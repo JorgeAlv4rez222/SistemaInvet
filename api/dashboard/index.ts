@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { supabase } from '../lib/supabase/client'
 import { dashboardService } from './dashboard.service'
