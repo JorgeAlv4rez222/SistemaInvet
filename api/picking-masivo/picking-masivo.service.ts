@@ -342,7 +342,7 @@ export const pickingMasivoService = {
   },
 
   // ── 6. Cola de subtareas libres para un operador ──────────────────────────
-  async colaSubtareas(sesionId: string, usuarioId: string): Promise<ServiceResult<unknown[]>> {
+  async colaSubtareas(sesionId: string, _usuarioId: string): Promise<ServiceResult<unknown[]>> {
     // Liberar expiradas primero
     await supabase.rpc('liberar_subtareas_expiradas', { p_sesion_id: sesionId })
 
