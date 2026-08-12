@@ -1,0 +1,530 @@
+import { supabase } from '../lib/supabase/client'
+import type { ServiceResult } from '../../src/shared/types/base'
+
+// ─── Tipos públicos ───────────────────────────────────────────────────────────
+
+export type CrearSesionInput = {
+  usuarioId:     string
+  numeroOc:      string
+  nombreCliente?: string
+  archivoNombre: string
+  items: {
+    codigo:        string
+    descripcion:   string
+    cantidadPedida: number
+    productoId?:   string   // puede ser null si no existe en catálogo
+  }[]
+}
+
+export type ValidarExcelInput = {
+  items: {
+    codigo:        string
+    descripcion:   string
+    cantidadPedida: number
+  }[]
+}
+
+export type ValidarExcelResult = {
+  totalItems:    number
+  conCatalogo:   number
+  sinCatalogo:   number
+  sinStock:      number
+  alertas: {
+    codigo:       string
+    descripcion:  string
+    tipo:         'sin_catalogo' | 'sin_stock' | 'stock_insuficiente'
+    stockActual?: number
+    solicitado?:  number
+  }[]
+  items: {
+    codigo:        string
+    descripcion:   string
+    cantidadPedida: number
+    productoId?:   string
+    stockTotal?:   number
+    ok:            boolean
+  }[]
+}
+
+export type ActivarSesionInput = {
+  sesionId:  string
+  usuarioId: string
+}
+
+export type TomarSubtareaInput = {
+  subtareaId: string
+  usuarioId:  string
+}
+
+export type ConfirmarSubtareaInput = {
+  subtareaId:          string
+  usuarioId:           string
+  cantidadDespachada:  number
+  motivo?:             string
+  productoRealId?:     string  // si hubo equivalente
+}
+
+export type LiberarPropiasInput = {
+  sesionId:  string
+  usuarioId: string
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+export const pickingMasivoService = {
+
+  // ── 1. Validar Excel (sin escribir nada) ──────────────────────────────────
+  async validarExcel(input: ValidarExcelInput): Promise<ServiceResult<ValidarExcelResult>> {
+    const codigos = input.items.map(i => i.codigo)
+
+    // Buscar productos en catálogo
+    const { data: productos, error } = await supabase
+      .from('productos')
+      .select('id, sku, nombre')
+      .in('sku', codigos)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+
+    const mapaCatalogo = new Map(productos?.map(p => [p.sku, p]) ?? [])
+
+    // Buscar stock actual de los productos encontrados
+    const productoIds = productos?.map(p => p.id) ?? []
+    let mapaStock = new Map<string, number>()
+
+    if (productoIds.length > 0) {
+      const { data: lotes } = await supabase
+        .from('lotes_inventario')
+        .select('producto_id, cantidad')
+        .in('producto_id', productoIds)
+        .eq('activo', true)
+        .gt('cantidad', 0)
+
+      for (const l of lotes ?? []) {
+        mapaStock.set(l.producto_id, (mapaStock.get(l.producto_id) ?? 0) + l.cantidad)
+      }
+    }
+
+    const alertas: ValidarExcelResult['alertas'] = []
+    const itemsResult: ValidarExcelResult['items'] = []
+    let sinCatalogo = 0
+    let sinStock = 0
+
+    for (const item of input.items) {
+      const prod = mapaCatalogo.get(item.codigo)
+      if (!prod) {
+        sinCatalogo++
+        alertas.push({ codigo: item.codigo, descripcion: item.descripcion, tipo: 'sin_catalogo' })
+        itemsResult.push({ ...item, ok: false })
+        continue
+      }
+
+      const stock = mapaStock.get(prod.id) ?? 0
+      if (stock === 0) {
+        sinStock++
+        alertas.push({
+          codigo: item.codigo,
+          descripcion: item.descripcion,
+          tipo: 'sin_stock',
+          stockActual: 0,
+          solicitado: item.cantidadPedida,
+        })
+      } else if (stock < item.cantidadPedida) {
+        alertas.push({
+          codigo: item.codigo,
+          descripcion: item.descripcion,
+          tipo: 'stock_insuficiente',
+          stockActual: stock,
+          solicitado: item.cantidadPedida,
+        })
+      }
+
+      itemsResult.push({
+        ...item,
+        productoId: prod.id,
+        stockTotal: stock,
+        ok: stock >= item.cantidadPedida,
+      })
+    }
+
+    return {
+      ok: true,
+      data: {
+        totalItems: input.items.length,
+        conCatalogo: input.items.length - sinCatalogo,
+        sinCatalogo,
+        sinStock,
+        alertas,
+        items: itemsResult,
+      },
+    }
+  },
+
+  // ── 2. Crear sesión (estado: validando) ───────────────────────────────────
+  async crearSesion(input: CrearSesionInput): Promise<ServiceResult<{ sesionId: string }>> {
+    const { data: sesion, error: sesionErr } = await supabase
+      .from('sesiones_picking_masivo')
+      .insert({
+        numero_oc:      input.numeroOc,
+        nombre_cliente: input.nombreCliente ?? null,
+        archivo_nombre: input.archivoNombre,
+        total_items:    input.items.length,
+        creado_por:     input.usuarioId,
+        estado:         'validando',
+      })
+      .select('id')
+      .single()
+
+    if (sesionErr || !sesion) {
+      return { ok: false, error: { code: 'DB_ERROR', message: sesionErr?.message ?? 'Error al crear sesión' } }
+    }
+
+    const itemRows = input.items.map(item => ({
+      sesion_id:          sesion.id,
+      producto_id:        item.productoId ?? null,
+      codigo:             item.codigo,
+      descripcion:        item.descripcion,
+      cantidad_pedida:    item.cantidadPedida,
+    }))
+
+    const { error: itemsErr } = await supabase
+      .from('items_picking_masivo')
+      .insert(itemRows)
+
+    if (itemsErr) {
+      // Rollback sesión (best-effort)
+      await supabase.from('sesiones_picking_masivo').delete().eq('id', sesion.id)
+      return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
+    }
+
+    return { ok: true, data: { sesionId: sesion.id } }
+  },
+
+  // ── 3. Activar sesión + generar subtareas FIFO ───────────────────────────
+  async activarSesion(input: ActivarSesionInput): Promise<ServiceResult<{ subtareasGeneradas: number }>> {
+    // Verificar sesión en estado validando
+    const { data: sesion, error: sesErr } = await supabase
+      .from('sesiones_picking_masivo')
+      .select('id, estado, total_items')
+      .eq('id', input.sesionId)
+      .single()
+
+    if (sesErr || !sesion) return { ok: false, error: { code: 'NOT_FOUND', message: 'Sesión no encontrada' } }
+    if (sesion.estado !== 'validando') {
+      return { ok: false, error: { code: 'INVALID_STATE', message: `La sesión está en estado '${sesion.estado}'` } }
+    }
+
+    // Obtener todos los ítems con producto_id
+    const { data: items, error: itemsErr } = await supabase
+      .from('items_picking_masivo')
+      .select('id, producto_id, cantidad_pedida')
+      .eq('sesion_id', input.sesionId)
+      .not('producto_id', 'is', null)
+
+    if (itemsErr) return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
+
+    const subtareas: {
+      item_id:           string
+      sesion_id:         string
+      lote_id:           string
+      posicion_id:       string
+      posicion_codigo:   string
+      orden_fifo:        number
+      cantidad_asignada: number
+    }[] = []
+
+    for (const item of items ?? []) {
+      if (!item.producto_id) continue
+
+      // FIFO: lotes más antiguos primero, con stock disponible
+      const { data: lotes } = await supabase
+        .from('lotes_inventario')
+        .select(`
+          id,
+          cantidad,
+          posicion_id,
+          creado_en,
+          posiciones_rack ( id, codigo )
+        `)
+        .eq('producto_id', item.producto_id)
+        .eq('activo', true)
+        .eq('en_pasillo', false)
+        .not('posicion_id', 'is', null)
+        .gt('cantidad', 0)
+        .order('creado_en', { ascending: true })
+
+      let restante = item.cantidad_pedida
+      let orden = 1
+
+      for (const lote of lotes ?? []) {
+        if (restante <= 0) break
+
+        const pos = lote.posiciones_rack as { id: string; codigo: string } | null
+        if (!pos) continue
+
+        const asignado = Math.min(lote.cantidad, restante)
+
+        subtareas.push({
+          item_id:           item.id,
+          sesion_id:         input.sesionId,
+          lote_id:           lote.id,
+          posicion_id:       pos.id,
+          posicion_codigo:   pos.codigo,
+          orden_fifo:        orden++,
+          cantidad_asignada: asignado,
+        })
+
+        restante -= asignado
+      }
+
+      // Si quedó restante, no hay stock suficiente — las subtareas generadas
+      // cubren lo que hay; el admin lo verá en el dashboard.
+    }
+
+    if (subtareas.length > 0) {
+      const { error: subErr } = await supabase
+        .from('subtareas_picking_masivo')
+        .insert(subtareas)
+
+      if (subErr) return { ok: false, error: { code: 'DB_ERROR', message: subErr.message } }
+    }
+
+    // Marcar sesión como activa
+    const { error: updErr } = await supabase
+      .from('sesiones_picking_masivo')
+      .update({ estado: 'activa', activada_en: new Date().toISOString() })
+      .eq('id', input.sesionId)
+
+    if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
+
+    return { ok: true, data: { subtareasGeneradas: subtareas.length } }
+  },
+
+  // ── 4. Listar sesiones ────────────────────────────────────────────────────
+  async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
+    let q = supabase
+      .from('sesiones_picking_masivo')
+      .select('id, numero_oc, nombre_cliente, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por')
+      .order('creado_en', { ascending: false })
+
+    if (estado) q = q.eq('estado', estado)
+
+    const { data, error } = await q
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: data ?? [] }
+  },
+
+  // ── 5. Obtener sesión con ítems y subtareas ───────────────────────────────
+  async obtenerSesion(sesionId: string): Promise<ServiceResult<unknown>> {
+    const { data: sesion, error: sesErr } = await supabase
+      .from('sesiones_picking_masivo')
+      .select('*')
+      .eq('id', sesionId)
+      .single()
+
+    if (sesErr || !sesion) return { ok: false, error: { code: 'NOT_FOUND', message: 'Sesión no encontrada' } }
+
+    const { data: items, error: itemsErr } = await supabase
+      .from('items_picking_masivo')
+      .select(`
+        *,
+        subtareas_picking_masivo (
+          id, posicion_codigo, orden_fifo, cantidad_asignada, cantidad_despachada,
+          estado, bloqueado_por, bloqueado_en, completado_por, completado_en,
+          motivo_diferencia, es_equivalente, producto_real_id
+        )
+      `)
+      .eq('sesion_id', sesionId)
+      .order('id')
+
+    if (itemsErr) return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
+
+    return { ok: true, data: { ...sesion, items: items ?? [] } }
+  },
+
+  // ── 6. Cola de subtareas libres para un operador ──────────────────────────
+  async colaSubtareas(sesionId: string, usuarioId: string): Promise<ServiceResult<unknown[]>> {
+    // Liberar expiradas primero
+    await supabase.rpc('liberar_subtareas_expiradas', { p_sesion_id: sesionId })
+
+    const { data, error } = await supabase
+      .from('subtareas_picking_masivo')
+      .select(`
+        id, posicion_codigo, orden_fifo, cantidad_asignada, estado,
+        bloqueado_por, bloqueado_en,
+        item_id,
+        items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada )
+      `)
+      .eq('sesion_id', sesionId)
+      .in('estado', ['libre', 'bloqueado'])
+      .order('orden_fifo', { ascending: true })
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: data ?? [] }
+  },
+
+  // ── 7. Tomar subtarea (bloqueo) ───────────────────────────────────────────
+  async tomarSubtarea(input: TomarSubtareaInput): Promise<ServiceResult<{ subtareaId: string }>> {
+    // Verificar que esté libre
+    const { data: sub, error: subErr } = await supabase
+      .from('subtareas_picking_masivo')
+      .select('id, estado, bloqueado_en')
+      .eq('id', input.subtareaId)
+      .single()
+
+    if (subErr || !sub) return { ok: false, error: { code: 'NOT_FOUND', message: 'Subtarea no encontrada' } }
+    if (sub.estado !== 'libre') {
+      return { ok: false, error: { code: 'CONFLICT', message: 'La subtarea ya fue tomada por otro operador' } }
+    }
+
+    const { error: updErr } = await supabase
+      .from('subtareas_picking_masivo')
+      .update({
+        estado:        'bloqueado',
+        bloqueado_por: input.usuarioId,
+        bloqueado_en:  new Date().toISOString(),
+      })
+      .eq('id', input.subtareaId)
+      .eq('estado', 'libre')   // guard optimista
+
+    if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
+
+    return { ok: true, data: { subtareaId: input.subtareaId } }
+  },
+
+  // ── 8. Confirmar subtarea ─────────────────────────────────────────────────
+  async confirmarSubtarea(input: ConfirmarSubtareaInput): Promise<ServiceResult<{ movimientoId: string | null }>> {
+    // Verificar que esté bloqueada por este usuario
+    const { data: sub, error: subErr } = await supabase
+      .from('subtareas_picking_masivo')
+      .select('id, estado, bloqueado_por, sesion_id, lote_id, cantidad_asignada, item_id, items_picking_masivo(producto_id)')
+      .eq('id', input.subtareaId)
+      .single()
+
+    if (subErr || !sub) return { ok: false, error: { code: 'NOT_FOUND', message: 'Subtarea no encontrada' } }
+    if (sub.estado !== 'bloqueado') {
+      return { ok: false, error: { code: 'INVALID_STATE', message: 'La subtarea no está bloqueada' } }
+    }
+    if (sub.bloqueado_por !== input.usuarioId) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'No tienes esta subtarea bloqueada' } }
+    }
+
+    const cantidadDespachada = input.cantidadDespachada
+    const esParcialoSinStock = cantidadDespachada < sub.cantidad_asignada
+    const esEquivalente = !!input.productoRealId
+    const productoRealId = input.productoRealId ?? (sub.items_picking_masivo as { producto_id: string } | null)?.producto_id
+
+    if (esParcialoSinStock && !input.motivo) {
+      return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'El motivo es obligatorio para despacho parcial o sin stock' } }
+    }
+
+    let movimientoId: string | null = null
+
+    // Registrar movimiento de salida solo si se despachó algo
+    if (cantidadDespachada > 0 && productoRealId) {
+      // Descontar del lote
+      const { data: lote } = await supabase
+        .from('lotes_inventario')
+        .select('cantidad')
+        .eq('id', sub.lote_id)
+        .single()
+
+      if (lote) {
+        const nuevaCantidad = Math.max(0, lote.cantidad - cantidadDespachada)
+        await supabase
+          .from('lotes_inventario')
+          .update({ cantidad: nuevaCantidad, activo: nuevaCantidad > 0 })
+          .eq('id', sub.lote_id)
+      }
+
+      // Registrar en movimientos
+      const { data: mov, error: movErr } = await supabase
+        .from('movimientos')
+        .insert({
+          tipo:           'salida',
+          producto_id:    productoRealId,
+          lote_id:        sub.lote_id,
+          cantidad:       cantidadDespachada,
+          usuario_id:     input.usuarioId,
+          referencia:     `picking-masivo:${sub.sesion_id}`,
+          notas:          input.motivo ?? null,
+        })
+        .select('id')
+        .single()
+
+      if (movErr) return { ok: false, error: { code: 'DB_ERROR', message: movErr.message } }
+      movimientoId = mov?.id ?? null
+    }
+
+    // Actualizar subtarea (dispara trigger sync_item_desde_subtarea)
+    const estadoFinal = cantidadDespachada === 0
+      ? 'sin_stock'
+      : cantidadDespachada >= sub.cantidad_asignada
+        ? 'completado'
+        : 'parcial'
+
+    const { error: updErr } = await supabase
+      .from('subtareas_picking_masivo')
+      .update({
+        estado:               estadoFinal,
+        completado_por:       input.usuarioId,
+        completado_en:        new Date().toISOString(),
+        cantidad_despachada:  cantidadDespachada,
+        motivo_diferencia:    input.motivo ?? null,
+        producto_real_id:     productoRealId ?? null,
+        es_equivalente:       esEquivalente,
+        movimiento_id:        movimientoId,
+      })
+      .eq('id', input.subtareaId)
+
+    if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
+
+    return { ok: true, data: { movimientoId } }
+  },
+
+  // ── 9. Liberar propias subtareas bloqueadas ───────────────────────────────
+  async liberarPropias(input: LiberarPropiasInput): Promise<ServiceResult<{ liberadas: number }>> {
+    const { data, error } = await supabase
+      .from('subtareas_picking_masivo')
+      .update({
+        estado:        'libre',
+        bloqueado_por: null,
+        bloqueado_en:  null,
+      })
+      .eq('sesion_id', input.sesionId)
+      .eq('bloqueado_por', input.usuarioId)
+      .eq('estado', 'bloqueado')
+      .select('id')
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { liberadas: data?.length ?? 0 } }
+  },
+
+  // ── 10. Cancelar sesión ───────────────────────────────────────────────────
+  async cancelarSesion(sesionId: string): Promise<ServiceResult<{ sesionId: string }>> {
+    const { data: sesion } = await supabase
+      .from('sesiones_picking_masivo')
+      .select('estado')
+      .eq('id', sesionId)
+      .single()
+
+    if (!sesion) return { ok: false, error: { code: 'NOT_FOUND', message: 'Sesión no encontrada' } }
+    if (sesion.estado === 'completada') {
+      return { ok: false, error: { code: 'INVALID_STATE', message: 'No se puede cancelar una sesión completada' } }
+    }
+
+    // Liberar todas las subtareas bloqueadas de la sesión
+    await supabase
+      .from('subtareas_picking_masivo')
+      .update({ estado: 'libre', bloqueado_por: null, bloqueado_en: null })
+      .eq('sesion_id', sesionId)
+      .eq('estado', 'bloqueado')
+
+    const { error } = await supabase
+      .from('sesiones_picking_masivo')
+      .update({ estado: 'cancelada' })
+      .eq('id', sesionId)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { sesionId } }
+  },
+}

@@ -1,0 +1,78 @@
+import { apiClient } from '../../../shared/utils/apiClient'
+import type {
+  ValidarExcelInput,
+  ValidarExcelResult,
+  CrearSesionInput,
+  ActivarSesionInput,
+  TomarSubtareaInput,
+  ConfirmarSubtareaInput,
+  LiberarPropiasInput,
+} from '../../../../api/picking-masivo/picking-masivo.service'
+
+export type {
+  ValidarExcelResult,
+}
+
+export type SesionResumen = {
+  id:               string
+  numero_oc:        string
+  nombre_cliente:   string | null
+  estado:           'validando' | 'activa' | 'completada' | 'cancelada'
+  total_items:      number
+  items_completados: number
+  archivo_nombre:   string | null
+  creado_en:        string
+  activada_en:      string | null
+  completada_en:    string | null
+}
+
+export type SubtareaResumen = {
+  id:                string
+  posicion_codigo:   string
+  orden_fifo:        number
+  cantidad_asignada: number
+  cantidad_despachada: number | null
+  estado:            'libre' | 'bloqueado' | 'completado' | 'parcial' | 'sin_stock'
+  bloqueado_por:     string | null
+  bloqueado_en:      string | null
+  item_id:           string
+  items_picking_masivo: {
+    codigo:            string
+    descripcion:       string
+    cantidad_pedida:   number
+    cantidad_despachada: number
+  } | null
+}
+
+export const pickingMasivoApi = {
+
+  validarExcel: (body: ValidarExcelInput) =>
+    apiClient.post<ValidarExcelResult>('/picking-masivo?accion=validar-excel', body),
+
+  crearSesion: (body: CrearSesionInput) =>
+    apiClient.post<{ sesionId: string }>('/picking-masivo?accion=crear-sesion', body),
+
+  activarSesion: (body: ActivarSesionInput) =>
+    apiClient.post<{ subtareasGeneradas: number }>('/picking-masivo?accion=activar-sesion', body),
+
+  listarSesiones: (estado?: string) =>
+    apiClient.get<SesionResumen[]>(`/picking-masivo?accion=sesiones${estado ? `&estado=${estado}` : ''}`),
+
+  obtenerSesion: (id: string) =>
+    apiClient.get<SesionResumen & { items: unknown[] }>(`/picking-masivo?accion=sesion&id=${id}`),
+
+  colaSubtareas: (sesionId: string) =>
+    apiClient.get<SubtareaResumen[]>(`/picking-masivo?accion=cola&id=${sesionId}`),
+
+  tomarSubtarea: (body: TomarSubtareaInput) =>
+    apiClient.post<{ subtareaId: string }>('/picking-masivo?accion=tomar-subtarea', body),
+
+  confirmarSubtarea: (body: ConfirmarSubtareaInput) =>
+    apiClient.post<{ movimientoId: string | null }>('/picking-masivo?accion=confirmar-subtarea', body),
+
+  liberarPropias: (body: LiberarPropiasInput) =>
+    apiClient.post<{ liberadas: number }>('/picking-masivo?accion=liberar-propias', body),
+
+  cancelarSesion: (sesionId: string) =>
+    apiClient.post<{ sesionId: string }>('/picking-masivo?accion=cancelar-sesion', { sesionId }),
+}
