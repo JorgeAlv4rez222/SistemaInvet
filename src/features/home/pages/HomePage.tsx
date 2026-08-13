@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { UserRole } from '../../../shared/types/base'
 import { useDashboard } from '../hooks/useDashboard'
@@ -5,7 +6,7 @@ import { GraficoDespachosMensuales } from '../components/GraficoDespachosMensual
 
 // ── Íconos nav ────────────────────────────────────────────────────────────
 
-const ICONOS: Record<string, JSX.Element> = {
+const ICONOS: Record<string, React.ReactElement> = {
   productos: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -68,7 +69,7 @@ function KpiCard({
   value: string | number
   sub?:  string
   color: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'slate'
-  icon:  JSX.Element
+  icon:  React.ReactElement
 }) {
   const colors: Record<string, string> = {
     blue:   'kpi-blue',
