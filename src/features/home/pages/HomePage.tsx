@@ -159,9 +159,8 @@ export function HomePage() {
       {/* ── KPIs ── */}
       <div className="kpi-grid">
         <KpiCard
-          label="NV pendientes"
+          label="NV en preparación"
           value={kpisLoading ? '—' : kpis?.notasPendientes ?? 0}
-          sub={kpis?.notasDespacho ? `${kpis.notasDespacho} lista${kpis.notasDespacho !== 1 ? 's' : ''} para despacho` : undefined}
           color={kpis?.notasPendientes ? 'amber' : 'slate'}
           icon={<IcoClipboard />}
         />
@@ -172,7 +171,7 @@ export function HomePage() {
           icon={<IcoImport />}
         />
         <KpiCard
-          label="Despachos Pendientes"
+          label="NV por revisar"
           value={kpisLoading ? '—' : kpis?.notasDespacho ?? 0}
           color={kpis?.notasDespacho ? 'purple' : 'slate'}
           icon={<IcoTruck />}
