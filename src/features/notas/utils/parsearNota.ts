@@ -29,7 +29,7 @@ const REGEX_OC       = /N[°º]\s*OC[:\s]*(\d+)/i
 // Formato Grantt: "100. AG/PR6003 Descripcion 174 17,400"
 // Acepta: AG/PR6003 (barra), HX-MVC2P10A-N (guión), 09631 (numérico 4-8 dígitos)
 // Los precios finales actúan como delimitador de la descripción (no se capturan)
-const REGEX_PRODUCTO = /(\d+)\.\s+([A-Z]{1,5}[\/\-][A-Z0-9][A-Z0-9\-]*|\d{4,8})\s+(.+?)\s+[\d,\.]+\s+[\d,\.]+(?=\s|$)/g
+const REGEX_PRODUCTO = /(\d+)\.\s+([A-Z]{1,5}(?:[\/\-][A-Z0-9][A-Z0-9\-]*|\d+[A-Z0-9\-]*)|\d{4,8})\s+(.+?)\s+[\d,\.]+\s+[\d,\.]+(?=\s|$)/g
 
 const INICIO_TABLA = /Cantidad\s+Codi[gó]o\s+Descripci[oó]n/i
 const FIN_TABLA    = /Condici[oó]n de Pago|Total\s+IVA|Sub\s+Total/i
