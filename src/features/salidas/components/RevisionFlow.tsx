@@ -281,9 +281,15 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
           <div className="ing-prod-detalle">
             <div className="ing-prod-cantidades">
               <div className="ing-cantidad-item">
-                <span className="ing-cantidad-label">Despachado</span>
-                <span className="ing-cantidad-valor">{item.cantidadDespachada}</span>
+                <span className="ing-cantidad-label">Solicitado</span>
+                <span className="ing-cantidad-valor">{item.cantidadSolicitada}</span>
               </div>
+              {item.cantidadDespachada > 0 && (
+                <div className="ing-cantidad-item">
+                  <span className="ing-cantidad-label">Despachado</span>
+                  <span className="ing-cantidad-valor">{item.cantidadDespachada}</span>
+                </div>
+              )}
             </div>
 
             {item.skuEquivalente && (
