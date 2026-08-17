@@ -191,7 +191,12 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     setError(null)
     setCantidad('')
     setComentario('')
-    setPaso({ tipo: 'escanear_producto', item })
+    // Productos CG no requieren escaneo de código de barras
+    if (item.sku.startsWith('CG')) {
+      setPaso({ tipo: 'ingresar_cantidad', item, codigoEscaneado: '' })
+    } else {
+      setPaso({ tipo: 'escanear_producto', item })
+    }
   }
 
   function handleEscanearProducto(codigo: string) {
