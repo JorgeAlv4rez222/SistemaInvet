@@ -237,7 +237,6 @@ export function NotasPage() {
             <div className="notas-lista-scroll">
               <div className="notas-lista-filas">
               {notasFiltradas.map((nota: NotaResumen) => {
-                const pct = nota.totalProductos ? Math.round((nota.productosCompletos / nota.totalProductos) * 100) : 0
                 const marcada = nota.notaId === seleccionadaId
                 return (
                   <div
@@ -273,17 +272,8 @@ export function NotasPage() {
 
                       {/* Progreso */}
                       <div className="nota-fila-progreso">
-                        <div className="nota-progreso-barra">
-                          <div
-                            className="nota-progreso-fill"
-                            style={{
-                              width: `${pct}%`,
-                              background: pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--danger)',
-                            }}
-                          />
-                        </div>
                         <span className="nota-progreso-texto">
-                          {nota.productosCompletos}/{nota.totalProductos} · {pct}%
+                          {nota.productosCompletos}/{nota.totalProductos}
                         </span>
                       </div>
 

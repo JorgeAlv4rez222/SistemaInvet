@@ -4163,8 +4163,8 @@ label {
 }
 .notas-conteo {
   font-size: var(--font-size-xs);
-  color: var(--color-texto-sobre-fondo);
-  opacity: 0.6;
+  font-weight: 700;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -4237,16 +4237,25 @@ label {
   flex-direction: column;
   gap: 4px;
   min-width: 160px;
+  max-width: 220px;
 }
 .nota-fila-numero {
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nota-fila-cliente {
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nota-fila-progreso {
   flex: 1;
@@ -4263,7 +4272,8 @@ label {
   align-items: center;
   gap: 6px;
   font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--text-primary);
   min-width: 100px;
 }
 .nota-fila-estado {
@@ -5385,7 +5395,8 @@ input[type="radio"] {
   .nota-fila-principal,
   .nota-fila-fecha,
   .nota-fila-progreso { min-width: 0; }
-  .nota-fila-principal { padding-right: 36px; }
+  .nota-fila-principal { max-width: none; padding-right: 36px; }
+  .nota-fila-progreso { flex: none; }
   .nota-fila-estado { order: -1; }
 
   /* ── Ubicaciones / Mapa ── */
