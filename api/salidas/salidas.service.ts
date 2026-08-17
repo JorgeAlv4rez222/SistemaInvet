@@ -15,6 +15,7 @@ export type ValidarProductoInput = {
   notaProductoId:    string
   codigoProducto:    string
   cantidadIngresada: number
+  comentario?:       string
 }
 
 export type ValidarProductoResult = {
@@ -98,7 +99,6 @@ export const salidasService = {
     const productoRef    = notaProducto.productos as ProductoRef
     const equivalenteRef = notaProducto.productos_equivalente as { codigo_barra: string; sku: string } | null
 
-    // Si se pickeó un equivalente, validar contra su código de barra
     const codigoEsperado = notaProducto.producto_equivalente_id
       ? equivalenteRef?.codigo_barra
       : productoRef.codigo_barra
@@ -117,44 +117,65 @@ export const salidasService = {
       }
     }
 
-    // TC-SAL-001 / TC-SAL-002: verificar coincidencia de cantidad
-    const coincide = input.cantidadIngresada === notaProducto.cantidad_despachada
+    // Usar cantidad_solicitada como referencia (en revisión directa la cantidad_despachada puede ser 0)
+    const cantidadReferencia = notaProducto.cantidad_solicitada || notaProducto.cantidad_despachada
 
-    // Solo marcar revisado_admin si coincide (TC-SAL-002: no marcar si cantidad incorrecta)
-    if (coincide) {
-      const { error: errorUpdate } = await supabase
-        .from('nota_productos')
-        .update({ revisado_admin: true })
-        .eq('id', input.notaProductoId)
-
-      if (errorUpdate) {
-        return { ok: false, error: { code: 'DB_ERROR', message: errorUpdate.message } }
-      }
-
-      // EV-001: registrar auditoría de revisión
-      await supabase.from('movimientos').insert({
-        tipo: 'revision_admin',
-        nota_venta_id: notaRef.id,
-        producto_id: notaProducto.producto_id,
-        cantidad: input.cantidadIngresada,
-        usuario_id: input.adminId,
-        detalle: {
-          numeroNota: notaRef.numero_nota,
-          sku: productoRef.sku,
-          nombreProducto: productoRef.nombre,
-          cantidadDespachada: notaProducto.cantidad_despachada,
-          cantidadRevisada: input.cantidadIngresada,
+    if (input.cantidadIngresada > cantidadReferencia) {
+      return {
+        ok: false,
+        error: {
+          code: 'EXCEDE_SOLICITADO',
+          message: `La cantidad ingresada (${input.cantidadIngresada}) supera la solicitada (${cantidadReferencia})`,
         },
-      })
+      }
     }
 
-    // TC-SAL-003: verificar si todos los ítems de la nota ya fueron revisados
+    const coincide = input.cantidadIngresada === cantidadReferencia
+
+    if (!coincide && !input.comentario?.trim()) {
+      return {
+        ok: false,
+        error: {
+          code: 'COMENTARIO_REQUERIDO',
+          message: 'Debes indicar el motivo por el cual la cantidad es menor a la solicitada',
+          field: 'comentario',
+        },
+      }
+    }
+
+    // Marcar siempre como revisado_admin (sin restricción de stock)
+    const { error: errorUpdate } = await supabase
+      .from('nota_productos')
+      .update({ revisado_admin: true })
+      .eq('id', input.notaProductoId)
+
+    if (errorUpdate) {
+      return { ok: false, error: { code: 'DB_ERROR', message: errorUpdate.message } }
+    }
+
+    // EV-001: registrar auditoría de revisión
+    await supabase.from('movimientos').insert({
+      tipo: 'revision_admin',
+      nota_venta_id: notaRef.id,
+      producto_id: notaProducto.producto_id,
+      cantidad: input.cantidadIngresada,
+      usuario_id: input.adminId,
+      detalle: {
+        numeroNota:         notaRef.numero_nota,
+        sku:                productoRef.sku,
+        nombreProducto:     productoRef.nombre,
+        cantidadSolicitada: cantidadReferencia,
+        cantidadRevisada:   input.cantidadIngresada,
+        ...(input.comentario?.trim() ? { motivoDiferencia: input.comentario.trim() } : {}),
+      },
+    })
+
+    // Verificar si todos los ítems de la nota ya fueron revisados
     const { data: todosItems } = await supabase
       .from('nota_productos')
       .select('id, revisado_admin')
       .eq('nota_venta_id', notaRef.id)
 
-    // Si el ítem actual acaba de ser marcado, contarlo como revisado también
     const todosRevisados = (todosItems ?? []).every(
       (item) => item.revisado_admin || item.id === input.notaProductoId
     )
@@ -162,12 +183,12 @@ export const salidasService = {
     return {
       ok: true,
       data: {
-        valido:            coincide,
-        cantidadEsperada:  notaProducto.cantidad_despachada,
+        valido:            true,
+        cantidadEsperada:  cantidadReferencia,
         cantidadIngresada: input.cantidadIngresada,
         coincide,
         mensaje:           coincide ? 'Producto revisado' : 'Verifique cantidad',
-        todosRevisados:    coincide ? todosRevisados : false,
+        todosRevisados,
       },
     }
   },

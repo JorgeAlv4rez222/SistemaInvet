@@ -64,6 +64,7 @@ function RevisionConDetalle({
     sku:                p.sku,
     nombre:             p.nombre,
     codigoBarra:        p.codigoBarra,
+    cantidadSolicitada: p.cantidadSolicitada,
     cantidadDespachada: p.cantidadDespachada,
     revisadoAdmin:      p.revisadoAdmin,
     estado:             p.estado,

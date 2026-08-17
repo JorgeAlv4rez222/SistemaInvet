@@ -11,6 +11,8 @@ import type {
   ConcluirParcialResult,
   CambiarEstadoInput,
   CambiarEstadoResult,
+  EnviarARevisionInput,
+  EnviarARevisionResult,
 } from '../../../../api/notas/notas.service'
 
 export type {
@@ -44,4 +46,7 @@ export const notasApi = {
 
   cambiarEstado: (body: CambiarEstadoInput) =>
     apiClient.post<CambiarEstadoResult>('/notas?accion=cambiar-estado', body),
+
+  enviarARevision: (body: EnviarARevisionInput) =>
+    apiClient.post<EnviarARevisionResult>('/notas?accion=enviar-revision', body),
 }

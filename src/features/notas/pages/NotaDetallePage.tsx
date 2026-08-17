@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDetalleNota, useCambiarEstadoNota, useConcluirParcial } from '../hooks/useNotas'
+import { useDetalleNota, useCambiarEstadoNota, useConcluirParcial, useEnviarARevision } from '../hooks/useNotas'
 import { PickingFlow } from '../components/PickingFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -173,6 +173,7 @@ function ModalChofer({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
 
 export function NotaDetallePage() {
   const operadorId              = localStorage.getItem('user_id') ?? ''
+  const esAdmin                 = localStorage.getItem('user_rol') === 'admin'
   const navigate                = useNavigate()
   const { id: notaId = '' }     = useParams<{ id: string }>()
   const { offline }             = useConectividad()
@@ -184,7 +185,19 @@ export function NotaDetallePage() {
   const [concluirAbierto, setConcluirAbierto] = useState<string | null>(null)
   const [concluirTexto,   setConcluirTexto]   = useState('')
   const [concluirError,   setConcluirError]   = useState<string | null>(null)
-  const concluirParcial = useConcluirParcial()
+  const [errorRevision,   setErrorRevision]   = useState<string | null>(null)
+  const concluirParcial  = useConcluirParcial()
+  const enviarARevision  = useEnviarARevision()
+
+  async function handleEnviarARevision() {
+    setErrorRevision(null)
+    try {
+      await enviarARevision.mutateAsync({ adminId: operadorId, notaId })
+      void refetch()
+    } catch (e) {
+      setErrorRevision(e instanceof ApiResponseError ? e.message : 'Error al enviar a revisión')
+    }
+  }
 
   function toggleExpandido(id: string) {
     setExpandidos((prev) => {
@@ -470,6 +483,20 @@ export function NotaDetallePage() {
         <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border ${data.estado === 'lista_despacho' ? 'bg-sky-500/10 text-sky-400 border-sky-500/25' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'}`}>
           <IcoCheck size={14} />
           {data.estado === 'lista_despacho' ? 'Lista para despacho' : 'Completada — pendiente revisión Admin'}
+        </div>
+      )}
+
+      {!notaCerrada && esAdmin && (
+        <div className="flex flex-col gap-1 mb-3">
+          <button
+            className="btn-secundario"
+            style={{ alignSelf: 'flex-start' }}
+            disabled={enviarARevision.isPending || offline}
+            onClick={handleEnviarARevision}
+          >
+            {enviarARevision.isPending ? 'Enviando…' : 'Enviar a revisión directa'}
+          </button>
+          {errorRevision && <p className="text-red-400" style={{ fontSize: 'var(--font-size-xs)' }}>{errorRevision}</p>}
         </div>
       )}
 

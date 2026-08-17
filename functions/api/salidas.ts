@@ -6,6 +6,7 @@ import { z } from 'zod'
 const validarProductoSchema = z.object({
   adminId: z.string().uuid(), notaProductoId: z.string().uuid(),
   codigoProducto: z.string().min(1), cantidadIngresada: z.number().int().positive(),
+  comentario: z.string().optional(),
 })
 
 export async function onRequest({ request, env }: { request: Request; env: Env }): Promise<Response> {

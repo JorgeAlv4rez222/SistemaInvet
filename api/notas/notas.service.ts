@@ -131,6 +131,16 @@ export type CambiarEstadoResult = {
   fechaDespacho: string
 }
 
+export type EnviarARevisionInput = {
+  adminId: string
+  notaId:  string
+}
+
+export type EnviarARevisionResult = {
+  notaId: string
+  estado: 'completa'
+}
+
 //Constantes (prefijos que sirve para equivalente en caso de S.STOCK)
 
 const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL', 'BO'] as const
@@ -717,6 +727,43 @@ export const notasService = {
     const notaCompleta = await evaluarEstadoNota(notaRef.id, input.usuarioId, { numero_nota: notaRef.numero_nota, nombre_cliente: notaRef.nombre_cliente })
 
     return { ok: true, data: { notaProductoId: input.notaProductoId, notaCompleta } }
+  },
+
+  async enviarARevision(input: EnviarARevisionInput): Promise<ServiceResult<EnviarARevisionResult>> {
+    if (!(await verificarAdmin(input.adminId))) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Solo el Admin puede enviar notas a revisión directa' } }
+    }
+
+    const { data: nota, error } = await supabase
+      .from('notas_venta')
+      .select('id, estado, numero_nota, nombre_cliente')
+      .eq('id', input.notaId)
+      .single()
+
+    if (error || !nota) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
+    }
+
+    if (nota.estado !== 'pendiente') {
+      return { ok: false, error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `La nota ya está en estado '${nota.estado}'` } }
+    }
+
+    await supabase.from('notas_venta').update({ estado: 'completa' }).eq('id', input.notaId)
+
+    await supabase.from('movimientos').insert({
+      tipo:          'cambio_estado_nota',
+      nota_venta_id: input.notaId,
+      usuario_id:    input.adminId,
+      detalle: {
+        numeroNota:     nota.numero_nota,
+        nombreCliente:  nota.nombre_cliente,
+        estadoAnterior: 'pendiente',
+        estadoNuevo:    'completa',
+        motivo:         'envio_directo_revision',
+      },
+    })
+
+    return { ok: true, data: { notaId: input.notaId, estado: 'completa' } }
   },
 
   async cambiarEstadoNota(input: CambiarEstadoInput): Promise<ServiceResult<CambiarEstadoResult>> {

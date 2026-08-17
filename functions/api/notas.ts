@@ -23,6 +23,9 @@ const cambiarEstadoSchema = z.object({
   adminId: z.string().uuid(), notaId: z.string().uuid(),
   nuevoEstado: z.literal('lista_despacho'), nombreChofer: z.string().min(1),
 })
+const enviarRevisionSchema = z.object({
+  adminId: z.string().uuid(), notaId: z.string().uuid(),
+})
 
 export async function onRequest({ request, env }: { request: Request; env: Env }): Promise<Response> {
   initSupabase(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
@@ -61,6 +64,12 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const parsed = concluirParcialSchema.safeParse(body)
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await notasService.concluirParcial(parsed.data)
+      return result.ok ? json(result.data) : json({ error: result.error }, 400)
+    }
+    if (accion === 'enviar-revision') {
+      const parsed = enviarRevisionSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await notasService.enviarARevision(parsed.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 400)
     }
     if (accion === 'cambiar-estado') {

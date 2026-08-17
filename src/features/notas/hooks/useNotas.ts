@@ -53,6 +53,17 @@ export function useConcluirParcial() {
   })
 }
 
+export function useEnviarARevision() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: notasApi.enviarARevision,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notas'] })
+      qc.invalidateQueries({ queryKey: ['salidas'] })
+    },
+  })
+}
+
 export function useCambiarEstadoNota() {
   const qc = useQueryClient()
   return useMutation({

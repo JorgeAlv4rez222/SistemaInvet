@@ -9,6 +9,7 @@ export type ItemRevision = {
   sku:                string
   nombre:             string
   codigoBarra:        string
+  cantidadSolicitada: number
   cantidadDespachada: number
   revisadoAdmin:      boolean
   estado:             string
@@ -155,16 +156,17 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   const rolUsuario = localStorage.getItem('user_rol') ?? ''
   const esAdmin    = rolUsuario === 'admin'
 
-  const [paso, setPaso]           = useState<Paso>({ tipo: 'lista' })
-  const [cantidad, setCantidad]   = useState('')
-  const [error, setError]         = useState<string | null>(null)
+  const [paso, setPaso]             = useState<Paso>({ tipo: 'lista' })
+  const [cantidad, setCantidad]     = useState('')
+  const [comentario, setComentario] = useState('')
+  const [error, setError]           = useState<string | null>(null)
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
 
-  // Todos revisados: excluye sin_stock (no requieren verificación física)
+  // Todos revisados: incluye todos los ítems (sin_stock también requieren revisión manual)
   const todosRevisados = revisadoEnSesion ||
-    items.filter((i) => i.estado !== 'sin_stock').every((i) => i.revisadoAdmin)
+    items.every((i) => i.revisadoAdmin)
   const [mostrarModalChofer, setMostrarModalChofer] = useState(false)
   const scanRef    = useRef<HTMLInputElement>(null)
   const cantidadRef = useRef<HTMLInputElement>(null)
@@ -188,6 +190,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     if (item.revisadoAdmin) return
     setError(null)
     setCantidad('')
+    setComentario('')
     setPaso({ tipo: 'escanear_producto', item })
   }
 
@@ -213,6 +216,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
         notaProductoId:    paso.item.notaProductoId,
         codigoProducto:    paso.codigoEscaneado,
         cantidadIngresada: cant,
+        comentario:        comentario.trim() || undefined,
       })
 
       if (resultado.todosRevisados) setRevisadoEnSesion(true)
@@ -234,15 +238,15 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     ? items.filter((i) => i.sku.toLowerCase().includes(qProducto) || i.nombre.toLowerCase().includes(qProducto))
     : items
 
-  const pendientes  = itemsMostrados.filter((i) => !i.revisadoAdmin && i.estado !== 'sin_stock')
-  const completados = itemsMostrados.filter((i) => i.revisadoAdmin || i.estado === 'sin_stock')
+  const pendientes  = itemsMostrados.filter((i) => !i.revisadoAdmin)
+  const completados = itemsMostrados.filter((i) => i.revisadoAdmin)
 
   function renderFila(item: ItemRevision) {
     const abierto    = expandidos.has(item.notaProductoId)
     const esSinStock = item.estado === 'sin_stock'
     const revisado   = item.revisadoAdmin
     const estadoItem: 'revisado' | 'sin_stock' | 'pendiente' = revisado ? 'revisado' : esSinStock ? 'sin_stock' : 'pendiente'
-    const puedeRevisar = !revisado && !esSinStock && !offline
+    const puedeRevisar = !revisado && !offline
 
     return (
       <div key={item.notaProductoId} className="ing-prod-item">
@@ -290,9 +294,9 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
                     <IcoCheck size={13} /> Revisado
                   </span>
                 )}
-                {esSinStock && (
+                {esSinStock && !revisado && (
                   <span className="inline-flex items-center gap-1 text-amber-400">
-                    Sin stock — no requiere revisión
+                    Sin stock
                   </span>
                 )}
               </div>
@@ -485,8 +489,10 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       {/* INGRESAR CANTIDAD */}
       {paso.tipo === 'ingresar_cantidad' && (
         <div className="paso">
-          <p>Producto: <strong>{paso.item.sku}</strong></p>
-          <p>Cantidad despachada registrada: <strong>{paso.item.cantidadDespachada}</strong></p>
+          <p>Producto: <strong>{paso.item.skuEquivalente ?? paso.item.sku}</strong> — {paso.item.nombre}</p>
+          <p>Cantidad solicitada: <strong>{paso.item.cantidadSolicitada}</strong>
+            {paso.item.cantidadDespachada > 0 && <> · Despachado: <strong>{paso.item.cantidadDespachada}</strong></>}
+          </p>
           <label>
             Cantidad física contada
             <input
@@ -494,10 +500,31 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
               type="number"
               min={1}
               value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
+              onChange={(e) => { setCantidad(e.target.value); setComentario('') }}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirmarCantidad()}
             />
           </label>
+
+          {(() => {
+            const cant = parseInt(cantidad, 10)
+            const ref  = paso.item.cantidadSolicitada
+            if (!isNaN(cant) && cant > 0 && cant < ref) {
+              return (
+                <label>
+                  Motivo de la diferencia <span style={{ color: 'var(--danger)' }}>*</span>
+                  <textarea
+                    rows={2}
+                    placeholder="Ej: faltante en bodega, producto dañado…"
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    style={{ resize: 'vertical' }}
+                  />
+                </label>
+              )
+            }
+            return null
+          })()}
+
           <div className="paso-acciones">
             <button
               className="btn-secundario"
