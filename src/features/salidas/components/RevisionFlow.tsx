@@ -245,7 +245,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     const abierto    = expandidos.has(item.notaProductoId)
     const esSinStock = item.estado === 'sin_stock'
     const revisado   = item.revisadoAdmin
-    const estadoItem: 'revisado' | 'sin_stock' | 'pendiente' = revisado ? 'revisado' : esSinStock ? 'sin_stock' : 'pendiente'
+    const estadoItem: 'revisado' | 'sin_stock' | 'pendiente' = revisado ? 'revisado' : 'pendiente'
     const puedeRevisar = !revisado && !offline
 
     return (
