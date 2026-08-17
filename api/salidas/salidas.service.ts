@@ -144,10 +144,10 @@ export const salidasService = {
       }
     }
 
-    // Marcar siempre como revisado_admin (sin restricción de stock)
+    // Marcar revisado_admin y actualizar cantidad_despachada con lo físicamente contado
     const { error: errorUpdate } = await supabase
       .from('nota_productos')
-      .update({ revisado_admin: true })
+      .update({ revisado_admin: true, cantidad_despachada: input.cantidadIngresada })
       .eq('id', input.notaProductoId)
 
     if (errorUpdate) {
