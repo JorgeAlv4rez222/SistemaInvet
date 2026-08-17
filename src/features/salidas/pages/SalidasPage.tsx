@@ -2,12 +2,14 @@ import { useState, useMemo } from 'react'
 import { useNotasParaRevision } from '../hooks/useSalidas'
 import { useDetalleNota } from '../../notas/hooks/useNotas'
 import { RevisionFlow } from '../components/RevisionFlow'
+import { ImportarNotaRevisionFlow } from '../components/ImportarNotaRevisionFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import type { NotaParaRevision } from '../services/salidas.api'
 import type { ItemRevision } from '../components/RevisionFlow'
 
 type Vista =
   | { tipo: 'lista' }
+  | { tipo: 'importar' }
   | { tipo: 'revision'; notaId: string }
 
 const MESES = [
@@ -88,6 +90,7 @@ function RevisionConDetalle({
 
 export function SalidasPage() {
   const adminId      = localStorage.getItem('user_id') ?? ''
+  const esAdmin      = localStorage.getItem('user_rol') === 'admin'
   const { offline }  = useConectividad()
   const [vista, setVista] = useState<Vista>({ tipo: 'lista' })
   const { data, isLoading, isError } = useNotasParaRevision()
@@ -132,6 +135,16 @@ export function SalidasPage() {
 
   function onRevisar() {
     if (seleccionadaId) setVista({ tipo: 'revision', notaId: seleccionadaId })
+  }
+
+  if (vista.tipo === 'importar') {
+    return (
+      <ImportarNotaRevisionFlow
+        adminId={adminId}
+        onVolver={() => setVista({ tipo: 'lista' })}
+        onCreada={(notaId) => setVista({ tipo: 'revision', notaId })}
+      />
+    )
   }
 
   if (vista.tipo === 'revision') {
@@ -222,6 +235,11 @@ export function SalidasPage() {
 
       {/* Revisar — se habilita al marcar una nota de la lista */}
       <div className="notas-veroc-wrap">
+        {esAdmin && (
+          <button className="btn-secundario" disabled={offline} onClick={() => setVista({ tipo: 'importar' })}>
+            + NV
+          </button>
+        )}
         <button className="btn-primario" disabled={!seleccionadaId || offline} onClick={onRevisar}>
           Revisar
         </button>
