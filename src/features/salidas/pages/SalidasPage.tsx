@@ -163,7 +163,7 @@ export function SalidasPage() {
       <ImportarNotaRevisionFlow
         adminId={adminId}
         onVolver={() => setVista({ tipo: 'lista' })}
-        onCreada={(notaId) => setVista({ tipo: 'revision', notaId })}
+        onCreada={(notaId) => setVista({ tipo: 'revision', notaId, estadoNota: 'completa', nombreChofer: null })}
       />
     )
   }
