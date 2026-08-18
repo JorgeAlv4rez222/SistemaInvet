@@ -21,6 +21,8 @@ export function RackDetalleModal({
 }) {
   const total    = rack.posiciones.length
   const ocupadas = rack.posiciones.filter((p) => p.ocupada).length
+  // Ordenar de mayor a menor nivel (N4 arriba, N1 abajo = vista real del rack)
+  const posicionesOrdenadas = [...rack.posiciones].sort((a, b) => b.nivel - a.nivel)
 
   return (
     <div className="mapa-pos-overlay" onClick={onClose}>
@@ -37,7 +39,7 @@ export function RackDetalleModal({
 
         <div className="mapa-pos-modal-body">
           <div className="mapa-posiciones-grid">
-            {rack.posiciones.map((pos) => (
+            {posicionesOrdenadas.map((pos) => (
               <PosicionBtn key={pos.id} pos={pos} onClick={() => onPosicion(pos)} />
             ))}
           </div>
