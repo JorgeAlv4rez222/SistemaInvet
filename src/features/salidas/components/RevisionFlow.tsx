@@ -335,7 +335,13 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
 
       {/* ── Header ── */}
       <div className="ing-detalle-header">
-        <button className="btn-volver" onClick={onCerrar}>
+        <button
+          className="btn-volver"
+          onClick={() => {
+            if (paso.tipo === 'lista') { onCerrar() }
+            else { setPaso({ tipo: 'lista' }); setError(null) }
+          }}
+        >
           <IcoBack /> Volver
         </button>
         <h2
