@@ -13,6 +13,7 @@ export type NotaParaRevision = {
   productosCompletos: number
   creadoEn:           string
   actualizadoEn:      string
+  nombreChofer:       string | null
 }
 
 export type { ValidarProductoResult }

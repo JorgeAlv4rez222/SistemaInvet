@@ -5239,6 +5239,13 @@ input[type="radio"] {
   font-weight: 700;
   color: #86efac;
 }
+.todos-revisados-aviso--despachada {
+  background: rgba(56,189,248,0.12);
+  border-color: var(--info);
+  color: var(--info);
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+}
 .btn-despacho {
   display: flex;
   align-items: center;

@@ -10,7 +10,7 @@ import type { ItemRevision } from '../components/RevisionFlow'
 type Vista =
   | { tipo: 'lista' }
   | { tipo: 'importar' }
-  | { tipo: 'revision'; notaId: string }
+  | { tipo: 'revision'; notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null }
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -47,14 +47,18 @@ function IconSearch() {
 // Componente intermedio que carga los productos de la nota antes de mostrar RevisionFlow
 function RevisionConDetalle({
   notaId,
+  estadoNota,
+  nombreChofer,
   adminId,
   offline,
   onCerrar,
 }: {
-  notaId:   string
-  adminId:  string
-  offline:  boolean
-  onCerrar: () => void
+  notaId:       string
+  estadoNota:   'completa' | 'despachada'
+  nombreChofer: string | null
+  adminId:      string
+  offline:      boolean
+  onCerrar:     () => void
 }) {
   const { data, isLoading, isError } = useDetalleNota(notaId)
 
@@ -82,6 +86,8 @@ function RevisionConDetalle({
       numeroOc={data.numeroOc}
       adminId={adminId}
       items={items}
+      estadoNota={estadoNota}
+      nombreChofer={nombreChofer}
       offline={offline}
       onCerrar={onCerrar}
     />
@@ -147,7 +153,9 @@ export function SalidasPage() {
   }
 
   function onRevisar() {
-    if (seleccionadaId) setVista({ tipo: 'revision', notaId: seleccionadaId })
+    if (!seleccionadaId) return
+    const nota = notas.find((n) => n.notaId === seleccionadaId)
+    if (nota) setVista({ tipo: 'revision', notaId: seleccionadaId, estadoNota: nota.estado, nombreChofer: nota.nombreChofer })
   }
 
   if (vista.tipo === 'importar') {
@@ -164,6 +172,8 @@ export function SalidasPage() {
     return (
       <RevisionConDetalle
         notaId={vista.notaId}
+        estadoNota={vista.estadoNota}
+        nombreChofer={vista.nombreChofer}
         adminId={adminId}
         offline={offline}
         onCerrar={() => setVista({ tipo: 'lista' })}

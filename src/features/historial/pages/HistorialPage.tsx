@@ -211,7 +211,6 @@ function NotaGrupoCard({
           </span>
           <span className="hist-nota-grupo-meta">
             {movimientos.length} movimiento{movimientos.length !== 1 ? 's' : ''}
-            {totalUds > 0 && <> · {totalUds} Und.</>}
           </span>
           {onDetalle && primero.notaVentaId && (
             <button
@@ -340,6 +339,12 @@ function DetalleIngreso({ importacionId, onCerrar }: { importacionId: string; on
       )}
     </div>
   )
+}
+
+function isoADMY(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = iso.slice(0, 10)
+  return d.split('-').reverse().join('-')
 }
 
 const ESTADO_NOTA_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -513,7 +518,7 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
   const estadoCfg = data ? (ESTADO_NOTA_CFG[data.estado] ?? { label: data.estado, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }) : null
 
   return (
-    <div className="p-4 flex flex-col gap-4 max-w-3xl">
+    <div className="p-4 flex flex-col gap-4">
 
       {/* Cabecera */}
       <div className="flex items-center gap-3">
@@ -551,7 +556,7 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
               </svg>
               <span className="text-sm text-[var(--text-secondary)]">
                 Despachado por <strong className="text-[var(--text-primary)]">{data.despacho.nombreChofer}</strong>
-                <span className="text-[var(--text-muted)]"> · {data.despacho.fechaDespacho?.slice(0, 10) ?? ''}</span>
+                <span className="text-[var(--text-muted)]"> · {isoADMY(data.despacho.fechaDespacho)}</span>
               </span>
             </div>
           )}
@@ -811,7 +816,7 @@ function IngresosHistorialView() {
                 </div>
                 <div className="hing-card-oc">OC #{oc.numeroOc}</div>
                 <div className="hing-card-meta">
-                  <span>{oc.fechaIngreso?.slice(0, 10)}</span>
+                  <span>{isoADMY(oc.fechaIngreso)}</span>
                   <span>{oc.totalProductos} producto{oc.totalProductos !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="hing-card-chevron">
@@ -840,7 +845,7 @@ function IngresosHistorialView() {
         <div className="hing-oc-meta">
           <strong>{nav.oc.codigo}</strong>
           <span>OC #{nav.oc.numeroOc}</span>
-          <span>{nav.oc.fechaIngreso?.slice(0, 10)}</span>
+          <span>{isoADMY(nav.oc.fechaIngreso)}</span>
         </div>
         <h3 className="hing-subtitulo">Productos ({nav.oc.totalProductos})</h3>
 

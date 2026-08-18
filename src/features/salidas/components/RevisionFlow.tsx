@@ -148,11 +148,14 @@ interface Props {
   numeroOc?:     string | null
   adminId:       string
   items:         ItemRevision[]
+  estadoNota:    'completa' | 'despachada'
+  nombreChofer:  string | null
   offline:       boolean
   onCerrar:      () => void
 }
 
-export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, numeroOc, adminId, items, offline, onCerrar }: Props) {
+export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, numeroOc, adminId, items, estadoNota, nombreChofer, offline, onCerrar }: Props) {
+  const yaDespachada = estadoNota === 'despachada'
   const rolUsuario = localStorage.getItem('user_rol') ?? ''
   const esAdmin    = rolUsuario === 'admin'
 
@@ -251,7 +254,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     const esSinStock = item.estado === 'sin_stock'
     const revisado   = item.revisadoAdmin
     const estadoItem: 'revisado' | 'sin_stock' | 'pendiente' = revisado ? 'revisado' : 'pendiente'
-    const puedeRevisar = !revisado && !offline
+    const puedeRevisar = !revisado && !offline && !yaDespachada
 
     return (
       <div key={item.notaProductoId} className="ing-prod-item">
@@ -395,7 +398,11 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       {/* LISTA DE ÍTEMS */}
       {paso.tipo === 'lista' && (
         <>
-          {todosRevisados && esAdmin && (
+          {yaDespachada ? (
+            <div className="todos-revisados-aviso todos-revisados-aviso--despachada">
+              <span>✓ Nota despachada{nombreChofer ? ` — Chofer: ${nombreChofer}` : ''}</span>
+            </div>
+          ) : todosRevisados && esAdmin ? (
             <div className="todos-revisados-aviso">
               ✓ Todos los productos revisados
               <button
@@ -406,7 +413,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
                 Lista para despacho
               </button>
             </div>
-          )}
+          ) : null}
 
           {/* ── Búsqueda de productos por código o nombre ── */}
           <div className="ing-busqueda">

@@ -24,6 +24,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       productosCompletos: n.totalRevisados,
       creadoEn:           n.created_at,
       actualizadoEn:      n.updated_at,
+      nombreChofer:       n.nombreChofer ?? null,
     }))
     return json(mapped)
   }
