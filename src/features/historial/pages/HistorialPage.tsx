@@ -379,42 +379,27 @@ function ProductoHistorialCard({
 
   return (
     <div className={`hist-prod-accordion${abierto ? ' abierto' : ''}`}>
+      {/* ── Fila colapsada ── */}
       <button
-        className="hist-prod-accordion-header ing-prod-fila"
+        className="hist-prod-accordion-header"
         onClick={() => setAbierto(v => !v)}
       >
-        {/* Nombre + SKU chip — idéntico a NV Despacho */}
-        <div className="ing-prod-info">
-          <span className="ing-prod-nombre">{nombreProducto ?? sku}</span>
-          <code className="ing-prod-sku">{sku}</code>
-          {skuOriginal && (
-            <span className="hist-prod-equiv-label">Reemplazó a <strong>{skuOriginal}</strong></span>
-          )}
-          {skuDespachado && (
-            <span className="hist-prod-equiv-label">Despachado como <strong>{skuDespachado}</strong></span>
-          )}
-        </div>
+        {/* Solo código SKU */}
+        <code className="hist-prod-sku-solo">{sku}</code>
 
-        <div className="ing-prod-fila-derecha">
+        <div className="hist-prod-fila-derecha">
+          {/* Solo "Desp." en blanco neutro */}
+          {!soloEquivalente && (
+            <span className="hist-prod-desp">
+              <span className="hist-prod-cant-label">Desp.</span>
+              <strong className="hist-prod-cant-val">{totalDespachado}</strong>
+            </span>
+          )}
+
+          {/* Badge al extremo derecho */}
           <div className="hist-prod-accordion-badges">
             {tiposBadge.map(t => <BadgeTipo key={t} tipo={t} />)}
           </div>
-
-          {!soloEquivalente && (
-            <div className="hist-prod-cantidades">
-              <span>
-                <span className="hist-prod-cant-label">Sol.</span>
-                <strong className="hist-prod-cant-val">{cantSolicitada}</strong>
-              </span>
-              <span>
-                <span className="hist-prod-cant-label">Desp.</span>
-                <strong
-                  className="hist-prod-cant-val"
-                  style={{ color: completo ? '#86efac' : '#fbbf24' }}
-                >{totalDespachado}</strong>
-              </span>
-            </div>
-          )}
 
           <span className={`hist-nota-grupo-chevron${abierto ? ' abierto' : ''}`}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
@@ -424,9 +409,29 @@ function ProductoHistorialCard({
         </div>
       </button>
 
-      {/* Detalle expandido */}
+      {/* ── Detalle expandido ── */}
       {abierto && (
         <div className="hist-prod-accordion-detalle">
+          {/* Nombre completo */}
+          {nombreProducto && (
+            <p className="hist-prod-detalle-nombre">{nombreProducto}</p>
+          )}
+          {(skuOriginal || skuDespachado) && (
+            <div className="flex flex-wrap gap-2">
+              {skuOriginal  && <span className="hist-prod-equiv-label">Reemplazó a <strong>{skuOriginal}</strong></span>}
+              {skuDespachado && <span className="hist-prod-equiv-label">Despachado como <strong>{skuDespachado}</strong></span>}
+            </div>
+          )}
+
+          {/* Sol. vs Desp. */}
+          {!soloEquivalente && (
+            <div className="hist-prod-detalle-cantidades">
+              <span><span className="hist-prod-cant-label">Solicitado</span><strong className="hist-prod-cant-val">{cantSolicitada}</strong></span>
+              <span><span className="hist-prod-cant-label">Despachado</span><strong className="hist-prod-cant-val">{totalDespachado}</strong></span>
+            </div>
+          )}
+
+          {/* Chips de meta */}
           <div className="flex flex-wrap gap-2 items-center">
             {ubicacion && (
               <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#86efac] bg-[rgba(34,197,94,0.12)] px-1.5 py-0.5 rounded font-mono">
@@ -715,6 +720,61 @@ function MovimientoIngresoCard({ m }: { m: MovimientoHistorial }) {
   )
 }
 
+function ProductoIngresoAccordion({
+  prod,
+  onVerMovimientos,
+}: {
+  prod:             ProductoEnOC
+  onVerMovimientos: () => void
+}) {
+  const [abierto, setAbierto] = useState(false)
+  const estadoColor = prod.estado === 'completa' ? '#86efac' : prod.cantidadRecibida > 0 ? '#fbbf24' : '#f87171'
+  const estadoLabel = ESTADO_PROD_CFG[prod.estado]?.label ?? prod.estado
+
+  return (
+    <div className={`hist-prod-accordion${abierto ? ' abierto' : ''}`}>
+      {/* Fila colapsada */}
+      <button className="hist-prod-accordion-header" onClick={() => setAbierto(v => !v)}>
+        <code className="hist-prod-sku-solo">{prod.sku}</code>
+        <div className="hist-prod-fila-derecha">
+          <span className="hist-prod-desp">
+            <span className="hist-prod-cant-label">Rec.</span>
+            <strong className="hist-prod-cant-val">{prod.cantidadRecibida}</strong>
+          </span>
+          <span
+            className="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full border border-transparent whitespace-nowrap"
+            style={{ color: estadoColor, background: estadoColor + '22', borderColor: estadoColor + '40' }}
+          >
+            {estadoLabel}
+          </span>
+          <span className={`hist-nota-grupo-chevron${abierto ? ' abierto' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </span>
+        </div>
+      </button>
+
+      {/* Detalle expandido */}
+      {abierto && (
+        <div className="hist-prod-accordion-detalle">
+          <p className="hist-prod-detalle-nombre">{prod.nombre}</p>
+          <div className="hist-prod-detalle-cantidades">
+            <span><span className="hist-prod-cant-label">Esperado</span><strong className="hist-prod-cant-val">{prod.cantidadEsperada}</strong></span>
+            <span><span className="hist-prod-cant-label">Recibido</span><strong className="hist-prod-cant-val" style={{ color: estadoColor }}>{prod.cantidadRecibida}</strong></span>
+          </div>
+          <button
+            className="inline-flex items-center text-[12px] text-[var(--accent-light)] bg-[rgba(2,132,199,0.12)] border border-[rgba(125,211,252,0.25)] rounded px-2.5 py-1.5 cursor-pointer transition-colors hover:bg-[rgba(2,132,199,0.25)]"
+            onClick={(e) => { e.stopPropagation(); onVerMovimientos() }}
+          >
+            Ver movimientos →
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function IngresosHistorialView() {
   const [nav, setNav]               = useState<IngresoNivel>({ nivel: 'lista' })
   const [filtroEstado, setFiltroEstado] = useState<string>('')
@@ -792,26 +852,18 @@ function IngresosHistorialView() {
         </div>
 
         {cargandoProd && <div className="hist-cargando"><span className="spinner" /><span>Cargando productos…</span></div>}
-        <div className="hing-prod-lista">
-          {(productos ?? []).filter(p => !filtroEstado || p.estado === filtroEstado).map((prod) => {
-            const pct = prod.cantidadEsperada ? Math.round((prod.cantidadRecibida / prod.cantidadEsperada) * 100) : 0
-            const estadoColor = prod.estado === 'completa' ? '#86efac' : prod.cantidadRecibida > 0 ? '#fbbf24' : '#f87171'
-            return (
-              <button key={prod.detalleId} className="hing-prod-card" onClick={() => setNav({ nivel: 'movimientos', oc: nav.oc, producto: prod })}>
-                <div className="hing-prod-top">
-                  <div className="hing-prod-info">
-                    <span className="hing-prod-sku">{prod.sku}</span>
-                    <span className="hing-prod-nombre">{prod.nombre}</span>
-                  </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-                <div className="hing-prod-cantidades">
-                  <span>Esperado: <strong>{prod.cantidadEsperada}</strong></span>
-                  <span>Recibido: <strong style={{ color: estadoColor }}>{prod.cantidadRecibida}</strong></span>
-                </div>
-              </button>
-            )
-          })}
+        <div className="notas-lista-panel">
+          <div className="notas-lista-scroll">
+            <div className="notas-lista-filas">
+              {(productos ?? []).filter(p => !filtroEstado || p.estado === filtroEstado).map((prod) => (
+                <ProductoIngresoAccordion
+                  key={prod.detalleId}
+                  prod={prod}
+                  onVerMovimientos={() => setNav({ nivel: 'movimientos', oc: nav.oc, producto: prod })}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )

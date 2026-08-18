@@ -2330,8 +2330,47 @@ label {
 }
 .hist-prod-accordion:last-child { border-bottom: none; }
 .hist-prod-accordion.abierto { background: var(--bg-elevated); }
+/* Fila colapsada del acordeón */
+.hist-prod-sku-solo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.hist-prod-fila-derecha {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+.hist-prod-desp {
+  white-space: nowrap;
+}
+/* Detalle expandido */
+.hist-prod-detalle-nombre {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs);
+}
+.hist-prod-detalle-cantidades {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+}
+.hist-prod-detalle-cantidades .hist-prod-cant-label {
+  display: block;
+  margin-bottom: 1px;
+}
+
 .hist-prod-accordion-header {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-md);
   background: none;
   border: none;
@@ -3012,8 +3051,10 @@ label {
 .mapa-pos-btn {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   min-height: 52px;
   border-radius: var(--radius-sm);
   background: rgba(180,140,80,0.18);
@@ -3022,6 +3063,10 @@ label {
   transition: filter 0.1s, transform 0.1s;
   box-sizing: border-box;
   padding: 6px 4px;
+}
+.mapa-pos-btn--ocupada {
+  background: rgba(120,90,45,0.32);
+  border-color: rgba(120,90,45,0.55);
 }
 .mapa-pos-btn:hover   { filter: brightness(1.25); }
 .mapa-pos-btn:active  { transform: scale(0.95); }
@@ -3032,6 +3077,14 @@ label {
   color: var(--text-primary);
   font-family: monospace;
   line-height: 1;
+}
+.mapa-pos-libre-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
 }
 
 /* ── Leyenda ── */

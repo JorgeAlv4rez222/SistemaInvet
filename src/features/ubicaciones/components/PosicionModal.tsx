@@ -1,5 +1,4 @@
 import type { PosicionMapa } from '../hooks/useUbicaciones'
-import { calcularCapacidad, pctOcupacion, nivelOcupacion } from '../../../shared/utils/cubicacion'
 
 function IconClose() {
   return (
@@ -49,9 +48,6 @@ export function PosicionModal({
               <IconBox />
             </div>
             {posicion.lote ? (() => {
-              const capacidad = calcularCapacidad(posicion.lote)
-              const pct       = pctOcupacion(posicion.lote.cantidad, capacidad)
-              const nivel     = nivelOcupacion(posicion.lote.cantidad, capacidad)
               return (
                 <div className="mapa-pos-modal-filas">
                   <div className="mapa-pos-modal-fila">
@@ -64,30 +60,14 @@ export function PosicionModal({
                   </div>
                   <div className="mapa-pos-modal-fila">
                     <span className="mapa-pos-modal-etq">Cantidad:</span>
-                    <span className="mapa-pos-modal-val mapa-pos-modal-val--qty">{posicion.lote.cantidad} uds</span>
+                    <span className="mapa-pos-modal-val mapa-pos-modal-val--qty">{posicion.lote.cantidad}</span>
                   </div>
                   <div className="mapa-pos-modal-fila">
                     <span className="mapa-pos-modal-etq">Ingreso:</span>
-                    <span className="mapa-pos-modal-val">{posicion.lote.fechaIngreso.slice(0, 10)}</span>
+                    <span className="mapa-pos-modal-val">
+                      {posicion.lote.fechaIngreso.slice(0, 10).split('-').reverse().join('-')}
+                    </span>
                   </div>
-                  {capacidad > 0 && (
-                    <div className="cubicacion-wrap">
-                      <div className="cubicacion-header">
-                        <span>Ocupación</span>
-                        <span className={`cubicacion-badge cubicacion-badge--${nivel}`}>
-                          {posicion.lote.cantidad} / {capacidad} cajas
-                          {nivel === 'llena' && ' · LLENA'}
-                          {nivel === 'casi-llena' && ' · CASI LLENA'}
-                        </span>
-                      </div>
-                      <div className="cubicacion-bar-bg">
-                        <div
-                          className={`cubicacion-bar-fill cubicacion-bar-fill--${nivel}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               )
             })() : (
