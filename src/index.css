@@ -2334,10 +2334,10 @@ label {
 .hist-prod-accordion.abierto { background: var(--bg-elevated); }
 /* Fila colapsada del acordeón */
 .hist-prod-sku-solo {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   font-family: monospace;
-  color: var(--text-primary);
+  color: var(--success);
   flex: 1;
   min-width: 0;
   text-align: left;
