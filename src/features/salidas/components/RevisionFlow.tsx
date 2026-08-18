@@ -351,8 +351,8 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
         </div>
       </div>
 
-      {/* ── Metadata cliente ── */}
-      <div className="ing-detalle-meta">
+      {/* ── Metadata cliente — solo visible en la lista ── */}
+      {paso.tipo === 'lista' && <div className="ing-detalle-meta">
         <div className="ing-meta-item">
           <IcoUser />
           <div>
@@ -378,7 +378,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── Avisos ── */}
       {offline && (
