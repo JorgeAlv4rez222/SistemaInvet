@@ -279,9 +279,11 @@ label {
   font-weight: 600;
 }
 .badge-pendiente      { background: rgba(245,158,11,0.15); color: var(--warning); }
+.badge-preparacion    { background: rgba(245,158,11,0.15); color: var(--warning); }
 .badge-completa,
 .badge-completo,
 .badge-lista-despacho { background: rgba(34,197,94,0.15);  color: var(--success); }
+.badge-despachada     { background: rgba(56,189,248,0.15); color: var(--info); }
 .badge-parcial        { background: rgba(245,158,11,0.15); color: var(--warning); }
 .badge-lista          { background: rgba(34,197,94,0.15);  color: var(--success); }
 .badge-sin-stock      { background: rgba(245,158,11,0.15); color: var(--warning); }
@@ -4412,7 +4414,8 @@ label {
   flex-shrink: 0;
 }
 .nota-fila--hist {
-  grid-template-columns: 1fr 110px 90px;
+  grid-template-columns: 1fr 110px 100px;
+  gap: 0 12px;
 }
 
 /* ═══════════════════════════════════════════════════════════

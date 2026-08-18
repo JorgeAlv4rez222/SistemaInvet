@@ -32,7 +32,7 @@ export const salidasService = {
     const { data, error } = await supabase
       .from('notas_venta')
       .select('*, nota_productos(id, revisado_admin)')
-      .eq('estado', 'completa')
+      .in('estado', ['completa', 'despachada'])
       .order('updated_at', { ascending: false })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }

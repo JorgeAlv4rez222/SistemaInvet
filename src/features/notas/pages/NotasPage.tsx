@@ -11,7 +11,7 @@ const ESTADO_LABELS: Record<string, string> = {
   completa:    'Completa',
   despachada:  'Despachada',
 }
-const ESTADO_FILTROS = ['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const
+const ESTADO_FILTROS = ['', 'pendiente', 'preparacion', 'completa'] as const
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -81,6 +81,7 @@ export function NotasPage() {
     if (filtroAnio) lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
     if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
     if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
+    lista = lista.filter((n) => n.estado !== 'despachada')
     return lista
   }, [notas, busqueda, filtroAnio, filtroMes, filtroDia])
 
@@ -211,16 +212,16 @@ export function NotasPage() {
         </div>
       )}
 
-      {/* Ver nota (izquierda) + Nueva NV (derecha) */}
+      {/* Nueva NV (izquierda) + Ver nota (derecha) */}
       <div className="notas-veroc-wrap">
-        <button className="btn-primario" disabled={!seleccionadaId} onClick={onVerNota}>
-          Ver nota
-        </button>
         {ROL === 'admin' && (
           <button className="btn-primario" onClick={() => setImportar(true)} disabled={offline}>
             + NV
           </button>
         )}
+        <button className="btn-primario" disabled={!seleccionadaId} onClick={onVerNota}>
+          Ver nota
+        </button>
       </div>
 
       {isLoading && <p className="cargando">Cargando notas…</p>}

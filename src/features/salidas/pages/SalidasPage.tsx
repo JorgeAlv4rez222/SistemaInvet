@@ -236,7 +236,7 @@ export function SalidasPage() {
       {/* Revisar — se habilita al marcar una nota de la lista */}
       <div className="notas-veroc-wrap">
         {esAdmin && (
-          <button className="btn-secundario" disabled={offline} onClick={() => setVista({ tipo: 'importar' })}>
+          <button className="btn-primario" disabled={offline} onClick={() => setVista({ tipo: 'importar' })}>
             + NV
           </button>
         )}
@@ -315,7 +315,9 @@ export function SalidasPage() {
 
                       {/* Estado */}
                       <div className="nota-fila-estado">
-                        <span className="badge badge-completa">Completa</span>
+                        <span className={`badge badge-${nota.estado}`}>
+                          {nota.estado === 'despachada' ? 'Despachada' : 'Completa'}
+                        </span>
                       </div>
                     </div>
                   </div>

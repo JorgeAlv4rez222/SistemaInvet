@@ -8,7 +8,7 @@ export type NotaParaRevision = {
   notaId:             string
   numeroNota:         string
   nombreCliente:      string
-  estado:             'completa'
+  estado:             'completa' | 'despachada'
   totalProductos:     number
   productosCompletos: number
   creadoEn:           string
