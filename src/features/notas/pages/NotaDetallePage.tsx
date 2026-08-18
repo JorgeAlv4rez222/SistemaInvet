@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDetalleNota, useCambiarEstadoNota, useConcluirParcial, useEnviarARevision } from '../hooks/useNotas'
+import { useDetalleNota, useConcluirParcial, useEnviarARevision } from '../hooks/useNotas'
 import { PickingFlow } from '../components/PickingFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -61,14 +61,7 @@ function IcoDoc({ size = 13 }: { size?: number }) {
     </svg>
   )
 }
-function IcoTruck({ size = 16 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
-      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
-      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-    </svg>
-  )
-}
+
 function IcoRack({ size = 12 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
@@ -110,64 +103,6 @@ const NOTA_ESTADO_LABEL: Record<string, string> = {
   preparacion: 'En preparación',
   completa:    'Completa',
   despachada:  'Despachada',
-}
-
-// ── Modal chofer ──────────────────────────────────────────────────────────
-
-function ModalChofer({ notaId, onCerrar }: { notaId: string; onCerrar: () => void }) {
-  const [nombreChofer, setNombreChofer] = useState('')
-  const [error, setError]               = useState<string | null>(null)
-  const adminId                         = localStorage.getItem('user_id') ?? ''
-  const cambiarEstado                   = useCambiarEstadoNota()
-
-  async function handleConfirmar() {
-    setError(null)
-    try {
-      await cambiarEstado.mutateAsync({ adminId, notaId, nuevoEstado: 'despachada', nombreChofer })
-      onCerrar()
-    } catch (e) {
-      setError(e instanceof ApiResponseError ? e.message : 'Error al marcar para despacho')
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
-      <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-          <IcoTruck size={16} /> Marcar para despacho
-        </h3>
-        <label className="block text-xs font-medium text-slate-400 mb-1">
-          Nombre del chofer <span className="text-red-400">*</span>
-        </label>
-        <input
-          type="text"
-          value={nombreChofer}
-          onChange={(e) => setNombreChofer(e.target.value)}
-          placeholder="Ej: Juan Pérez"
-          autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && nombreChofer.trim() && handleConfirmar()}
-          className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-white/10 text-white text-sm mb-4 focus:outline-none focus:border-sky-500"
-        />
-        {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-        <div className="flex gap-2">
-          <button
-            className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
-            onClick={onCerrar}
-            disabled={cambiarEstado.isPending}
-          >
-            Cancelar
-          </button>
-          <button
-            className="flex-1 px-4 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-            disabled={cambiarEstado.isPending || !nombreChofer.trim()}
-            onClick={handleConfirmar}
-          >
-            {cambiarEstado.isPending ? 'Procesando…' : 'Confirmar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Página principal ──────────────────────────────────────────────────────
