@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const validarProductoSchema = z.object({
   adminId: z.string().uuid(), notaProductoId: z.string().uuid(),
-  codigoProducto: z.string().optional().default(''), cantidadIngresada: z.number().int().positive(),
+  codigoProducto: z.string().optional().default(''), cantidadIngresada: z.number().int().min(0),
   comentario: z.string().optional(),
 })
 

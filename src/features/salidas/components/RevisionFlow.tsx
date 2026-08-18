@@ -212,7 +212,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   async function handleConfirmarCantidad() {
     if (paso.tipo !== 'ingresar_cantidad') return
     const cant = parseInt(cantidad, 10)
-    if (!cant || cant <= 0) { setError('Ingresa una cantidad válida'); return }
+    if (isNaN(cant) || cant < 0) { setError('Ingresa una cantidad válida'); return }
 
     setError(null)
     try {
@@ -515,7 +515,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <input
               ref={cantidadRef}
               type="number"
-              min={1}
+              min={0}
               value={cantidad}
               onChange={(e) => { setCantidad(e.target.value); setComentario('') }}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirmarCantidad()}
@@ -525,13 +525,13 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
           {(() => {
             const cant = parseInt(cantidad, 10)
             const ref  = paso.item.cantidadSolicitada
-            if (!isNaN(cant) && cant > 0 && cant < ref) {
+            if (!isNaN(cant) && cant < ref) {
               return (
                 <label>
                   Motivo de la diferencia <span style={{ color: 'var(--danger)' }}>*</span>
                   <textarea
                     rows={2}
-                    placeholder="Ej: faltante en bodega, producto dañado…"
+                    placeholder="Ej: sin stock, faltante en bodega, producto dañado…"
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     style={{ resize: 'vertical' }}
