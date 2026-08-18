@@ -2332,10 +2332,6 @@ label {
 .hist-prod-accordion.abierto { background: var(--bg-elevated); }
 .hist-prod-accordion-header {
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto auto 20px;
-  align-items: center;
-  gap: var(--spacing-md);
   padding: var(--spacing-md);
   background: none;
   border: none;

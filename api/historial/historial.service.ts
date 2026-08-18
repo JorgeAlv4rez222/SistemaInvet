@@ -24,6 +24,7 @@ export type MovimientoHistorial = {
   fecha:              string
   usuario:            string
   producto:           string | null
+  nombreProducto:     string | null
   cantidad:           number | null
   detalle:            string
   ubicacion:          string | null
@@ -167,7 +168,7 @@ type RawMovimiento = {
   detalle:       DetalleJson | null
   nota_venta_id: string | null
   usuarios:      { nombre: string } | null
-  productos:     { sku: string } | null
+  productos:     { sku: string; nombre: string } | null
   notas_venta:   { numero_nota: string } | null
   importaciones: { codigo: string } | null
 }
@@ -183,6 +184,7 @@ function mapearMovimiento(row: RawMovimiento): MovimientoHistorial {
     fecha:              row.fecha,
     usuario,
     producto:           row.productos?.sku ?? null,
+    nombreProducto:     row.productos?.nombre ?? null,
     cantidad:           row.cantidad,
     detalle:            textoLegible(tipo, row.detalle, usuario, row.cantidad),
     ubicacion:          typeof d.ubicacion === 'object' && d.ubicacion != null
@@ -205,7 +207,7 @@ const JOINS = `
   id, tipo, fecha, cantidad, detalle,
   nota_venta_id,
   usuarios(nombre),
-  productos(sku),
+  productos(sku, nombre),
   notas_venta(numero_nota),
   importaciones(codigo)
 `

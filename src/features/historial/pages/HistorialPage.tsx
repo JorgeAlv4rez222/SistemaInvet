@@ -368,6 +368,7 @@ function ProductoHistorialCard({
   const skuOriginal   = equivRevMap.get(sku) ?? null
   const tiposBadge    = tiposUnicos.filter(t => t !== 'equivalente_usado')
   const soloEquivalente = tiposUnicos.every(t => t === 'equivalente_usado')
+  const nombreProducto = movs.find(m => m.nombreProducto)?.nombreProducto ?? null
 
   const totalDespachado = movs
     .filter(m => m.tipo === 'salida' || m.tipo === 'salida_parcial')
@@ -378,13 +379,14 @@ function ProductoHistorialCard({
 
   return (
     <div className={`hist-prod-accordion${abierto ? ' abierto' : ''}`}>
-      {/* Fila colapsada — misma estructura que nota-fila */}
       <button
-        className="hist-prod-accordion-header"
+        className="hist-prod-accordion-header ing-prod-fila"
         onClick={() => setAbierto(v => !v)}
       >
-        <div className="nota-fila-principal">
-          <span className="nota-fila-numero">{sku}</span>
+        {/* Nombre + SKU chip — idéntico a NV Despacho */}
+        <div className="ing-prod-info">
+          <span className="ing-prod-nombre">{nombreProducto ?? sku}</span>
+          <code className="ing-prod-sku">{sku}</code>
           {skuOriginal && (
             <span className="hist-prod-equiv-label">Reemplazó a <strong>{skuOriginal}</strong></span>
           )}
@@ -393,31 +395,33 @@ function ProductoHistorialCard({
           )}
         </div>
 
-        <div className="hist-prod-accordion-badges">
-          {tiposBadge.map(t => <BadgeTipo key={t} tipo={t} />)}
-        </div>
-
-        {!soloEquivalente && (
-          <div className="hist-prod-cantidades">
-            <span>
-              <span className="hist-prod-cant-label">Sol.</span>
-              <strong className="hist-prod-cant-val">{cantSolicitada}</strong>
-            </span>
-            <span>
-              <span className="hist-prod-cant-label">Desp.</span>
-              <strong
-                className="hist-prod-cant-val"
-                style={{ color: completo ? '#86efac' : '#fbbf24' }}
-              >{totalDespachado}</strong>
-            </span>
+        <div className="ing-prod-fila-derecha">
+          <div className="hist-prod-accordion-badges">
+            {tiposBadge.map(t => <BadgeTipo key={t} tipo={t} />)}
           </div>
-        )}
 
-        <span className={`hist-nota-grupo-chevron${abierto ? ' abierto' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </span>
+          {!soloEquivalente && (
+            <div className="hist-prod-cantidades">
+              <span>
+                <span className="hist-prod-cant-label">Sol.</span>
+                <strong className="hist-prod-cant-val">{cantSolicitada}</strong>
+              </span>
+              <span>
+                <span className="hist-prod-cant-label">Desp.</span>
+                <strong
+                  className="hist-prod-cant-val"
+                  style={{ color: completo ? '#86efac' : '#fbbf24' }}
+                >{totalDespachado}</strong>
+              </span>
+            </div>
+          )}
+
+          <span className={`hist-nota-grupo-chevron${abierto ? ' abierto' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </span>
+        </div>
       </button>
 
       {/* Detalle expandido */}
