@@ -30,8 +30,6 @@ export const TIPOS_MOVIMIENTO = [
   'traslado_reubicacion',
   'traslado_intercambio',
   'equivalente_usado',
-  'cambio_estado_nota',
-  'despacho',
 ] as const
 
 export type TipoFiltro = typeof TIPOS_MOVIMIENTO[number]

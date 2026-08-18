@@ -119,13 +119,13 @@ export type ConcluirParcialResult = {
 export type CambiarEstadoInput = {
   adminId:      string
   notaId:       string
-  nuevoEstado:  'lista_despacho'
+  nuevoEstado:  'despachada'
   nombreChofer: string
 }
 
 export type CambiarEstadoResult = {
   notaId:        string
-  estado:        'lista_despacho'
+  estado:        'despachada'
   despachoId:    string
   nombreChofer:  string
   fechaDespacho: string
@@ -246,6 +246,10 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   )
   if (!terminados) return false
 
+  // Leer el estado actual para registrarlo correctamente en el movimiento
+  const { data: notaActual } = await supabase.from('notas_venta').select('estado').eq('id', notaId).single()
+  const estadoAnterior = notaActual?.estado ?? 'pendiente'
+
   await supabase.from('notas_venta').update({ estado: 'completa' }).eq('id', notaId)
 
   // TC-NTA-006: EVT-008 cambio de estado automático — solo si hay un usuario a quien
@@ -258,7 +262,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
       detalle: {
         numeroNota:    notaData.numero_nota,
         nombreCliente: notaData.nombre_cliente,
-        estadoAnterior: 'pendiente',
+        estadoAnterior,
         estadoNuevo:   'completa',
         completadoPor:  usuarioId,
         rol:            'operador',
@@ -325,7 +329,7 @@ export const notasService = {
     // terminados (p.ej. se cerró un parcial y nadie volvió a pickear después),
     // recalcular el estado al leer la nota en vez de esperar a la próxima escritura.
     let estadoNota = data.estado
-    if (estadoNota === 'pendiente') {
+    if (estadoNota === 'pendiente' || estadoNota === 'preparacion') {
       const quedoCompleta = await evaluarEstadoNota(notaId, usuarioId ?? null, { numero_nota: data.numero_nota, nombre_cliente: data.nombre_cliente })
       if (quedoCompleta) estadoNota = 'completa'
     }
@@ -442,8 +446,13 @@ export const notasService = {
     const notaRef    = np.notas_venta as NotaRef
     const productoRef = np.productos as ProductoRef
 
-    if (notaRef.estado !== 'pendiente') {
+    if (notaRef.estado !== 'pendiente' && notaRef.estado !== 'preparacion') {
       return { ok: false, error: { code: 'CONFLICT_NOTA_NO_PENDIENTE', message: `La nota está en estado '${notaRef.estado}'` } }
+    }
+
+    // Primer picking de la nota: pasar de 'pendiente' → 'preparacion'
+    if (notaRef.estado === 'pendiente') {
+      await supabase.from('notas_venta').update({ estado: 'preparacion' }).eq('id', notaRef.id)
     }
 
     // Determinar qué producto usar (original o equivalente)
@@ -744,7 +753,7 @@ export const notasService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
     }
 
-    if (nota.estado !== 'pendiente') {
+    if (nota.estado !== 'pendiente' && nota.estado !== 'preparacion') {
       return { ok: false, error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `La nota ya está en estado '${nota.estado}'` } }
     }
 
@@ -757,7 +766,7 @@ export const notasService = {
       detalle: {
         numeroNota:     nota.numero_nota,
         nombreCliente:  nota.nombre_cliente,
-        estadoAnterior: 'pendiente',
+        estadoAnterior: nota.estado,
         estadoNuevo:    'completa',
         motivo:         'envio_directo_revision',
       },
@@ -790,7 +799,7 @@ export const notasService = {
     if (nota.estado !== 'completa') {
       return {
         ok: false,
-        error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `Solo se puede pasar a 'lista_despacho' desde estado 'completa'. Estado actual: '${nota.estado}'` },
+        error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `Solo se puede pasar a 'despachada' desde estado 'completa'. Estado actual: '${nota.estado}'` },
       }
     }
 
@@ -806,7 +815,7 @@ export const notasService = {
       return { ok: false, error: { code: 'DB_ERROR', message: errorDespacho?.message ?? 'Error al crear despacho' } }
     }
 
-    await supabase.from('notas_venta').update({ estado: 'lista_despacho' }).eq('id', input.notaId)
+    await supabase.from('notas_venta').update({ estado: 'despachada' }).eq('id', input.notaId)
 
     type NPEstado = { estado: string; comentario_operador: string | null }
     const nps = nota.nota_productos as NPEstado[]
@@ -820,7 +829,7 @@ export const notasService = {
         numeroNota:    nota.numero_nota,
         nombreCliente: nota.nombre_cliente,
         estadoAnterior: 'completa',
-        estadoNuevo:   'lista_despacho',
+        estadoNuevo:   'despachada',
         validadoPor:   input.adminId,
         rol:           'admin',
       },
@@ -845,7 +854,7 @@ export const notasService = {
 
     return {
       ok: true,
-      data: { notaId: input.notaId, estado: 'lista_despacho', despachoId: despacho.id, nombreChofer: input.nombreChofer, fechaDespacho },
+      data: { notaId: input.notaId, estado: 'despachada', despachoId: despacho.id, nombreChofer: input.nombreChofer, fechaDespacho },
     }
   },
 }

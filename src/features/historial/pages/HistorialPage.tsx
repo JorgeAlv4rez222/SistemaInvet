@@ -249,7 +249,10 @@ function ListaMovimientos({
   movimientos: MovimientoHistorial[]
   onDetalle:   ((ctx: DetalleContexto) => void) | null
 }) {
-  if (movimientos.length === 0) {
+  const TIPOS_OCULTOS = new Set(['cambio_estado_nota', 'despacho'])
+  const visibles = movimientos.filter(m => !TIPOS_OCULTOS.has(m.tipo))
+
+  if (visibles.length === 0) {
     return <p className="vacio">Sin movimientos en este rango</p>
   }
 
@@ -260,7 +263,7 @@ function ListaMovimientos({
 
   // Agrupar por día, y dentro de cada día agrupar por nota los movimientos asociados
   const diasMap = new Map<string, MovimientoHistorial[]>()
-  for (const m of movimientos) {
+  for (const m of visibles) {
     const dia = m.fecha.slice(0, 10)
     if (!diasMap.has(dia)) diasMap.set(dia, [])
     diasMap.get(dia)!.push(m)
@@ -342,7 +345,8 @@ function DetalleIngreso({ importacionId, onCerrar }: { importacionId: string; on
 const ESTADO_NOTA_CFG: Record<string, { label: string; color: string; bg: string }> = {
   pendiente:      { label: 'Pendiente',      color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
   completa:       { label: 'Completa',       color: '#86efac', bg: 'rgba(34,197,94,0.15)'  },
-  lista_despacho: { label: 'Lista despacho', color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
+  despachada:     { label: 'Despachada',     color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
+  preparacion:    { label: 'En preparación', color: '#fb923c', bg: 'rgba(251,146,60,0.15)'  },
 }
 
 // ── Tarjeta accordion por producto en detalle de nota ────────────────────────
@@ -579,14 +583,16 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
 // ── Vista notas ───────────────────────────────────────────────────────────
 
 const ESTADO_NOTA_LABELS: Record<string, string> = {
-  pendiente:      'Pendiente',
-  completa:       'Completa',
-  lista_despacho: 'Lista despacho',
+  pendiente:   'Pendiente',
+  preparacion: 'En preparación',
+  completa:    'Completa',
+  despachada:  'Despachada',
 }
 const ESTADO_NOTA_COLORS: Record<string, { color: string; bg: string }> = {
-  pendiente:      { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-  completa:       { color: '#86efac', bg: 'rgba(34,197,94,0.15)' },
-  lista_despacho: { color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
+  pendiente:   { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+  preparacion: { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
+  completa:    { color: '#86efac', bg: 'rgba(34,197,94,0.15)'  },
+  despachada:  { color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
 }
 
 function NotaHistorialCard({
@@ -638,7 +644,7 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
     <div className="hist-notas-view">
       <h2 className="hing-titulo">Notas de Venta</h2>
       <div className="hist-notas-filtros">
-        {(['', 'pendiente', 'completa', 'lista_despacho'] as const).map((e) => (
+        {(['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const).map((e) => (
           <button
             key={e}
             className={`filtro-btn${filtroEstado === e ? ' activo' : ''}`}

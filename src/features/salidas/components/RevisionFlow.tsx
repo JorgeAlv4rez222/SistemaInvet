@@ -95,7 +95,7 @@ function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
   async function handleConfirmar() {
     setError(null)
     try {
-      await cambiarEstado.mutateAsync({ adminId, notaId, nuevoEstado: 'lista_despacho', nombreChofer })
+      await cambiarEstado.mutateAsync({ adminId, notaId, nuevoEstado: 'despachada', nombreChofer })
       onCerrar()
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al marcar para despacho')

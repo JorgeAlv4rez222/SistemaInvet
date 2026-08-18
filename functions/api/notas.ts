@@ -21,7 +21,7 @@ const concluirParcialSchema = z.object({
 })
 const cambiarEstadoSchema = z.object({
   adminId: z.string().uuid(), notaId: z.string().uuid(),
-  nuevoEstado: z.literal('lista_despacho'), nombreChofer: z.string().min(1),
+  nuevoEstado: z.literal('despachada'), nombreChofer: z.string().min(1),
 })
 const enviarRevisionSchema = z.object({
   adminId: z.string().uuid(), notaId: z.string().uuid(),

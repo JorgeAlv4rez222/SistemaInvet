@@ -106,9 +106,10 @@ function BadgeEstado({ estado }: { estado: string }) {
 }
 
 const NOTA_ESTADO_LABEL: Record<string, string> = {
-  pendiente:      'Pendiente',
-  completa:       'Completa',
-  lista_despacho: 'Lista despacho',
+  pendiente:   'Pendiente',
+  preparacion: 'En preparación',
+  completa:    'Completa',
+  despachada:  'Despachada',
 }
 
 // ── Modal chofer ──────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ function ModalChofer({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
   async function handleConfirmar() {
     setError(null)
     try {
-      await cambiarEstado.mutateAsync({ adminId, notaId, nuevoEstado: 'lista_despacho', nombreChofer })
+      await cambiarEstado.mutateAsync({ adminId, notaId, nuevoEstado: 'despachada', nombreChofer })
       onCerrar()
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al marcar para despacho')
@@ -223,7 +224,7 @@ export function NotaDetallePage() {
   if (isLoading) return <p className="cargando">Cargando nota…</p>
   if (isError || !data) return <p className="error">Nota no encontrada</p>
 
-  const notaCerrada  = data.estado === 'completa' || data.estado === 'lista_despacho'
+  const notaCerrada  = data.estado === 'completa' || data.estado === 'despachada'
 
   const qProducto = busquedaProducto.trim().toLowerCase()
   const productosMostrados = qProducto
@@ -480,9 +481,9 @@ export function NotaDetallePage() {
         </div>
       )}
       {notaCerrada && (
-        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border ${data.estado === 'lista_despacho' ? 'bg-sky-500/10 text-sky-400 border-sky-500/25' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'}`}>
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border ${data.estado === 'despachada' ? 'bg-sky-500/10 text-sky-400 border-sky-500/25' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'}`}>
           <IcoCheck size={14} />
-          {data.estado === 'lista_despacho' ? 'Lista para despacho' : 'Completada — pendiente revisión Admin'}
+          {data.estado === 'despachada' ? 'Despachada' : 'Completada — pendiente revisión Admin'}
         </div>
       )}
 

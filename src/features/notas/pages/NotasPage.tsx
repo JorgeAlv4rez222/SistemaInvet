@@ -6,11 +6,12 @@ import { ImportarNotaFlow } from '../components/ImportarNotaFlow'
 import type { NotaResumen } from '../services/notas.api'
 
 const ESTADO_LABELS: Record<string, string> = {
-  pendiente:      'Pendiente',
-  completa:       'Completa',
-  lista_despacho: 'Lista despacho',
+  pendiente:   'Pendiente',
+  preparacion: 'En preparación',
+  completa:    'Completa',
+  despachada:  'Despachada',
 }
-const ESTADO_FILTROS = ['', 'pendiente', 'completa', 'lista_despacho'] as const
+const ESTADO_FILTROS = ['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

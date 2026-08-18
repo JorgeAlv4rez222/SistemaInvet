@@ -70,7 +70,7 @@ export function useCambiarEstadoNota() {
     mutationFn: notasApi.cambiarEstado,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notas'] })
-      // Al pasar a lista_despacho, la nota debe salir de la lista "NV para despacho"
+      // Al pasar a despachada, la nota debe salir de la lista "NV para despacho"
       qc.invalidateQueries({ queryKey: ['salidas'] })
     },
   })

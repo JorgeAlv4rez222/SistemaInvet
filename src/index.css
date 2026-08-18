@@ -3698,17 +3698,13 @@ label {
   box-shadow: var(--shadow-sm);
   padding: 0 var(--spacing-sm) 0 var(--spacing-md);
   scrollbar-width: thin;
-  scrollbar-color: var(--accent) var(--bg-elevated);
+  scrollbar-color: rgba(120,120,120,0.4) transparent;
 }
-.ing-lista-scroll::-webkit-scrollbar { width: 10px; }
-.ing-lista-scroll::-webkit-scrollbar-track {
-  background: var(--bg-elevated);
-  border-radius: 999px;
-}
+.ing-lista-scroll::-webkit-scrollbar { width: 6px; }
+.ing-lista-scroll::-webkit-scrollbar-track { background: transparent; }
 .ing-lista-scroll::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: rgba(120,120,120,0.4);
   border-radius: 999px;
-  border: 2px solid var(--bg-elevated);
 }
 .ing-lista-filas {
   display: flex;
@@ -4320,12 +4316,12 @@ label {
   max-height: 62vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: rgba(120,120,120,0.4) transparent;
 }
 .notas-lista-scroll::-webkit-scrollbar { width: 6px; }
 .notas-lista-scroll::-webkit-scrollbar-track { background: transparent; }
 .notas-lista-scroll::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(120,120,120,0.4);
   border-radius: 999px;
 }
 .notas-lista-filas {
