@@ -345,6 +345,116 @@ const ESTADO_NOTA_CFG: Record<string, { label: string; color: string; bg: string
   lista_despacho: { label: 'Lista despacho', color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
 }
 
+// ── Tarjeta accordion por producto en detalle de nota ────────────────────────
+
+function ProductoHistorialCard({
+  sku,
+  movs,
+  equivRevMap,
+  comentario,
+}: {
+  sku:         string
+  movs:        MovimientoHistorial[]
+  equivRevMap: Map<string, string>
+  comentario:  string | null
+}) {
+  const [abierto, setAbierto] = useState(false)
+
+  const tiposUnicos   = Array.from(new Set(movs.map(m => m.tipo)))
+  const equivalente   = movs.find(m => m.tipo === 'equivalente_usado')
+  const salidaParcial = movs.find(m => m.tipo === 'salida_parcial')
+  const ubicacion     = movs.find(m => m.ubicacion)?.ubicacion ?? null
+  const skuDespachado = equivalente?.skuEquivalente ?? null
+  const skuOriginal   = equivRevMap.get(sku) ?? null
+  const tiposBadge    = tiposUnicos.filter(t => t !== 'equivalente_usado')
+  const soloEquivalente = tiposUnicos.every(t => t === 'equivalente_usado')
+
+  const totalDespachado = movs
+    .filter(m => m.tipo === 'salida' || m.tipo === 'salida_parcial')
+    .reduce((s, m) => s + (m.cantidad ?? 0), 0)
+
+  const cantSolicitada = salidaParcial?.cantidadSolicitada ?? totalDespachado
+  const completo       = cantSolicitada > 0 && totalDespachado === cantSolicitada
+
+  return (
+    <div className={`hist-prod-accordion${abierto ? ' abierto' : ''}`}>
+      {/* Fila colapsada — misma estructura que nota-fila */}
+      <button
+        className="hist-prod-accordion-header"
+        onClick={() => setAbierto(v => !v)}
+      >
+        <div className="nota-fila-principal">
+          <span className="nota-fila-numero">{sku}</span>
+          {skuOriginal && (
+            <span className="hist-prod-equiv-label">Reemplazó a <strong>{skuOriginal}</strong></span>
+          )}
+          {skuDespachado && (
+            <span className="hist-prod-equiv-label">Despachado como <strong>{skuDespachado}</strong></span>
+          )}
+        </div>
+
+        <div className="hist-prod-accordion-badges">
+          {tiposBadge.map(t => <BadgeTipo key={t} tipo={t} />)}
+        </div>
+
+        {!soloEquivalente && (
+          <div className="hist-prod-cantidades">
+            <span>
+              <span className="hist-prod-cant-label">Sol.</span>
+              <strong className="hist-prod-cant-val">{cantSolicitada}</strong>
+            </span>
+            <span>
+              <span className="hist-prod-cant-label">Desp.</span>
+              <strong
+                className="hist-prod-cant-val"
+                style={{ color: completo ? '#86efac' : '#fbbf24' }}
+              >{totalDespachado}</strong>
+            </span>
+          </div>
+        )}
+
+        <span className={`hist-nota-grupo-chevron${abierto ? ' abierto' : ''}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+      </button>
+
+      {/* Detalle expandido */}
+      {abierto && (
+        <div className="hist-prod-accordion-detalle">
+          <div className="flex flex-wrap gap-2 items-center">
+            {ubicacion && (
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#86efac] bg-[rgba(34,197,94,0.12)] px-1.5 py-0.5 rounded font-mono">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                {ubicacion}
+              </span>
+            )}
+            {movs[0] && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                {movs[0].usuario}
+              </span>
+            )}
+            {comentario && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-[#fbbf24] bg-[rgba(251,191,36,0.10)] px-1.5 py-0.5 rounded italic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                {comentario}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => void }) {
   const { data, isLoading, isError, error } = useMovimientosPorNota(notaId)
 
@@ -433,113 +543,23 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
             </div>
           )}
 
-          {/* Tarjetas por producto */}
+          {/* Tarjetas por producto — accordion */}
           {porSku.length === 0 && <p className="vacio">Sin movimientos registrados para esta nota</p>}
 
-          <div className="flex flex-col gap-3">
-            {porSku.map(([sku, movs]) => {
-              const tiposUnicos   = Array.from(new Set(movs.map(m => m.tipo)))
-              const equivalente   = movs.find(m => m.tipo === 'equivalente_usado')
-              const salidaParcial = movs.find(m => m.tipo === 'salida_parcial')
-              const ubicacion     = movs.find(m => m.ubicacion)?.ubicacion ?? null
-              const skuDespachado   = equivalente?.skuEquivalente ?? null        // este SKU reemplazó al pedido
-              const skuOriginal     = equivRevMap.get(sku) ?? null               // este SKU fue pedido originalmente
-              const tiposBadge      = tiposUnicos.filter(t => t !== 'equivalente_usado')
-              const soloEquivalente = tiposUnicos.every(t => t === 'equivalente_usado')
-
-              const totalDespachado = movs
-                .filter(m => m.tipo === 'salida' || m.tipo === 'salida_parcial')
-                .reduce((s, m) => s + (m.cantidad ?? 0), 0)
-
-              const cantSolicitada = salidaParcial?.cantidadSolicitada ?? totalDespachado
-              const diferencia     = cantSolicitada - totalDespachado
-              const completo       = diferencia === 0 && totalDespachado > 0
-
-              return (
-                <div
-                  key={sku}
-                  className={`bg-[var(--bg-surface)] rounded-xl p-4 flex flex-col gap-3 shadow-sm border-l-4 ${
-                    completo ? 'border-[#86efac]' : diferencia > 0 ? 'border-[#fbbf24]' : 'border-[var(--border-light)]'
-                  }`}
-                >
-                  {/* SKU pedido + equivalente + badges */}
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <span className="font-mono text-sm font-bold text-[var(--accent-light)]">{sku}</span>
-
-                      {/* Producto original que fue reemplazado por este equivalente */}
-                      {skuOriginal && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-[var(--text-muted)]">Reemplazó a</span>
-                          <span className="font-mono font-bold text-[#93c5fd] bg-[rgba(147,197,253,0.12)] border border-[rgba(147,197,253,0.25)] px-1.5 py-0.5 rounded">
-                            {skuOriginal}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Producto pedido que no pudo despacharse — se envió este equivalente */}
-                      {skuDespachado && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-[var(--text-muted)]">Despachado como</span>
-                          <span className="font-mono font-bold text-[#fde68a] bg-[rgba(253,230,138,0.12)] border border-[rgba(253,230,138,0.25)] px-1.5 py-0.5 rounded">
-                            {skuDespachado}
-                          </span>
-                          <span className="text-[10px] text-[#fbbf24] font-semibold uppercase tracking-wide">equivalente</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {tiposBadge.map(t => <BadgeTipo key={t} tipo={t} />)}
-                    </div>
-                  </div>
-
-                  {/* Cantidades — se omite si la tarjeta solo tiene el evento equivalente_usado */}
-                  {!soloEquivalente && (
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <span className="text-[var(--text-muted)]">
-                        Solicitado:&nbsp;
-                        <strong className="text-[var(--text-primary)]">{cantSolicitada} Und.</strong>
-                      </span>
-                      <span className="text-[var(--text-muted)]">
-                        Despachado:&nbsp;
-                        <strong style={{ color: completo ? '#86efac' : diferencia > 0 ? '#fbbf24' : '#86efac' }}>{totalDespachado} Und.</strong>
-                      </span>
-                      {diferencia > 0 && (
-                        <span className="font-bold text-[#f87171]">−{diferencia} Und. pendiente</span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Chips: ubicación + usuario + comentario */}
-                  <div className="flex flex-wrap gap-2 items-center">
-                    {ubicacion && (
-                      <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#86efac] bg-[rgba(34,197,94,0.12)] px-1.5 py-0.5 rounded font-mono">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        {ubicacion}
-                      </span>
-                    )}
-                    {movs[0] && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        {movs[0].usuario}
-                      </span>
-                    )}
-                    {data?.comentariosPorSku[sku] && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[#fbbf24] bg-[rgba(251,191,36,0.10)] px-1.5 py-0.5 rounded italic">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}>
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        {data.comentariosPorSku[sku]}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+          <div className="notas-lista-panel">
+            <div className="notas-lista-scroll">
+              <div className="notas-lista-filas">
+                {porSku.map(([sku, movs]) => (
+                  <ProductoHistorialCard
+                    key={sku}
+                    sku={sku}
+                    movs={movs}
+                    equivRevMap={equivRevMap}
+                    comentario={data?.comentariosPorSku[sku] ?? null}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}

@@ -2284,6 +2284,62 @@ label {
   padding: var(--spacing-xs);
 }
 
+/* ── Accordion de producto en detalle de nota (Historial) ── */
+.hist-prod-accordion {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.hist-prod-accordion:last-child { border-bottom: none; }
+.hist-prod-accordion.abierto { background: var(--bg-elevated); }
+.hist-prod-accordion-header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto auto 20px;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.hist-prod-accordion-header:hover { background: var(--bg-elevated); }
+.hist-prod-accordion-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.hist-prod-cantidades {
+  display: flex;
+  gap: var(--spacing-md);
+  white-space: nowrap;
+}
+.hist-prod-cant-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 3px;
+}
+.hist-prod-cant-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.hist-prod-equiv-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hist-prod-equiv-label strong {
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+.hist-prod-accordion-detalle {
+  padding: 0 var(--spacing-md) var(--spacing-md);
+  border-top: 1px solid var(--border);
+  padding-top: var(--spacing-sm);
+}
+
 /* hist-vista-tabs, hist-vista-tab → migrados a Tailwind */
 
 /* ── Vista notas ── */
