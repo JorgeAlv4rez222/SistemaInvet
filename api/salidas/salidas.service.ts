@@ -171,6 +171,18 @@ export const salidasService = {
       },
     })
 
+    // EV-002: registrar salida/salida_parcial visible en historial
+    await supabase.from('movimientos').insert({
+      tipo:          coincide ? 'salida' : 'salida_parcial',
+      nota_venta_id: notaRef.id,
+      producto_id:   notaProducto.producto_id,
+      cantidad:      input.cantidadIngresada,
+      usuario_id:    input.adminId,
+      detalle: coincide
+        ? { numeroNota: notaRef.numero_nota, sku: productoRef.sku, nombreProducto: productoRef.nombre, cantidadSolicitada: cantidadReferencia, cantidadDespachada: input.cantidadIngresada }
+        : { numeroNota: notaRef.numero_nota, sku: productoRef.sku, nombreProducto: productoRef.nombre, cantidadSolicitada: cantidadReferencia, cantidadDespachada: input.cantidadIngresada, cantidadFaltante: cantidadReferencia - input.cantidadIngresada, razon: 'revision_admin', comentarioOperador: input.comentario?.trim() ?? null },
+    })
+
     // Verificar si todos los ítems de la nota ya fueron revisados
     const { data: todosItems } = await supabase
       .from('nota_productos')
