@@ -1006,6 +1006,45 @@ label {
 }
 .hing-movs-lista { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 
+/* Card de movimiento de ingreso (nivel 3 de ingresos) */
+.hing-mov-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-surface);
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+.hing-mov-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.hing-mov-texto {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.hing-mov-ubicacion {
+  font-weight: 700;
+  color: #86efac;
+}
+.hing-mov-usuario {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hing-mov-fecha {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  align-self: center;
+  margin-left: auto;
+}
+
 /* ═══════════════════════════════════════════════════════
    INVENTARIO INICIAL
    ═══════════════════════════════════════════════════════ */

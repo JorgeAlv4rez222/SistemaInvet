@@ -684,6 +684,33 @@ const ESTADO_PROD_CFG: Record<string, { label: string; color: string }> = {
   completa:  { label: 'Completa',  color: '#86efac' },
 }
 
+// ── Card de movimiento simplificada para la vista de ingresos ────────────────
+
+function MovimientoIngresoCard({ m }: { m: MovimientoHistorial }) {
+  // Extrae "X/Y" o "X" del texto del detalle generado por el backend
+  const matchCant = m.detalle.match(/(\d+\/\d+|\d+)\s+unidades?/i)
+  const cantStr   = matchCant ? matchCant[1] : String(m.cantidad ?? '')
+
+  // Formato DD-MM-YYYY
+  const fecha = m.fecha.slice(0, 10).split('-').reverse().join('-')
+
+  return (
+    <div className="hing-mov-card">
+      <BadgeTipo tipo={m.tipo} />
+      <div className="hing-mov-body">
+        <p className="hing-mov-texto">
+          Ingreso {cantStr} Unidades de <strong>{m.producto}</strong>{' '}
+          {m.ubicacion && (
+            <>en <span className="hing-mov-ubicacion">{m.ubicacion}</span></>
+          )}
+        </p>
+        <span className="hing-mov-usuario">{m.usuario}</span>
+      </div>
+      <span className="hing-mov-fecha">{fecha}</span>
+    </div>
+  )
+}
+
 function IngresosHistorialView() {
   const [nav, setNav]               = useState<IngresoNivel>({ nivel: 'lista' })
   const [filtroEstado, setFiltroEstado] = useState<string>('')
@@ -777,10 +804,6 @@ function IngresosHistorialView() {
                 <div className="hing-prod-cantidades">
                   <span>Esperado: <strong>{prod.cantidadEsperada}</strong></span>
                   <span>Recibido: <strong style={{ color: estadoColor }}>{prod.cantidadRecibida}</strong></span>
-                  <span>{pct}%</span>
-                </div>
-                <div className="hing-prod-barra-wrap">
-                  <div className="hing-prod-barra-fill" style={{ width: `${pct}%`, background: estadoColor }} />
                 </div>
               </button>
             )
@@ -811,7 +834,7 @@ function IngresosHistorialView() {
       {!cargandoMovs && (movimientos ?? []).length === 0 && <p className="vacio">Sin movimientos registrados para este producto en esta OC</p>}
       <div className="hing-movs-lista">
         {(movimientos ?? []).map((m) => (
-          <MovimientoCard key={m.movimientoId} m={m} onDetalle={null} />
+          <MovimientoIngresoCard key={m.movimientoId} m={m} />
         ))}
       </div>
     </div>
