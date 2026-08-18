@@ -56,7 +56,7 @@ const NAV_ITEMS: NavItem[] = [
   { ruta: '/ingresos',    key: 'ingresos',    label: 'Importacion',        desc: 'Recibir órdenes de compra',  soloAdmin: true },
   { ruta: '/notas',       key: 'notas',       label: 'NV preparacion',     desc: 'Picking y despacho' },
   { ruta: '/salidas',     key: 'salidas',     label: 'NV despacho',        desc: 'Revisión antes de despacho', soloAdmin: true },
-  { ruta: '/traslados',   key: 'traslados',   label: 'Traslado de stock',  desc: 'Re-ubicar e intercambiar' },
+  { ruta: '/traslados',   key: 'traslados',   label: 'Traslado',  desc: 'Re-ubicar e intercambiar' },
   { ruta: '/historial',   key: 'historial',   label: 'Historial',         desc: 'Auditoría de movimientos' },
 ]
 

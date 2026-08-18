@@ -104,6 +104,7 @@ export type DetalleImportacion = {
     alto_cm:          number
     largo_cm:         number
     ancho_cm:         number
+    ubicacion:        string | null
   }[]
 }
 
@@ -171,7 +172,7 @@ export const ingresosService = {
       .select(`
         *,
         usuarios!importaciones_importado_por_fkey(nombre),
-        importacion_detalles(*, productos!importacion_detalles_producto_id_fkey(sku, nombre, codigo_barra, alto_cm, largo_cm, ancho_cm))
+        importacion_detalles(*, productos!importacion_detalles_producto_id_fkey(sku, nombre, codigo_barra, alto_cm, largo_cm, ancho_cm), lotes_inventario(posiciones_rack(codigo)))
       `)
       .eq('id', importacionId)
       .single()
@@ -180,7 +181,10 @@ export const ingresosService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Importación no encontrada', field: 'importacionId' } }
     }
 
-    type DetalleRaw = ImportacionDetalle & { productos: { sku: string; nombre: string; codigo_barra: string | null; alto_cm: number; largo_cm: number; ancho_cm: number } | null }
+    type DetalleRaw = ImportacionDetalle & {
+      productos: { sku: string; nombre: string; codigo_barra: string | null; alto_cm: number; largo_cm: number; ancho_cm: number } | null
+      lotes_inventario: { posiciones_rack: { codigo: string } | null }[]
+    }
     type UsuarioRef = { nombre: string } | null
 
     const result: DetalleImportacion = {
@@ -203,6 +207,7 @@ export const ingresosService = {
         alto_cm:          d.productos?.alto_cm ?? 0,
         largo_cm:         d.productos?.largo_cm ?? 0,
         ancho_cm:         d.productos?.ancho_cm ?? 0,
+        ubicacion:        d.lotes_inventario?.[0]?.posiciones_rack?.codigo ?? null,
       })),
     }
 

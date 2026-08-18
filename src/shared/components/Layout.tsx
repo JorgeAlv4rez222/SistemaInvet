@@ -49,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
   },
   {
-    ruta: '/traslados', label: 'Traslado de stock', labelCorto: 'Traslado',
+    ruta: '/traslados', label: 'Traslado', labelCorto: 'Traslado',
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M15 6l6 6-6 6"/><path d="M19 12H5"/><path d="M9 6L3 12l6 6"/></svg>,
   },
   {

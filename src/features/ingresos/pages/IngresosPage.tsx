@@ -606,6 +606,9 @@ function DetalleOC({
                       <code className="ing-prod-sku">{det.sku}</code>
                     </div>
                     <div className="ing-prod-fila-derecha">
+                      {det.ubicacion && (
+                        <span className="ing-prod-ubicacion">{det.ubicacion}</span>
+                      )}
                       <BadgeEstado estado={det.estado} />
                       <span className={`ing-prod-chevron ${abierto ? 'ing-prod-chevron--activo' : ''}`}>
                         <IconChevron />
@@ -625,9 +628,6 @@ function DetalleOC({
                           <span className="ing-cantidad-label">Pendiente</span>
                           <span className="ing-cantidad-valor ing-cantidad-valor--ok">{det.cantidadEsperada - det.cantidadRecibida}</span>
                         </div>
-                      </div>
-                      <div className="ing-prod-barra-wrap">
-                        <div className="ing-prod-barra-fill ing-prod-barra-fill--ok" style={{ width: '100%' }} />
                       </div>
                     </div>
                   )}
