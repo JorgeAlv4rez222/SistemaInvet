@@ -4278,6 +4278,9 @@ label {
   justify-content: flex-end;
   flex-shrink: 0;
 }
+.nota-fila--hist {
+  grid-template-columns: 1fr 110px 90px;
+}
 
 /* ═══════════════════════════════════════════════════════════
    NOTA DETALLE PAGE

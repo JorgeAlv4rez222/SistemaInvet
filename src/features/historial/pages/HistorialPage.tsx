@@ -567,66 +567,36 @@ function NotaHistorialCard({
   nota: NotaResumen
   onDetalle: (notaId: string) => void
 }) {
-  const pct = nota.totalProductos
-    ? Math.round((nota.productosCompletos / nota.totalProductos) * 100)
-    : 0
   const cfg = ESTADO_NOTA_COLORS[nota.estado] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }
   const fecha = new Date(nota.creadoEn).toLocaleDateString('es-CL', {
     day: '2-digit', month: '2-digit', year: 'numeric',
   })
-  const hora = new Date(nota.creadoEn).toLocaleTimeString('es-CL', {
-    hour: '2-digit', minute: '2-digit',
-  })
 
   return (
-    <button className="hist-nota-card" onClick={() => onDetalle(nota.notaId)}>
-      <div className="hist-nota-top">
-        <div className="hist-nota-numero">
-          <span className="hist-nota-label">NV</span>
-          <span className="hist-nota-num">{nota.numeroNota}</span>
+    <div
+      className="nota-fila-item"
+      role="button"
+      tabIndex={0}
+      onClick={() => onDetalle(nota.notaId)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDetalle(nota.notaId) } }}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="nota-fila nota-fila--hist">
+        <div className="nota-fila-principal">
+          <span className="nota-fila-numero">{nota.numeroNota}</span>
+          <span className="nota-fila-cliente">{nota.nombreCliente}</span>
         </div>
-        <span
-          className="hist-nota-estado"
-          style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.color + '40' }}
-        >
-          {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
-        </span>
-      </div>
-
-      <div className="hist-nota-cliente">{nota.nombreCliente}</div>
-
-      <div className="hist-nota-progreso-wrap">
-        <div className="hist-nota-progreso-barra">
-          <div
-            className="hist-nota-progreso-fill"
-            style={{
-              width: `${pct}%`,
-              background: pct === 100 ? '#86efac' : pct > 0 ? '#fbbf24' : '#f87171',
-            }}
-          />
-        </div>
-        <span className="hist-nota-progreso-txt">
-          {nota.productosCompletos}/{nota.totalProductos} productos · {pct}%
-        </span>
-      </div>
-
-      <div className="hist-nota-footer">
-        {nota.importadoPor && (
-          <span className="hist-nota-meta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={12} height={12}>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            {nota.importadoPor}
+        <span className="nota-fila-fecha">{fecha}</span>
+        <div className="nota-fila-estado">
+          <span
+            className="badge"
+            style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.color}40` }}
+          >
+            {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
           </span>
-        )}
-        <span className="hist-nota-meta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={12} height={12}>
-            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          {fecha} {hora}
-        </span>
+        </div>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -654,16 +624,18 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
 
       {!isLoading && !isError && (
         <>
-          <div className="hist-resumen">
-            <strong>{notas.length}</strong> nota{notas.length !== 1 ? 's' : ''} encontrada{notas.length !== 1 ? 's' : ''}
-          </div>
+          <p className="notas-conteo">{notas.length} nota{notas.length !== 1 ? 's' : ''}</p>
           {notas.length === 0
             ? <p className="vacio">No hay notas con este estado</p>
             : (
-              <div className="hist-notas-grid">
-                {notas.map((n) => (
-                  <NotaHistorialCard key={n.notaId} nota={n} onDetalle={onDetalle} />
-                ))}
+              <div className="notas-lista-panel">
+                <div className="notas-lista-scroll">
+                  <div className="notas-lista-filas">
+                    {notas.map((n) => (
+                      <NotaHistorialCard key={n.notaId} nota={n} onDetalle={onDetalle} />
+                    ))}
+                  </div>
+                </div>
               </div>
             )
           }
