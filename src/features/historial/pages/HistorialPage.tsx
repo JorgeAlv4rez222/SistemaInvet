@@ -771,7 +771,7 @@ function ProductoIngresoAccordion({
             <span><span className="hist-prod-cant-label">Recibido</span><strong className="hist-prod-cant-val" style={{ color: estadoColor }}>{prod.cantidadRecibida}</strong></span>
           </div>
           <button
-            className="inline-flex items-center text-[12px] text-[var(--accent-light)] bg-[rgba(2,132,199,0.12)] border border-[rgba(125,211,252,0.25)] rounded px-2.5 py-1.5 cursor-pointer transition-colors hover:bg-[rgba(2,132,199,0.25)]"
+            className="hist-ver-mov-btn"
             onClick={(e) => { e.stopPropagation(); onVerMovimientos() }}
           >
             Ver movimientos →

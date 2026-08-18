@@ -2402,6 +2402,21 @@ label {
   font-weight: 700;
   color: var(--text-primary);
 }
+.hist-ver-mov-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.hist-ver-mov-btn:hover { background: var(--accent-hover); }
 .hist-prod-equiv-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -4341,9 +4356,9 @@ label {
   width: 100%;
   padding: var(--spacing-md);
   display: grid;
-  grid-template-columns: 28px 200px 1fr 110px 90px;
+  grid-template-columns: 28px 200px 1fr 120px 100px;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm) var(--spacing-lg);
   text-align: left;
   cursor: pointer;
   position: relative;
