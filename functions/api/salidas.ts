@@ -23,6 +23,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       totalProductos:     n.totalProductos,
       productosCompletos: n.totalRevisados,
       creadoEn:           n.created_at,
+      actualizadoEn:      n.updated_at,
     }))
     return json(mapped)
   }

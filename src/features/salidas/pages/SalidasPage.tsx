@@ -101,8 +101,21 @@ export function SalidasPage() {
   const [filtroDia,  setFiltroDia]  = useState<string | undefined>(undefined)
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const [seleccionadaId, setSeleccionadaId]   = useState<string | null>(null)
+  const [filtroEstado, setFiltroEstado] = useState<'completa' | 'despachada'>('completa')
 
-  const notas = data ?? []
+  const HORAS_VISIBILIDAD_DESPACHADA = 25
+
+  const notas = useMemo(() => {
+    const todas = data ?? []
+    const ahora = Date.now()
+    return todas.filter((n) => {
+      if (n.estado === 'despachada') {
+        const ms = ahora - new Date(n.actualizadoEn).getTime()
+        return ms < HORAS_VISIBILIDAD_DESPACHADA * 60 * 60 * 1000
+      }
+      return true
+    })
+  }, [data])
 
   const aniosDisponibles = useMemo(() => {
     const años = new Set(notas.map((n) => n.creadoEn?.slice(0, 4)).filter(Boolean))
@@ -110,7 +123,7 @@ export function SalidasPage() {
   }, [notas])
 
   const notasFiltradas = useMemo(() => {
-    let lista = notas
+    let lista = notas.filter((n) => n.estado === filtroEstado)
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter((n) => n.numeroNota.toLowerCase().includes(q) || n.nombreCliente.toLowerCase().includes(q))
@@ -119,7 +132,7 @@ export function SalidasPage() {
     if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
     if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
     return lista
-  }, [notas, busqueda, filtroAnio, filtroMes, filtroDia])
+  }, [notas, busqueda, filtroAnio, filtroMes, filtroDia, filtroEstado])
 
   const filtrosActivos = [filtroAnio, filtroMes, filtroDia].filter(Boolean).length
 
@@ -233,6 +246,24 @@ export function SalidasPage() {
         </div>
       )}
 
+      {/* Filtro por estado */}
+      <div className="sal-filtro-estado">
+        <button
+          type="button"
+          className={`sal-estado-btn ${filtroEstado === 'completa' ? 'sal-estado-btn--activo' : ''}`}
+          onClick={() => { setFiltroEstado('completa'); setSeleccionadaId(null) }}
+        >
+          Completa
+        </button>
+        <button
+          type="button"
+          className={`sal-estado-btn ${filtroEstado === 'despachada' ? 'sal-estado-btn--activo sal-estado-btn--despachada' : ''}`}
+          onClick={() => { setFiltroEstado('despachada'); setSeleccionadaId(null) }}
+        >
+          Despachada
+        </button>
+      </div>
+
       {/* Revisar — se habilita al marcar una nota de la lista */}
       <div className="notas-veroc-wrap">
         {esAdmin && (
@@ -249,7 +280,12 @@ export function SalidasPage() {
       {isError   && <p className="error">Error al cargar notas</p>}
       {!isLoading && !isError && notasFiltradas.length === 0 && (
         <div className="notas-vacio">
-          <p>{filtrosActivos > 0 || busqueda ? 'Sin resultados para el filtro aplicado' : "No hay notas en estado 'completa' para revisar"}</p>
+          <p>{filtrosActivos > 0 || busqueda
+            ? 'Sin resultados para el filtro aplicado'
+            : filtroEstado === 'despachada'
+              ? 'No hay notas despachadas en las últimas 25 horas'
+              : "No hay notas en estado 'completa' para revisar"
+          }</p>
         </div>
       )}
 
