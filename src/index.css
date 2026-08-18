@@ -3034,12 +3034,13 @@ label {
 }
 .mapa-rack-nivel-label {
   flex-shrink: 0;
-  width: 28px;
-  font-size: 11px;
-  font-weight: 700;
+  width: 34px;
+  font-size: 14px;
+  font-weight: 800;
   font-family: monospace;
-  color: var(--text-muted);
+  color: #7dd3fc;
   text-align: right;
+  letter-spacing: -0.5px;
 }
 .mapa-rack-posiciones {
   display: flex;
@@ -3057,23 +3058,25 @@ label {
   gap: 4px;
   min-height: 52px;
   border-radius: var(--radius-sm);
-  background: rgba(180,140,80,0.18);
-  border: 1.5px solid rgba(180,140,80,0.45);
+  /* libre: verde suave */
+  background: rgba(34,197,94,0.12);
+  border: 1.5px solid rgba(34,197,94,0.40);
   cursor: pointer;
   transition: filter 0.1s, transform 0.1s;
   box-sizing: border-box;
   padding: 6px 4px;
 }
 .mapa-pos-btn--ocupada {
-  background: rgba(120,90,45,0.32);
-  border-color: rgba(120,90,45,0.55);
+  /* ocupada: naranja/ámbar */
+  background: rgba(234,88,12,0.18);
+  border-color: rgba(234,88,12,0.50);
 }
-.mapa-pos-btn:hover   { filter: brightness(1.25); }
-.mapa-pos-btn:active  { transform: scale(0.95); }
+.mapa-pos-btn:hover  { filter: brightness(1.2); }
+.mapa-pos-btn:active { transform: scale(0.95); }
 .mapa-pos-lado {
   display: block;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   color: var(--text-primary);
   font-family: monospace;
   line-height: 1;
@@ -4317,16 +4320,13 @@ label {
   max-height: 62vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--accent) var(--bg-elevated);
+  scrollbar-color: var(--border) transparent;
 }
-.notas-lista-scroll::-webkit-scrollbar { width: 10px; }
-.notas-lista-scroll::-webkit-scrollbar-track {
-  background: var(--bg-elevated);
-}
+.notas-lista-scroll::-webkit-scrollbar { width: 6px; }
+.notas-lista-scroll::-webkit-scrollbar-track { background: transparent; }
 .notas-lista-scroll::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: var(--border);
   border-radius: 999px;
-  border: 2px solid var(--bg-elevated);
 }
 .notas-lista-filas {
   display: flex;

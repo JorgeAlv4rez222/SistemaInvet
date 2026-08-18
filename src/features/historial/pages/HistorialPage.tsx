@@ -391,7 +391,7 @@ function ProductoHistorialCard({
           {/* Solo "Desp." en blanco neutro */}
           {!soloEquivalente && (
             <span className="hist-prod-desp">
-              <span className="hist-prod-cant-label">Desp.</span>
+              <span className="hist-prod-cant-label">Despachado</span>
               <strong className="hist-prod-cant-val">{totalDespachado}</strong>
             </span>
           )}
@@ -636,6 +636,7 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
 
   return (
     <div className="hist-notas-view">
+      <h2 className="hing-titulo">Notas de Venta</h2>
       <div className="hist-notas-filtros">
         {(['', 'pendiente', 'completa', 'lista_despacho'] as const).map((e) => (
           <button
@@ -738,7 +739,7 @@ function ProductoIngresoAccordion({
         <code className="hist-prod-sku-solo">{prod.sku}</code>
         <div className="hist-prod-fila-derecha">
           <span className="hist-prod-desp">
-            <span className="hist-prod-cant-label">Rec.</span>
+            <span className="hist-prod-cant-label">Recibido</span>
             <strong className="hist-prod-cant-val">{prod.cantidadRecibida}</strong>
           </span>
           <span
