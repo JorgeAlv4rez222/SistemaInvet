@@ -375,7 +375,6 @@ function ProductoHistorialCard({
   const ubicacion     = movs.find(m => m.ubicacion)?.ubicacion ?? null
   const skuDespachado = equivalente?.skuEquivalente ?? null
   const skuOriginal   = equivRevMap.get(sku) ?? null
-  const tiposBadge    = tiposUnicos.filter(t => t !== 'equivalente_usado')
   const soloEquivalente = tiposUnicos.every(t => t === 'equivalente_usado')
   const nombreProducto = movs.find(m => m.nombreProducto)?.nombreProducto ?? null
 
@@ -385,6 +384,11 @@ function ProductoHistorialCard({
 
   const cantSolicitada = salidaParcial?.cantidadSolicitada ?? totalDespachado
   const completo       = cantSolicitada > 0 && totalDespachado === cantSolicitada
+
+  // Si la entrega fue completa, omitir el badge salida_parcial (era un estado intermedio)
+  const tiposBadge = tiposUnicos
+    .filter(t => t !== 'equivalente_usado')
+    .filter(t => !(completo && t === 'salida_parcial'))
 
   return (
     <div className={`hist-prod-accordion${abierto ? ' abierto' : ''}`}>
