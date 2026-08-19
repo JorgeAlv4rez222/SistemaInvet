@@ -177,7 +177,7 @@ function ListaImportaciones({
     return lista
   }, [data, busqueda, filtroAnio, filtroMes])
 
-  const filtrosActivos = [filtroEstado, filtroAnio, filtroMes].filter(Boolean).length
+  const filtrosActivos = [filtroAnio, filtroMes].filter(Boolean).length
 
   function limpiarFiltros() {
     setFiltroEstado(undefined)
@@ -214,24 +214,23 @@ function ListaImportaciones({
         </button>
       </div>
 
+      {/* Filtros de estado — siempre visibles */}
+      <div className="sal-filtro-estado">
+        {(['', 'pendiente', 'parcial', 'completa'] as const).map((e) => (
+          <button
+            key={e}
+            type="button"
+            className={`sal-estado-btn ${(filtroEstado ?? '') === e ? 'sal-estado-btn--activo' : ''}`}
+            onClick={() => setFiltroEstado(e || undefined)}
+          >
+            {e ? ESTADO_LABELS[e] : 'Todas'}
+          </button>
+        ))}
+      </div>
+
       {/* Panel de filtros — se despliega al hacer clic en "Filtrar" */}
       {filtrosAbiertos && (
         <div className="ing-filtros-panel">
-          <div className="ing-filtro-grupo">
-            <span className="ing-filtro-label">Estado de OC</span>
-            <div className="ing-filtro-opciones">
-              {(['', 'pendiente', 'parcial', 'completa'] as const).map((e) => (
-                <button
-                  key={e}
-                  className={`filtro-btn ${(filtroEstado ?? '') === e ? 'activo' : ''}`}
-                  onClick={() => setFiltroEstado(e || undefined)}
-                >
-                  {e ? ESTADO_LABELS[e] : 'Todas'}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="ing-filtro-grupo">
             <span className="ing-filtro-label">Fecha de OC</span>
             <div className="ing-filtro-opciones">
