@@ -365,6 +365,7 @@ function DetalleOC({
   const [urlPacking,   setUrlPacking]   = useState<string | null>(null)
   const [modalPacking, setModalPacking] = useState(false)
   const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [filtroEstadoProd, setFiltroEstadoProd] = useState<'' | 'pendiente' | 'parcial' | 'completa'>('')
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
 
   function toggleProducto(detalleId: string) {
@@ -410,9 +411,15 @@ function DetalleOC({
   const pct = data.detalles.length ? Math.round((completosTotal / data.detalles.length) * 100) : 0
 
   const qProducto = busquedaProducto.trim().toLowerCase()
-  const detallesMostrados = qProducto
-    ? data.detalles.filter((d) => d.sku.toLowerCase().includes(qProducto) || d.nombre.toLowerCase().includes(qProducto))
-    : data.detalles
+  const detallesMostrados = data.detalles
+    .filter((d) => !qProducto || d.sku.toLowerCase().includes(qProducto) || d.nombre.toLowerCase().includes(qProducto))
+    .filter((d) => {
+      if (!filtroEstadoProd) return true
+      if (filtroEstadoProd === 'pendiente') return d.estado === 'pendiente'
+      if (filtroEstadoProd === 'parcial')   return d.estado === 'parcial'
+      if (filtroEstadoProd === 'completa')  return d.estado === 'completa'
+      return true
+    })
 
   const pendientes = detallesMostrados.filter((d) => d.estado !== 'completa')
   const completos  = detallesMostrados.filter((d) => d.estado === 'completa')
@@ -508,7 +515,21 @@ function DetalleOC({
         )}
       </div>
 
-      {qProducto && pendientes.length === 0 && completos.length === 0 && (
+      {/* Filtro por estado de producto */}
+      <div className="sal-filtro-estado">
+        {(['', 'pendiente', 'parcial', 'completa'] as const).map((e) => (
+          <button
+            key={e}
+            type="button"
+            className={`sal-estado-btn ${filtroEstadoProd === e ? 'sal-estado-btn--activo' : ''}`}
+            onClick={() => setFiltroEstadoProd(e)}
+          >
+            {e ? ESTADO_LABELS[e] : 'Todos'}
+          </button>
+        ))}
+      </div>
+
+      {(qProducto || filtroEstadoProd) && pendientes.length === 0 && completos.length === 0 && (
         <div className="ing-vacio">
           <p>Sin resultados para "{busquedaProducto}"</p>
         </div>
