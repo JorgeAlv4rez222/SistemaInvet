@@ -686,8 +686,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <span className="icono-ok">✓</span>
             <p>{paso.mensaje}</p>
           </div>
-          <p>Stock restante del producto: <strong>{paso.stockRestante}</strong></p>
-          {paso.notaCompleta && (
+{paso.notaCompleta && (
             <div className="nota-completa-aviso">
               ✓ Nota completada — todos los productos han sido procesados
             </div>
