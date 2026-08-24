@@ -228,7 +228,7 @@ export function NotaDetallePage() {
             {!terminado && item.ubicaciones.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50" style={{ fontSize: 'var(--font-size-xs)' }}>
                 <span className="text-slate-400"><IcoRack size={12} /></span>
-                <span className="text-white font-mono font-medium">{item.ubicaciones[0].posicionCodigo}</span>
+                <span className="text-white font-mono font-medium">{item.ubicaciones[0].posicionCodigo ?? 'Sin ubicación'}</span>
                 <span className="text-slate-500 ml-auto">{formatearFecha(item.ubicaciones[0].fechaIngreso)}</span>
               </div>
             )}

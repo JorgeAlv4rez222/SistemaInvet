@@ -10,7 +10,7 @@ type NotaProducto = Database['public']['Tables']['nota_productos']['Row']
 
 export type Ubicacion = {
   loteId:         string
-  posicionCodigo: string
+  posicionCodigo: string | null
   cantidad:       number
   fechaIngreso:   string
 }
@@ -165,10 +165,9 @@ async function obtenerUbicacionesFifo(productoId: string): Promise<Ubicacion[]> 
   type LoteRaw = { id: string; cantidad: number; fecha_ingreso: string; created_at: string; posiciones_rack: { codigo: string } | null }
 
   return (data as LoteRaw[] ?? [])
-    .filter((l) => l.posiciones_rack)
     .map((l) => ({
       loteId:         l.id,
-      posicionCodigo: l.posiciones_rack!.codigo,
+      posicionCodigo: l.posiciones_rack?.codigo ?? null,
       cantidad:       l.cantidad,
       fechaIngreso:   l.fecha_ingreso,
     }))
@@ -503,10 +502,6 @@ export const notasService = {
       ? (lotesFifo.find(l => l.id === input.loteId) ?? lotesFifo[0])
       : lotesFifo[0]
 
-    if (!loteEsperado.posiciones_rack) {
-      return { ok: false, error: { code: 'INVALID_RACK', message: 'El lote no tiene posición asignada' } }
-    }
-
     // Bloquear despacho superior a lo solicitado en la nota
     const cantidadPendiente = np.cantidad_solicitada - np.cantidad_despachada
     if (input.cantidad > cantidadPendiente) {
@@ -550,8 +545,8 @@ export const notasService = {
 
     if (errorLoteUp) return { ok: false, error: { code: 'DB_ERROR', message: errorLoteUp.message } }
 
-    // TC-FIFO-003: si el lote se agotó, liberar posición
-    if (cantidadRestanteLote === 0 && loteEsperado.posiciones_rack) {
+    // TC-FIFO-003: si el lote se agotó y tenía rack asignado, liberar posición
+    if (cantidadRestanteLote === 0 && loteEsperado.posiciones_rack?.id) {
       await supabase
         .from('posiciones_rack')
         .update({ ocupada: false })

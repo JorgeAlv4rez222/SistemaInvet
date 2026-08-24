@@ -249,7 +249,6 @@ export const pickingMasivoService = {
         .eq('producto_id', item.producto_id)
         .eq('activo', true)
         .eq('en_pasillo', false)
-        .not('posicion_id', 'is', null)
         .gt('cantidad', 0)
         .order('creado_en', { ascending: true })
 

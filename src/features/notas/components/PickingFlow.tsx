@@ -14,7 +14,7 @@ interface Props {
 
 interface Parada {
   loteId:             string
-  posicionCodigo:     string
+  posicionCodigo:     string | null
   fechaIngreso:       string
   cantidadDisponible: number
   cantidadATomar:     number
@@ -86,7 +86,7 @@ function calcularPlan(ubicaciones: Ubicacion[], cantidadNecesaria: number): Para
 function UbicacionFifo({ ubicacion, esActual }: { ubicacion: Ubicacion; esActual: boolean }) {
   return (
     <div className={`ubicacion-fifo ${esActual ? 'fifo-actual' : ''}`}>
-      <span className="codigo-rack">{ubicacion.posicionCodigo}</span>
+      <span className="codigo-rack">{ubicacion.posicionCodigo ?? 'Sin ubicación'}</span>
       <span className="cantidad">{ubicacion.cantidad} uds</span>
       <span className="fecha">{formatearFecha(ubicacion.fechaIngreso)}</span>
       {esActual && <span className="badge-fifo">FIFO ↑</span>}
@@ -174,7 +174,10 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     setPlan(planCalculado)
     setPickedSoFar(0)
     setCantidad(planCalculado[0]?.cantidadATomar?.toString() ?? '')
-    setPaso({ tipo: 'escanear_rack', paradaIdx: 0, equivalenteId: equivalenteId ?? undefined })
+    const primerPaso = planCalculado[0]?.posicionCodigo
+      ? { tipo: 'escanear_rack' as const, paradaIdx: 0, equivalenteId: equivalenteId ?? undefined }
+      : { tipo: 'escanear_producto' as const, paradaIdx: 0, equivalenteId: equivalenteId ?? undefined }
+    setPaso(primerPaso)
     setError(null)
   }
 
@@ -308,7 +311,10 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
         setPickedSoFar(nuevoPicked)
         setCantidad(siguienteParada?.cantidadATomar?.toString() ?? '')
         if (rackInputRef.current) rackInputRef.current.value = ''
-        setPaso({ tipo: 'escanear_rack', paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined })
+        const siguientePaso = siguienteParada?.posicionCodigo
+          ? { tipo: 'escanear_rack' as const, paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined }
+          : { tipo: 'escanear_producto' as const, paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined }
+        setPaso(siguientePaso)
         return
       }
 
