@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bodega-v37'
+const CACHE_NAME = 'bodega-v38'
 const STATIC_ASSETS = ['/index.html', '/']
 
 self.addEventListener('install', (e) => {
