@@ -115,8 +115,8 @@ export const salidasService = {
       ? (equivalenteRef?.sku ?? productoRef.sku)
       : productoRef.sku
 
-    const esCG = productoRef.sku.startsWith('CG')
-    if (!esCG && codigoEsperado && codigoEsperado !== input.codigoProducto) {
+    const esSinEscaneo = productoRef.sku.startsWith('CG') || productoRef.sku.startsWith('SG')
+    if (!esSinEscaneo && codigoEsperado && codigoEsperado !== input.codigoProducto) {
       return {
         ok: false,
         error: {

@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDetalleNota, useConcluirParcial, useEnviarARevision } from '../hooks/useNotas'
+import { useDetalleNota, useConcluirParcial, useEnviarARevision, useRegistrarPicking } from '../hooks/useNotas'
 import { PickingFlow } from '../components/PickingFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { NotaProductoResumen } from '../services/notas.api'
+
+function esSinEscaneo(sku: string) {
+  return sku.toUpperCase().startsWith('CG') || sku.toUpperCase().startsWith('SG')
+}
 
 const ESTADO_LABELS: Record<string, string> = {
   pendiente: 'Pendiente',
@@ -115,6 +119,19 @@ export function NotaDetallePage() {
   const { offline }             = useConectividad()
   const { data, isLoading, isError, refetch } = useDetalleNota(notaId, operadorId)
   const [itemPicking, setItemPicking]         = useState<NotaProductoResumen | null>(null)
+  const registrarPicking                      = useRegistrarPicking()
+
+  async function handleMarcarCompleto(item: NotaProductoResumen) {
+    try {
+      await registrarPicking.mutateAsync({
+        usuarioId:      operadorId,
+        notaProductoId: item.notaProductoId,
+        codigoProducto: item.codigoBarra ?? item.sku,
+        cantidad:       item.cantidadSolicitada - item.cantidadDespachada,
+      })
+      void refetch()
+    } catch { /* error silencioso — el usuario puede reintentar */ }
+  }
   const [metaAbierto, setMetaAbierto]         = useState(false)
   const [expandidos, setExpandidos]           = useState<Set<string>>(new Set())
   const [busquedaProducto, setBusquedaProducto] = useState('')
@@ -299,9 +316,19 @@ export function NotaDetallePage() {
                       Marcar concluido
                     </button>
                   )}
-                  <button className="btn-primario ing-btn-ubicar" onClick={(e) => { e.stopPropagation(); setItemPicking(item) }}>
-                    Picking
-                  </button>
+                  {esSinEscaneo(item.sku) ? (
+                    <button
+                      className="btn-primario ing-btn-ubicar"
+                      disabled={registrarPicking.isPending}
+                      onClick={(e) => { e.stopPropagation(); void handleMarcarCompleto(item) }}
+                    >
+                      {registrarPicking.isPending ? 'Registrando…' : 'Marcar completo'}
+                    </button>
+                  ) : (
+                    <button className="btn-primario ing-btn-ubicar" onClick={(e) => { e.stopPropagation(); setItemPicking(item) }}>
+                      Picking
+                    </button>
+                  )}
                 </div>
               )}
             </div>
