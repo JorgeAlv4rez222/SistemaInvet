@@ -3,6 +3,7 @@ import { parsearOC }    from '../utils/parsearOC'
 import { productosApi } from '../../productos/services/productos.api'
 import { ingresosApi }  from '../services/ingresos.api'
 import { supabase }     from '../../../lib/supabaseClient'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 type EstadoBusqueda = 'buscando' | 'encontrado' | 'no_encontrado'
 
@@ -312,6 +313,8 @@ export function ImportarOCFlow({ adminId, onVolver, onCreada }: Props) {
                         min={1}
                         value={fila.cantidadEditable}
                         onChange={(e) => actualizarCantidad(idx, e.target.value)}
+                        onKeyDown={onlyNumbersKeyDown}
+                        onPaste={onlyNumbersPaste}
                         disabled={fila.estado !== 'encontrado'}
                         className="w-20 h-9 px-2 text-center rounded-lg border border-white/10 bg-slate-800 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:border-sky-500"
                       />

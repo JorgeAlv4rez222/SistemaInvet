@@ -6,11 +6,11 @@ import { z } from 'zod'
 const crearNotaSchema = z.object({
   adminId: z.string().uuid(), numeroNota: z.string().min(1), nombreCliente: z.string().min(1),
   rutCliente: z.string().min(1), numeroOc: z.string().optional(), archivoNombre: z.string().optional(),
-  productos: z.array(z.object({ productoId: z.string().uuid(), cantidadSolicitada: z.number().int().positive() })).min(1),
+  productos: z.array(z.object({ productoId: z.string().uuid(), cantidadSolicitada: z.coerce.number().int().positive() })).min(1),
 })
 const pickingSchema = z.object({
-  usuarioId: z.string().uuid(), notaProductoId: z.string().uuid(), codigoProducto: z.string().min(1),
-  cantidad: z.number().int().positive(), usarEquivalente: z.boolean().optional(),
+  usuarioId: z.string().uuid(), notaProductoId: z.string().uuid(), codigoProducto: z.string().min(1).max(100),
+  cantidad: z.coerce.number().int().positive(), usarEquivalente: z.boolean().optional(),
   productoEquivalenteId: z.string().uuid().optional(), comentarioOperador: z.string().optional().nullable(),
 })
 const sinStockSchema = z.object({

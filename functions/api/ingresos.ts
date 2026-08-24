@@ -5,18 +5,18 @@ import { z } from 'zod'
 
 const crearImportacionSchema = z.object({
   adminId: z.string().uuid(), numeroOc: z.string().min(1), archivoNombre: z.string().min(1),
-  productos: z.array(z.object({ productoId: z.string().uuid(), cantidadEsperada: z.number().int().positive() })).min(1),
+  productos: z.array(z.object({ productoId: z.string().uuid(), cantidadEsperada: z.coerce.number().int().positive() })).min(1),
 })
 const validarCantidadSchema = z.object({
-  detalleId: z.string().uuid(), cantidadIngresada: z.number().int().positive(),
+  detalleId: z.string().uuid(), cantidadIngresada: z.coerce.number().int().positive(),
 })
 const almacenarEnRackSchema = z.object({
   adminId: z.string().uuid(), detalleId: z.string().uuid(), posicionId: z.string().uuid(),
-  cantidad: z.number().int().positive(), agregarAMismoProducto: z.boolean().optional(),
+  cantidad: z.coerce.number().int().positive(), agregarAMismoProducto: z.boolean().optional(),
 })
 const almacenarEnPasilloSchema = z.object({
   adminId: z.string().uuid(), detalleId: z.string().uuid(), pasilloId: z.string().uuid(),
-  cantidad: z.number().int().positive(),
+  cantidad: z.coerce.number().int().positive(),
 })
 
 export async function onRequest({ request, env }: { request: Request; env: Env }): Promise<Response> {

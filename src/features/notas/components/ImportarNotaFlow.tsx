@@ -3,6 +3,7 @@ import { parsearNota }    from '../utils/parsearNota'
 import { productosApi }  from '../../productos/services/productos.api'
 import { notasApi }      from '../services/notas.api'
 import { autoCompletarNotaParaPruebas } from '../utils/autoCompletarPruebas' // TEMPORAL — solo para pruebas
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 type EstadoBusqueda = 'buscando' | 'encontrado' | 'no_encontrado'
 
@@ -299,6 +300,8 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
                       type="number" min={1}
                       value={fila.cantidadEditable}
                       onChange={(e) => actualizarCantidad(idx, e.target.value)}
+                      onKeyDown={onlyNumbersKeyDown}
+                      onPaste={onlyNumbersPaste}
                       className="input-cantidad"
                       disabled={fila.estado !== 'encontrado'}
                     />

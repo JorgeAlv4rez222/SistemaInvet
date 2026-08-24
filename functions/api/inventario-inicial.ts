@@ -7,7 +7,7 @@ const resolverPosicionSchema = z.object({ codigo: z.string().min(1) })
 const resolverProductoSchema = z.object({ codigoBarra: z.string().min(1) })
 const registrarLoteSchema = z.object({
   usuarioId: z.string().uuid(), posicionId: z.string().uuid(), productoId: z.string().uuid(),
-  cantidad: z.number().int().positive(), fechaIngreso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  cantidad: z.coerce.number().int().positive(), fechaIngreso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 })
 
 export async function onRequest({ request, env }: { request: Request; env: Env }): Promise<Response> {

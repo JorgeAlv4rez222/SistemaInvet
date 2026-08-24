@@ -3,6 +3,7 @@ import { useValidarProducto } from '../hooks/useSalidas'
 import { useCambiarEstadoNota } from '../../notas/hooks/useNotas'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 export type ItemRevision = {
   notaProductoId:     string
@@ -520,7 +521,8 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
               min={1}
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleConfirmarCantidad()}
+              onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleConfirmarCantidad() }}
+              onPaste={onlyNumbersPaste}
             />
           </label>
           <div className="paso-acciones">

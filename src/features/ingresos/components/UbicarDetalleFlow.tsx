@@ -3,6 +3,7 @@ import { ingresosApi } from '../services/ingresos.api'
 import { useAlmacenarEnRack, useAlmacenarEnPasillo, usePosicionesConProducto } from '../hooks/useIngresos'
 import { useTodasPosicionesLibres, usePasillos, useRacks } from '../../ubicaciones/hooks/useUbicaciones'
 import type { PosicionLibre } from '../../ubicaciones/hooks/useUbicaciones'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 import { RACKS_LAYOUT, PASILLOS_LAYOUT } from '../../ubicaciones/config/racksLayout'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -361,7 +362,8 @@ export function UbicarDetalleFlow({ detalle, importacionId, adminId, onCerrar, o
               max={pendiente}
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleValidarCantidad()}
+              onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleValidarCantidad() }}
+              onPaste={onlyNumbersPaste}
               autoFocus
             />
           </label>

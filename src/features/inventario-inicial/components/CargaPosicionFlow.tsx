@@ -2,6 +2,7 @@ import { useState, useRef, useEffect }           from 'react'
 import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial } from '../hooks/useInventarioInicial'
 import { BarcodeScanner }                         from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError }                       from '../../../shared/utils/apiClient'
+import { onlyNumbersKeyDown, onlyNumbersPaste }   from '../../../shared/utils/numericInput'
 import type { InfoPosicion, InfoProducto }        from '../services/inventarioInicial.api'
 
 type Paso =
@@ -217,7 +218,8 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
                 type="number" min={1}
                 value={cantidad}
                 onChange={(e) => setCantidad(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleRegistrar()}
+                onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleRegistrar() }}
+                onPaste={onlyNumbersPaste}
                 placeholder="0"
               />
             </label>

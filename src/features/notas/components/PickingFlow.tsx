@@ -3,6 +3,7 @@ import { useRegistrarPicking } from '../hooks/useNotas'
 import { SinStockForm } from './SinStockForm'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 import type { NotaProductoResumen, ProductoConStock, Ubicacion } from '../services/notas.api'
 
 interface Props {
@@ -536,7 +537,8 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
                 : cantidadPendiente}
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleConfirmarPicking()}
+              onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleConfirmarPicking() }}
+              onPaste={onlyNumbersPaste}
               autoFocus
             />
           </label>

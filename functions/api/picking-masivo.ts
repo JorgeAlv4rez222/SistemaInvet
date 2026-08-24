@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const itemExcelSchema = z.object({
   codigo: z.string().min(1), descripcion: z.string().min(1),
-  cantidadPedida: z.number().int().positive(), productoId: z.string().uuid().optional(),
+  cantidadPedida: z.coerce.number().int().positive(), productoId: z.string().uuid().optional(),
 })
 const validarExcelSchema   = z.object({ items: z.array(itemExcelSchema).min(1) })
 const crearSesionSchema    = z.object({
@@ -17,7 +17,7 @@ const activarSesionSchema  = z.object({ sesionId: z.string().uuid(), usuarioId: 
 const tomarSubtareaSchema  = z.object({ subtareaId: z.string().uuid(), usuarioId: z.string().uuid() })
 const confirmarSubtareaSchema = z.object({
   subtareaId: z.string().uuid(), usuarioId: z.string().uuid(),
-  cantidadDespachada: z.number().int().min(0), motivo: z.string().optional(),
+  cantidadDespachada: z.coerce.number().int().min(0), motivo: z.string().optional(),
   productoRealId: z.string().uuid().optional(),
 })
 const liberarPropiasSchema  = z.object({ sesionId: z.string().uuid(), usuarioId: z.string().uuid() })

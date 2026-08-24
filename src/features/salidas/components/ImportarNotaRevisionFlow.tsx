@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { parsearNota }   from '../../notas/utils/parsearNota'
 import { productosApi }  from '../../productos/services/productos.api'
 import { notasApi }      from '../../notas/services/notas.api'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 type EstadoBusqueda = 'buscando' | 'encontrado' | 'no_encontrado'
 
@@ -255,6 +256,8 @@ export function ImportarNotaRevisionFlow({ adminId, onVolver, onCreada }: Props)
                       type="number" min={1}
                       value={fila.cantidadEditable}
                       onChange={(e) => actualizarCantidad(idx, e.target.value)}
+                      onKeyDown={onlyNumbersKeyDown}
+                      onPaste={onlyNumbersPaste}
                       className="input-cantidad"
                       disabled={fila.estado !== 'encontrado'}
                     />

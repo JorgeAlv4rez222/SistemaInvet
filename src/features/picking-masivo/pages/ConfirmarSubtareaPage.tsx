@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useColaSubtareas, useConfirmarSubtarea } from '../hooks/usePickingMasivo'
 import { productosApi } from '../../productos/services/productos.api'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
+import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 import type { ProductoConUbicacion } from '../../productos/services/productos.api'
 
 export function ConfirmarSubtareaPage() {
@@ -100,6 +101,8 @@ export function ConfirmarSubtareaPage() {
             max={cantAsignada}
             value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
+            onKeyDown={onlyNumbersKeyDown}
+            onPaste={onlyNumbersPaste}
           />
         </label>
 
