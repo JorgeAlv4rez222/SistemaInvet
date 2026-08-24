@@ -218,7 +218,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     if (!cant || cant <= 0) { setError('Ingresa una cantidad válida'); return }
 
     const parada           = plan[paso.paradaIdx]
-    const esUltimaParada   = paso.paradaIdx === plan.length - 1
+    const esUltimaParada   = plan.length === 0 || paso.paradaIdx === plan.length - 1
     const cantidadRestante = cantidadPendiente - pickedSoFar
 
     if (cant > cantidadRestante) {
