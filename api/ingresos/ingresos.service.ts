@@ -111,18 +111,10 @@ export type DetalleImportacion = {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function generarCodigoImportacion(año: number): Promise<string> {
-  const prefijo = `IMP-${año}-`
-  const { data } = await supabase
-    .from('importaciones')
-    .select('codigo')
-    .like('codigo', `${prefijo}%`)
-    .order('codigo', { ascending: false })
-    .limit(1)
-    .single()
-
-  const last = data?.codigo ? parseInt(data.codigo.slice(prefijo.length), 10) : 0
-  const correlativo = isNaN(last) || last < 1 ? 1 : last + 1
-  return `${prefijo}${String(correlativo).padStart(4, '0')}`
+  // Llama a función SQL con advisory lock para serializar concurrencia (H4).
+  const { data, error } = await supabase.rpc('generar_codigo_importacion', { p_año: año })
+  if (error || !data) throw new Error(`No se pudo generar código de importación: ${error?.message}`)
+  return data as string
 }
 
 async function verificarAdmin(adminId: string): Promise<boolean> {
@@ -398,6 +390,20 @@ export const ingresosService = {
       if (loteExistente && loteExistente.producto_id !== detalle.producto_id) {
         return { ok: false, error: { code: 'CONFLICT_POSICION_OTRO_PRODUCTO', message: 'La posición tiene un producto diferente' } }
       }
+    } else {
+      // Reclamar la posición atómicamente antes de insertar el lote (H5).
+      // Si otro admin ganó la carrera entre el SELECT y este UPDATE, 0 filas son
+      // afectadas y retornamos CONFLICT en vez de insertar dos lotes en la misma posición.
+      const { data: claimed } = await supabase
+        .from('posiciones_rack')
+        .update({ ocupada: true })
+        .eq('id', input.posicionId)
+        .eq('ocupada', false)
+        .select('id')
+
+      if (!claimed || claimed.length === 0) {
+        return { ok: false, error: { code: 'CONFLICT_POSICION_OCUPADA', message: 'La posición acaba de ser ocupada por otra operación. Selecciona otra posición.' } }
+      }
     }
 
     type ProductoRef = { sku: string; nombre: string } | null
@@ -429,18 +435,19 @@ export const ingresosService = {
       return { ok: false, error: { code: 'DB_ERROR', message: errorLote?.message ?? 'Error al crear lote' } }
     }
 
-    // Marcar posición como ocupada (MD-013)
-    await supabase.from('posiciones_rack').update({ ocupada: true }).eq('id', input.posicionId)
+    // posición ya marcada como ocupada atómicamente antes de la inserción del lote
 
-    // Actualizar detalle
-    const nuevaRecibida = detalle.cantidad_recibida + input.cantidad
-    const estadoDetalle = nuevaRecibida >= detalle.cantidad_esperada ? 'completa' : 'parcial'
-    const restante      = detalle.cantidad_esperada - nuevaRecibida
+    // Incremento atómico: suma y validación ocurren en la BD para evitar race condition (H7).
+    const { data: incResult, error: errorInc } = await supabase
+      .rpc('incrementar_cantidad_recibida', { p_detalle_id: input.detalleId, p_cantidad: input.cantidad })
 
-    await supabase
-      .from('importacion_detalles')
-      .update({ cantidad_recibida: nuevaRecibida, estado: estadoDetalle })
-      .eq('id', input.detalleId)
+    if (errorInc) return { ok: false, error: { code: 'DB_ERROR', message: errorInc.message } }
+    if (!incResult?.ok) {
+      return { ok: false, error: { code: 'VALIDATION_CANTIDAD_EXCEDE', message: 'La cantidad excede lo pendiente. Otra tablet puede haber almacenado antes. Recarga e intenta nuevamente.' } }
+    }
+
+    const estadoDetalle = incResult.estado as string
+    const restante      = incResult.restante as number
 
     // stock_total se recalcula automáticamente vía trigger trg_recalcular_stock al insertar el lote
 
@@ -542,15 +549,17 @@ export const ingresosService = {
       return { ok: false, error: { code: 'DB_ERROR', message: errorLote?.message ?? 'Error al crear lote' } }
     }
 
-    const nuevaRecibida = detalle.cantidad_recibida + input.cantidad
-    const estadoDetalle = nuevaRecibida >= detalle.cantidad_esperada ? 'completa' : 'parcial'
-    const restante      = detalle.cantidad_esperada - nuevaRecibida
+    // Incremento atómico: suma y validación ocurren en la BD para evitar race condition (H7).
+    const { data: incResult, error: errorInc } = await supabase
+      .rpc('incrementar_cantidad_recibida', { p_detalle_id: input.detalleId, p_cantidad: input.cantidad })
 
-    const { error: errorUpdate } = await supabase
-      .from('importacion_detalles')
-      .update({ cantidad_recibida: nuevaRecibida, estado: estadoDetalle })
-      .eq('id', input.detalleId)
-    if (errorUpdate) return { ok: false, error: { code: 'DB_ERROR', message: errorUpdate.message } }
+    if (errorInc) return { ok: false, error: { code: 'DB_ERROR', message: errorInc.message } }
+    if (!incResult?.ok) {
+      return { ok: false, error: { code: 'VALIDATION_CANTIDAD_EXCEDE', message: 'La cantidad excede lo pendiente. Otra tablet puede haber almacenado antes. Recarga e intenta nuevamente.' } }
+    }
+
+    const estadoDetalle = incResult.estado as string
+    const restante      = incResult.restante as number
 
     // stock_total se recalcula automáticamente vía trigger trg_recalcular_stock al insertar el lote
 
