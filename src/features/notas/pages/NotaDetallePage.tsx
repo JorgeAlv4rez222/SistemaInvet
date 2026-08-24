@@ -189,7 +189,7 @@ export function NotaDetallePage() {
           </p>
           <p className="nota-bloqueada-desc">
             {notaTomada
-              ? 'Otro operador está preparando esta nota. Podrás acceder cuando la libere o luego de 10 minutos de inactividad.'
+              ? 'Otro operador está preparando esta nota.'
               : 'No se pudo cargar la nota de venta.'}
           </p>
         </div>
