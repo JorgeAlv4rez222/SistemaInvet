@@ -376,7 +376,10 @@ export const pickingMasivoService = {
       return { ok: false, error: { code: 'CONFLICT', message: 'La subtarea ya fue tomada por otro operador' } }
     }
 
-    const { error: updErr } = await supabase
+    // El SELECT previo es solo una comprobación rápida; la carrera real se resuelve aquí:
+    // si otro operador ganó entre el SELECT y este UPDATE, la condición .eq('estado','libre')
+    // no matchea ninguna fila y updated queda vacío → retornamos CONFLICT (H2).
+    const { data: updated, error: updErr } = await supabase
       .from('subtareas_picking_masivo')
       .update({
         estado:        'bloqueado',
@@ -384,9 +387,13 @@ export const pickingMasivoService = {
         bloqueado_en:  new Date().toISOString(),
       })
       .eq('id', input.subtareaId)
-      .eq('estado', 'libre')   // guard optimista
+      .eq('estado', 'libre')
+      .select('id')
 
     if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
+    if (!updated || updated.length === 0) {
+      return { ok: false, error: { code: 'CONFLICT', message: 'La subtarea ya fue tomada por otro operador' } }
+    }
 
     return { ok: true, data: { subtareaId: input.subtareaId } }
   },
@@ -421,19 +428,14 @@ export const pickingMasivoService = {
 
     // Registrar movimiento de salida solo si se despachó algo
     if (cantidadDespachada > 0 && productoRealId) {
-      // Descontar del lote
-      const { data: lote } = await supabase
-        .from('lotes_inventario')
-        .select('cantidad')
-        .eq('id', sub.lote_id)
-        .single()
-
-      if (lote) {
-        const nuevaCantidad = Math.max(0, lote.cantidad - cantidadDespachada)
-        await supabase
-          .from('lotes_inventario')
-          .update({ cantidad: nuevaCantidad, activo: nuevaCantidad > 0 })
-          .eq('id', sub.lote_id)
+      // Decremento atómico: la resta ocurre en la BD para evitar race condition (H3).
+      if (sub.lote_id) {
+        const { data: descontarResult, error: errorLote } = await supabase
+          .rpc('descontar_lote', { p_lote_id: sub.lote_id, p_cantidad: cantidadDespachada })
+        if (errorLote) return { ok: false, error: { code: 'DB_ERROR', message: errorLote.message } }
+        if (!descontarResult?.ok) {
+          return { ok: false, error: { code: 'STOCK_INSUFICIENTE', message: 'Stock insuficiente al momento de confirmar. Intenta nuevamente.' } }
+        }
       }
 
       // Registrar en movimientos

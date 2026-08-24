@@ -586,13 +586,16 @@ export const notasService = {
         ? (lotesFifo.find(l => l.id === input.loteId) ?? lotesFifo[0])
         : lotesFifo[0]
 
-      const cantidadRestanteLote = loteEsperado.cantidad - input.cantidad
-      const { error: errorLoteUp } = await supabase
-        .from('lotes_inventario')
-        .update({ cantidad: Math.max(0, cantidadRestanteLote), activo: cantidadRestanteLote > 0 })
-        .eq('id', loteEsperado.id)
+      // Decremento atómico: la resta ocurre en la BD para evitar race condition
+      // cuando dos tablets leen el mismo lote concurrentemente (H1).
+      const { data: descontarResult, error: errorLoteUp } = await supabase
+        .rpc('descontar_lote', { p_lote_id: loteEsperado.id, p_cantidad: input.cantidad })
 
       if (errorLoteUp) return { ok: false, error: { code: 'DB_ERROR', message: errorLoteUp.message } }
+      if (!descontarResult?.ok) {
+        return { ok: false, error: { code: 'STOCK_INSUFICIENTE', message: 'Stock insuficiente al momento de registrar. Intenta nuevamente.' } }
+      }
+      const cantidadRestanteLote = descontarResult.cantidad_nueva as number
 
       // TC-FIFO-003: si el lote se agotó y tenía rack asignado, liberar posición
       if (cantidadRestanteLote === 0 && loteEsperado.posiciones_rack?.id) {
