@@ -19,6 +19,7 @@ export type ItemRevision = {
 type Paso =
   | { tipo: 'lista' }
   | { tipo: 'escanear_producto'; item: ItemRevision }
+  | { tipo: 'ingresar_cantidad'; item: ItemRevision; codigoEscaneado: string }
   | { tipo: 'resultado'; mensaje: string; todosRevisados: boolean }
 
 // ── Íconos ────────────────────────────────────────────────────────────────
@@ -159,6 +160,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   const esAdmin    = rolUsuario === 'admin'
 
   const [paso, setPaso]             = useState<Paso>({ tipo: 'lista' })
+  const [cantidad, setCantidad]     = useState('')
   const [error, setError]           = useState<string | null>(null)
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [busquedaProducto, setBusquedaProducto] = useState('')
@@ -173,8 +175,11 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
 
   const validar    = useValidarProducto()
 
+  const cantidadRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     if (paso.tipo === 'escanear_producto') scanRef.current?.focus()
+    if (paso.tipo === 'ingresar_cantidad') cantidadRef.current?.focus()
   }, [paso])
 
   function toggleExpandido(id: string) {
@@ -188,9 +193,9 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   function handleSeleccionarItem(item: ItemRevision) {
     if (item.revisadoAdmin) return
     setError(null)
-    // Productos CG no requieren escaneo — confirmar directamente
+    setCantidad('')
     if (item.sku.startsWith('CG')) {
-      handleConfirmar(item, '')
+      setPaso({ tipo: 'ingresar_cantidad', item, codigoEscaneado: '' })
     } else {
       setPaso({ tipo: 'escanear_producto', item })
     }
@@ -205,15 +210,26 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       return
     }
     setError(null)
-    handleConfirmar(paso.item, codigo.trim())
+    setCantidad('')
+    setPaso({ tipo: 'ingresar_cantidad', item: paso.item, codigoEscaneado: codigo.trim() })
   }
 
-  async function handleConfirmar(item: ItemRevision, codigoEscaneado: string) {
+  async function handleConfirmarCantidad() {
+    if (paso.tipo !== 'ingresar_cantidad') return
+    const cant = parseInt(cantidad, 10)
+    if (isNaN(cant) || cant <= 0) { setError('Ingresa una cantidad válida'); return }
+
+    if (cant !== paso.item.cantidadSolicitada) {
+      setError(`La cantidad debe ser ${paso.item.cantidadSolicitada} — la misma que fue despachada`)
+      return
+    }
+
+    setError(null)
     try {
       const resultado = await validar.mutateAsync({
         adminId,
-        notaProductoId: item.notaProductoId,
-        codigoProducto: codigoEscaneado,
+        notaProductoId: paso.item.notaProductoId,
+        codigoProducto: paso.codigoEscaneado,
       })
 
       if (resultado.todosRevisados) setRevisadoEnSesion(true)
@@ -222,7 +238,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       const msg = e instanceof ApiResponseError ? e.message : 'Error al validar'
       setError(msg)
       if (e instanceof ApiResponseError && e.code === 'INVALID_PRODUCTO') {
-        setPaso({ tipo: 'escanear_producto', item })
+        setPaso({ tipo: 'escanear_producto', item: paso.item })
         if (scanRef.current) scanRef.current.value = ''
         scanRef.current?.focus()
       }
@@ -486,6 +502,45 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
 
             <button className="btn-primario" onClick={() => handleEscanearProducto(scanRef.current?.value ?? '')}>
               Confirmar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* INGRESAR CANTIDAD */}
+      {paso.tipo === 'ingresar_cantidad' && (
+        <div className="paso">
+          <p>Producto: <strong>{paso.item.skuEquivalente ?? paso.item.sku}</strong> — {paso.item.nombre}</p>
+          <p>Cantidad despachada: <strong>{paso.item.cantidadSolicitada}</strong></p>
+          <label>
+            Cantidad física contada
+            <input
+              ref={cantidadRef}
+              type="number"
+              min={1}
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleConfirmarCantidad()}
+            />
+          </label>
+          <div className="paso-acciones">
+            <button
+              className="btn-secundario"
+              onClick={() => {
+                setPaso(paso.item.sku.startsWith('CG')
+                  ? { tipo: 'lista' }
+                  : { tipo: 'escanear_producto', item: paso.item })
+                setError(null)
+              }}
+            >
+              ← Volver
+            </button>
+            <button
+              className="btn-primario"
+              disabled={validar.isPending || !cantidad}
+              onClick={handleConfirmarCantidad}
+            >
+              {validar.isPending ? 'Validando…' : 'Confirmar cantidad'}
             </button>
           </div>
         </div>
