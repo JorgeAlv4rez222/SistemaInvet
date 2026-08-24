@@ -502,17 +502,8 @@ export const notasService = {
 
     if (errorLotes) return { ok: false, error: { code: 'DB_ERROR', message: errorLotes.message } }
 
-    if (!lotes?.length) {
-      return { ok: false, error: { code: 'INSUFFICIENT_STOCK', message: 'No hay stock disponible para este producto' } }
-    }
-
     type LoteRaw = typeof lotes[number] & { posiciones_rack: { id: string; codigo: string } | null }
     const lotesFifo = lotes as LoteRaw[]
-
-    // Multi-lote: usar el lote indicado por el frontend; si no se indica, usar el primero FIFO
-    const loteEsperado = input.loteId
-      ? (lotesFifo.find(l => l.id === input.loteId) ?? lotesFifo[0])
-      : lotesFifo[0]
 
     // Bloquear despacho superior a lo solicitado en la nota
     const cantidadPendiente = np.cantidad_solicitada - np.cantidad_despachada
@@ -537,22 +528,52 @@ export const notasService = {
       }
     }
 
-    // Validar stock suficiente en el lote (TC-NTA-005: check antes del update)
-    if (loteEsperado.cantidad < input.cantidad) {
-      return {
-        ok: false,
-        error: {
-          code: 'INSUFFICIENT_STOCK',
-          message: `Stock insuficiente en lote — disponible: ${loteEsperado.cantidad}, solicitado: ${input.cantidad}`,
-        },
-      }
-    }
+    // ── MODO SALIDA LIBRE ──────────────────────────────────────────────────────
+    // Si no hay lotes registrados o el stock es insuficiente, crear lote virtual
+    // para cubrir la diferencia. El stock físico existe pero aún no está en el sistema.
+    // Cuando se integre Softland, estos lotes quedan como referencia de salidas previas.
 
-    // Descontar stock del lote
+    const fechaHoy = new Date().toISOString().slice(0, 10)
+
+    // Determinar cuánto stock real hay disponible
+    const stockDisponible = lotesFifo.reduce((sum, l) => sum + l.cantidad, 0)
+    const faltante = input.cantidad - stockDisponible
+
+    if (faltante > 0) {
+      // Crear lote virtual por la cantidad que falta en el sistema
+      const { data: loteVirtual, error: errorLoteVirtual } = await supabase
+        .from('lotes_inventario')
+        .insert({
+          producto_id:   productoPickId,
+          cantidad:      faltante,
+          fecha_ingreso: fechaHoy,
+          posicion_id:   null,
+          pasillo_id:    null,
+          en_pasillo:    false,
+          activo:        true,
+        })
+        .select()
+        .single()
+
+      if (errorLoteVirtual || !loteVirtual) {
+        return { ok: false, error: { code: 'DB_ERROR', message: errorLoteVirtual?.message ?? 'Error al crear lote virtual' } }
+      }
+
+      // Agregar el lote virtual al final de la lista FIFO
+      lotesFifo.push({ ...loteVirtual, posiciones_rack: null })
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
+    // Multi-lote: usar el lote indicado por el frontend; si no se indica, usar el primero FIFO
+    const loteEsperado = input.loteId
+      ? (lotesFifo.find(l => l.id === input.loteId) ?? lotesFifo[0])
+      : lotesFifo[0]
+
+    // Descontar stock del lote (garantizado que hay suficiente por el bloque anterior)
     const cantidadRestanteLote = loteEsperado.cantidad - input.cantidad
     const { error: errorLoteUp } = await supabase
       .from('lotes_inventario')
-      .update({ cantidad: cantidadRestanteLote, activo: cantidadRestanteLote > 0 })
+      .update({ cantidad: Math.max(0, cantidadRestanteLote), activo: cantidadRestanteLote > 0 })
       .eq('id', loteEsperado.id)
 
     if (errorLoteUp) return { ok: false, error: { code: 'DB_ERROR', message: errorLoteUp.message } }
