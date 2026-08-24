@@ -249,7 +249,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   const { data: notaActual } = await supabase.from('notas_venta').select('estado').eq('id', notaId).single()
   const estadoAnterior = notaActual?.estado ?? 'pendiente'
 
-  await supabase.from('notas_venta').update({ estado: 'completa' }).eq('id', notaId)
+  await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null }).eq('id', notaId)
 
   // TC-NTA-006: EVT-008 cambio de estado automático — solo si hay un usuario a quien
   // atribuir el movimiento (p.ej. no cuando se autocorrige al simplemente leer la nota).
@@ -277,6 +277,9 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
 export const notasService = {
 
   async obtenerNotas(estado?: string): Promise<ServiceResult<NotaResumen[]>> {
+    // Liberar notas abandonadas (sin actividad >10 min) antes de listar
+    await supabase.rpc('liberar_notas_abandonadas')
+
     let query = supabase
       .from('notas_venta')
       .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
@@ -449,9 +452,18 @@ export const notasService = {
       return { ok: false, error: { code: 'CONFLICT_NOTA_NO_PENDIENTE', message: `La nota está en estado '${notaRef.estado}'` } }
     }
 
-    // Primer picking de la nota: pasar de 'pendiente' → 'preparacion'
+    // Tomar la nota atómicamente (previene concurrencia entre operadores)
     if (notaRef.estado === 'pendiente') {
-      await supabase.from('notas_venta').update({ estado: 'preparacion' }).eq('id', notaRef.id)
+      const { data: tomada } = await supabase.rpc('tomar_nota', {
+        p_nota_id:    notaRef.id,
+        p_usuario_id: input.usuarioId,
+      })
+      if (!tomada) {
+        return {
+          ok: false,
+          error: { code: 'NOTA_TOMADA', message: 'Esta nota ya está siendo procesada por otro operador' },
+        }
+      }
     }
 
     // Determinar qué producto usar (original o equivalente)
