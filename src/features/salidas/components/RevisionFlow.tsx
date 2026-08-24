@@ -529,9 +529,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <button
               className="btn-secundario"
               onClick={() => {
-                setPaso(false || item.sku.startsWith('SG')
-                  ? { tipo: 'lista' }
-                  : { tipo: 'escanear_producto', item: paso.item })
+                setPaso({ tipo: 'escanear_producto', item: paso.item })
                 setError(null)
               }}
             >
