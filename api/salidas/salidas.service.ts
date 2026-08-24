@@ -126,8 +126,8 @@ export const salidasService = {
       }
     }
 
-    // La cantidad despachada es siempre la solicitada — sin parciales en revisión
-    const cantidadReferencia = notaProducto.cantidad_solicitada || notaProducto.cantidad_despachada
+    // La referencia es lo que despachó el operador en NV Preparación
+    const cantidadReferencia = notaProducto.cantidad_despachada || notaProducto.cantidad_solicitada
 
     // Marcar revisado_admin y confirmar cantidad_despachada
     const { error: errorUpdate } = await supabase
