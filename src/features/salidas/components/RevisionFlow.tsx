@@ -195,7 +195,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     if (item.revisadoAdmin) return
     setError(null)
     setCantidad('')
-    if (item.sku.startsWith('CG') || item.sku.startsWith('SG')) {
+    if (false) {
       setPaso({ tipo: 'ingresar_cantidad', item, codigoEscaneado: '' })
     } else {
       setPaso({ tipo: 'escanear_producto', item })
@@ -529,7 +529,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <button
               className="btn-secundario"
               onClick={() => {
-                setPaso(paso.item.sku.startsWith('CG') || paso.item.sku.startsWith('SG') || item.sku.startsWith('SG')
+                setPaso(false || item.sku.startsWith('SG')
                   ? { tipo: 'lista' }
                   : { tipo: 'escanear_producto', item: paso.item })
                 setError(null)
