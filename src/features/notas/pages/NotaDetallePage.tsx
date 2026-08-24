@@ -20,8 +20,8 @@ function formatearFecha(fecha: string): string {
 // Un producto queda cerrado (sin más picking) cuando está completo, sin stock,
 // o cuando su despacho parcial ya fue justificado con un comentario del operador
 // (a diferencia del estado "parcial" transitorio de una parada multi-lote en curso).
-function esTerminado(item: { estado: string; comentarioOperador: string | null }): boolean {
-  return item.estado === 'completo' || item.estado === 'sin_stock' || (item.estado === 'parcial' && !!item.comentarioOperador)
+function esTerminado(item: { estado: string; comentarioOperador: string | null; revisadoAdmin: boolean }): boolean {
+  return item.revisadoAdmin || item.estado === 'completo' || item.estado === 'sin_stock' || (item.estado === 'parcial' && !!item.comentarioOperador)
 }
 
 // ── Íconos ────────────────────────────────────────────────────────────────
