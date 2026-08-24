@@ -11,20 +11,16 @@ export type NotaResumen = NotaVenta & {
 }
 
 export type ValidarProductoInput = {
-  adminId:           string
-  notaProductoId:    string
-  codigoProducto:    string
-  cantidadIngresada: number
-  comentario?:       string
+  adminId:        string
+  notaProductoId: string
+  codigoProducto: string
 }
 
 export type ValidarProductoResult = {
-  valido:            boolean
-  cantidadEsperada:  number
-  cantidadIngresada: number
-  coincide:          boolean
-  mensaje:           'Producto revisado' | 'Verifique cantidad'
-  todosRevisados:    boolean
+  valido:        boolean
+  cantidadEsperada: number
+  mensaje:       'Producto revisado'
+  todosRevisados: boolean
 }
 
 export const salidasService = {
@@ -131,36 +127,13 @@ export const salidasService = {
       }
     }
 
-    // Usar cantidad_solicitada como referencia (en revisión directa la cantidad_despachada puede ser 0)
+    // La cantidad despachada es siempre la solicitada — sin parciales en revisión
     const cantidadReferencia = notaProducto.cantidad_solicitada || notaProducto.cantidad_despachada
 
-    if (input.cantidadIngresada > cantidadReferencia) {
-      return {
-        ok: false,
-        error: {
-          code: 'EXCEDE_SOLICITADO',
-          message: `La cantidad ingresada (${input.cantidadIngresada}) supera la solicitada (${cantidadReferencia})`,
-        },
-      }
-    }
-
-    const coincide = input.cantidadIngresada === cantidadReferencia
-
-    if (!coincide && !input.comentario?.trim()) {
-      return {
-        ok: false,
-        error: {
-          code: 'COMENTARIO_REQUERIDO',
-          message: 'Debes indicar el motivo por el cual la cantidad es menor a la solicitada',
-          field: 'comentario',
-        },
-      }
-    }
-
-    // Marcar revisado_admin y actualizar cantidad_despachada con lo físicamente contado
+    // Marcar revisado_admin y confirmar cantidad_despachada
     const { error: errorUpdate } = await supabase
       .from('nota_productos')
-      .update({ revisado_admin: true, cantidad_despachada: input.cantidadIngresada })
+      .update({ revisado_admin: true, cantidad_despachada: cantidadReferencia })
       .eq('id', input.notaProductoId)
 
     if (errorUpdate) {
@@ -169,31 +142,34 @@ export const salidasService = {
 
     // EV-001: registrar auditoría de revisión
     await supabase.from('movimientos').insert({
-      tipo: 'revision_admin',
+      tipo:          'revision_admin',
       nota_venta_id: notaRef.id,
-      producto_id: notaProducto.producto_id,
-      cantidad: input.cantidadIngresada,
-      usuario_id: input.adminId,
+      producto_id:   notaProducto.producto_id,
+      cantidad:      cantidadReferencia,
+      usuario_id:    input.adminId,
       detalle: {
         numeroNota:         notaRef.numero_nota,
         sku:                productoRef.sku,
         nombreProducto:     productoRef.nombre,
         cantidadSolicitada: cantidadReferencia,
-        cantidadRevisada:   input.cantidadIngresada,
-        ...(input.comentario?.trim() ? { motivoDiferencia: input.comentario.trim() } : {}),
+        cantidadRevisada:   cantidadReferencia,
       },
     })
 
-    // EV-002: registrar salida/salida_parcial visible en historial
+    // EV-002: registrar salida en historial
     await supabase.from('movimientos').insert({
-      tipo:          coincide ? 'salida' : 'salida_parcial',
+      tipo:          'salida',
       nota_venta_id: notaRef.id,
       producto_id:   notaProducto.producto_id,
-      cantidad:      input.cantidadIngresada,
+      cantidad:      cantidadReferencia,
       usuario_id:    input.adminId,
-      detalle: coincide
-        ? { numeroNota: notaRef.numero_nota, sku: productoRef.sku, nombreProducto: productoRef.nombre, cantidadSolicitada: cantidadReferencia, cantidadDespachada: input.cantidadIngresada }
-        : { numeroNota: notaRef.numero_nota, sku: productoRef.sku, nombreProducto: productoRef.nombre, cantidadSolicitada: cantidadReferencia, cantidadDespachada: input.cantidadIngresada, cantidadFaltante: cantidadReferencia - input.cantidadIngresada, razon: 'revision_admin', comentarioOperador: input.comentario?.trim() ?? null },
+      detalle: {
+        numeroNota:        notaRef.numero_nota,
+        sku:               productoRef.sku,
+        nombreProducto:    productoRef.nombre,
+        cantidadSolicitada: cantidadReferencia,
+        cantidadDespachada: cantidadReferencia,
+      },
     })
 
     // Verificar si todos los ítems de la nota ya fueron revisados
@@ -209,11 +185,9 @@ export const salidasService = {
     return {
       ok: true,
       data: {
-        valido:            true,
-        cantidadEsperada:  cantidadReferencia,
-        cantidadIngresada: input.cantidadIngresada,
-        coincide,
-        mensaje:           coincide ? 'Producto revisado' : 'Verifique cantidad',
+        valido:           true,
+        cantidadEsperada: cantidadReferencia,
+        mensaje:          'Producto revisado',
         todosRevisados,
       },
     }

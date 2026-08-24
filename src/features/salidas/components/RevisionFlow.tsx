@@ -19,8 +19,7 @@ export type ItemRevision = {
 type Paso =
   | { tipo: 'lista' }
   | { tipo: 'escanear_producto'; item: ItemRevision }
-  | { tipo: 'ingresar_cantidad'; item: ItemRevision; codigoEscaneado: string }
-  | { tipo: 'resultado'; coincide: boolean; mensaje: string; todosRevisados: boolean }
+  | { tipo: 'resultado'; mensaje: string; todosRevisados: boolean }
 
 // ── Íconos ────────────────────────────────────────────────────────────────
 
@@ -160,8 +159,6 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   const esAdmin    = rolUsuario === 'admin'
 
   const [paso, setPaso]             = useState<Paso>({ tipo: 'lista' })
-  const [cantidad, setCantidad]     = useState('')
-  const [comentario, setComentario] = useState('')
   const [error, setError]           = useState<string | null>(null)
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [busquedaProducto, setBusquedaProducto] = useState('')
@@ -172,13 +169,12 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     items.every((i) => i.revisadoAdmin)
   const [mostrarModalChofer, setMostrarModalChofer] = useState(false)
   const scanRef    = useRef<HTMLInputElement>(null)
-  const cantidadRef = useRef<HTMLInputElement>(null)
 
-  const validar = useValidarProducto()
+
+  const validar    = useValidarProducto()
 
   useEffect(() => {
     if (paso.tipo === 'escanear_producto') scanRef.current?.focus()
-    if (paso.tipo === 'ingresar_cantidad') cantidadRef.current?.focus()
   }, [paso])
 
   function toggleExpandido(id: string) {
@@ -192,11 +188,9 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
   function handleSeleccionarItem(item: ItemRevision) {
     if (item.revisadoAdmin) return
     setError(null)
-    setCantidad('')
-    setComentario('')
-    // Productos CG no requieren escaneo de código de barras
+    // Productos CG no requieren escaneo — confirmar directamente
     if (item.sku.startsWith('CG')) {
-      setPaso({ tipo: 'ingresar_cantidad', item, codigoEscaneado: '' })
+      handleConfirmar(item, '')
     } else {
       setPaso({ tipo: 'escanear_producto', item })
     }
@@ -206,35 +200,29 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     if (!codigo.trim() || paso.tipo !== 'escanear_producto') return
     if (paso.item.codigoBarra && codigo.trim() !== paso.item.codigoBarra) {
       setError(`Producto incorrecto. Escanea ${paso.item.skuEquivalente ?? paso.item.sku}`)
+      if (scanRef.current) scanRef.current.value = ''
+      scanRef.current?.focus()
       return
     }
-    setPaso({ tipo: 'ingresar_cantidad', item: paso.item, codigoEscaneado: codigo.trim() })
     setError(null)
+    handleConfirmar(paso.item, codigo.trim())
   }
 
-  async function handleConfirmarCantidad() {
-    if (paso.tipo !== 'ingresar_cantidad') return
-    const cant = parseInt(cantidad, 10)
-    if (isNaN(cant) || cant < 0) { setError('Ingresa una cantidad válida'); return }
-
-    setError(null)
+  async function handleConfirmar(item: ItemRevision, codigoEscaneado: string) {
     try {
       const resultado = await validar.mutateAsync({
         adminId,
-        notaProductoId:    paso.item.notaProductoId,
-        codigoProducto:    paso.codigoEscaneado,
-        cantidadIngresada: cant,
-        comentario:        comentario.trim() || undefined,
+        notaProductoId: item.notaProductoId,
+        codigoProducto: codigoEscaneado,
       })
 
       if (resultado.todosRevisados) setRevisadoEnSesion(true)
-
-      setPaso({ tipo: 'resultado', coincide: resultado.coincide, mensaje: resultado.mensaje, todosRevisados: resultado.todosRevisados })
+      setPaso({ tipo: 'resultado', mensaje: resultado.mensaje, todosRevisados: resultado.todosRevisados })
     } catch (e) {
       const msg = e instanceof ApiResponseError ? e.message : 'Error al validar'
       setError(msg)
       if (e instanceof ApiResponseError && e.code === 'INVALID_PRODUCTO') {
-        setPaso({ tipo: 'escanear_producto', item: paso.item })
+        setPaso({ tipo: 'escanear_producto', item })
         if (scanRef.current) scanRef.current.value = ''
         scanRef.current?.focus()
       }
@@ -495,73 +483,9 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <button className="btn-secundario" onClick={() => { setPaso({ tipo: 'lista' }); setError(null) }}>
               ← Volver
             </button>
-            {!paso.item.codigoBarra && (
-              <button
-                className="btn-secundario"
-                onClick={() => { setPaso({ tipo: 'ingresar_cantidad', item: paso.item, codigoEscaneado: '' }); setError(null) }}
-              >
-                Ingresar cantidad sin código
-              </button>
-            )}
+
             <button className="btn-primario" onClick={() => handleEscanearProducto(scanRef.current?.value ?? '')}>
               Confirmar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* INGRESAR CANTIDAD */}
-      {paso.tipo === 'ingresar_cantidad' && (
-        <div className="paso">
-          <p>Producto: <strong>{paso.item.skuEquivalente ?? paso.item.sku}</strong> — {paso.item.nombre}</p>
-          <p>Cantidad solicitada: <strong>{paso.item.cantidadSolicitada}</strong>
-            {paso.item.cantidadDespachada > 0 && <> · Despachado: <strong>{paso.item.cantidadDespachada}</strong></>}
-          </p>
-          <label>
-            Cantidad física contada
-            <input
-              ref={cantidadRef}
-              type="number"
-              min={0}
-              value={cantidad}
-              onChange={(e) => { setCantidad(e.target.value); setComentario('') }}
-              onKeyDown={(e) => e.key === 'Enter' && handleConfirmarCantidad()}
-            />
-          </label>
-
-          {(() => {
-            const cant = parseInt(cantidad, 10)
-            const ref  = paso.item.cantidadSolicitada
-            if (!isNaN(cant) && cant < ref) {
-              return (
-                <label>
-                  Motivo de la diferencia <span style={{ color: 'var(--danger)' }}>*</span>
-                  <textarea
-                    rows={2}
-                    placeholder="Ej: sin stock, faltante en bodega, producto dañado…"
-                    value={comentario}
-                    onChange={(e) => setComentario(e.target.value)}
-                    style={{ resize: 'vertical' }}
-                  />
-                </label>
-              )
-            }
-            return null
-          })()}
-
-          <div className="paso-acciones">
-            <button
-              className="btn-secundario"
-              onClick={() => { setPaso({ tipo: 'escanear_producto', item: paso.item }); setError(null) }}
-            >
-              ← Volver
-            </button>
-            <button
-              className="btn-primario"
-              disabled={validar.isPending || !cantidad}
-              onClick={handleConfirmarCantidad}
-            >
-              {validar.isPending ? 'Validando…' : 'Confirmar cantidad'}
             </button>
           </div>
         </div>
@@ -570,10 +494,9 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       {/* RESULTADO */}
       {paso.tipo === 'resultado' && (
         <div className="paso resultado">
-          <div className={paso.coincide ? 'resultado-ok' : 'resultado-error'}>
-            <span className="icono">{paso.coincide ? '✓' : '✗'}</span>
-            {/* Regla 4: mensaje rojo si no coincide */}
-            <p className={paso.coincide ? '' : 'texto-error'}>{paso.mensaje}</p>
+          <div className="resultado-ok">
+            <span className="icono">✓</span>
+            <p>{paso.mensaje}</p>
           </div>
           {paso.todosRevisados && esAdmin && (
             <div className="todos-revisados-aviso">
