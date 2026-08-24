@@ -67,6 +67,7 @@ export type NotaResumen = {
   productosCompletos: number
   creadoEn:           string
   importadoPor:       string
+  tomadaPor:          string | null
 }
 
 export type DetalleNota = {
@@ -309,6 +310,7 @@ export const notasService = {
       productosCompletos: n.nota_productos.filter((p) => ['completo', 'sin_stock'].includes(p.estado)).length,
       creadoEn:           n.created_at,
       importadoPor:       n.usuarios?.nombre ?? '',
+      tomadaPor:          n.tomada_por ?? null,
     }))
 
     return { ok: true, data: result }
@@ -330,6 +332,27 @@ export const notasService = {
 
     if (error || !data) {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
+    }
+
+    // Si hay operador, intentar tomar la nota (bloqueo de concurrencia).
+    // tomar_nota devuelve false si otro operador ya la tiene dentro del timeout de 10 min.
+    if (usuarioId && (data.estado === 'pendiente' || data.estado === 'preparacion')) {
+      const { data: tomada, error: errorTomar } = await supabase
+        .rpc('tomar_nota', { p_nota_id: notaId, p_usuario_id: usuarioId })
+
+      if (errorTomar) {
+        return { ok: false, error: { code: 'DB_ERROR', message: errorTomar.message } }
+      }
+
+      if (!tomada) {
+        return {
+          ok: false,
+          error: {
+            code: 'CONFLICT_NOTA_TOMADA',
+            message: 'Esta nota está siendo preparada por otro operador',
+          },
+        }
+      }
     }
 
     // Autocorrección: si quedó "pendiente" pero todos sus ítems ya están

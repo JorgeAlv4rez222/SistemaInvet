@@ -117,7 +117,7 @@ export function NotaDetallePage() {
   const navigate                = useNavigate()
   const { id: notaId = '' }     = useParams<{ id: string }>()
   const { offline }             = useConectividad()
-  const { data, isLoading, isError, refetch } = useDetalleNota(notaId, operadorId)
+  const { data, isLoading, isError, error, refetch } = useDetalleNota(notaId, operadorId)
   const [itemPicking, setItemPicking]         = useState<NotaProductoResumen | null>(null)
   const registrarPicking                      = useRegistrarPicking()
 
@@ -174,7 +174,30 @@ export function NotaDetallePage() {
   }
 
   if (isLoading) return <p className="cargando">Cargando nota…</p>
-  if (isError || !data) return <p className="error">Nota no encontrada</p>
+
+  if (isError) {
+    const notaTomada = error instanceof ApiResponseError && error.code === 'CONFLICT_NOTA_TOMADA'
+    return (
+      <div className="nota-detalle-bloqueada">
+        <button className="btn-volver" onClick={() => navigate('/notas')}>
+          <IcoBack /> Volver
+        </button>
+        <div className="nota-bloqueada-aviso">
+          <span className="nota-bloqueada-icono">🔒</span>
+          <p className="nota-bloqueada-titulo">
+            {notaTomada ? 'Nota en preparación' : 'Nota no encontrada'}
+          </p>
+          <p className="nota-bloqueada-desc">
+            {notaTomada
+              ? 'Otro operador está preparando esta nota. Podrás acceder cuando la libere o luego de 10 minutos de inactividad.'
+              : 'No se pudo cargar la nota de venta.'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) return <p className="error">Nota no encontrada</p>
 
   const notaCerrada  = data.estado === 'completa' || data.estado === 'despachada'
 

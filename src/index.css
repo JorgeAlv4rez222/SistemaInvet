@@ -4393,6 +4393,14 @@ label {
 .nota-fila-item:last-child { border-bottom: none; }
 .nota-fila-item:hover { background: var(--bg-elevated); }
 .nota-fila-item--activa { background: var(--bg-elevated); }
+.nota-fila-item--bloqueada { opacity: 0.55; cursor: not-allowed; }
+.nota-fila-item--bloqueada .nota-fila { pointer-events: none; }
+.nota-fila-lock { display: inline-flex; align-items: center; color: var(--text-muted); margin-left: 4px; }
+.nota-detalle-bloqueada { padding: 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.nota-bloqueada-aviso { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 2rem 1rem; text-align: center; background: var(--bg-elevated); border-radius: 12px; border: 1px solid var(--border); }
+.nota-bloqueada-icono { font-size: 2.5rem; }
+.nota-bloqueada-titulo { font-weight: 600; font-size: 1.1rem; margin: 0; }
+.nota-bloqueada-desc { color: var(--text-muted); font-size: 0.9rem; margin: 0; max-width: 28ch; }
 .nota-fila {
   width: 100%;
   padding: var(--spacing-md);

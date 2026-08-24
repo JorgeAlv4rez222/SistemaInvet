@@ -49,6 +49,15 @@ function IconSearch() {
   )
 }
 
+function IcoLock({ size = 13 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  )
+}
+
 export function NotasPage() {
   const navigate    = useNavigate()
   const { offline } = useConectividad()
@@ -106,6 +115,10 @@ export function NotasPage() {
 
   function onSeleccionar(id: string) {
     setSeleccionadaId((cur) => (cur === id ? null : id))
+  }
+
+  function esTomadaPorOtro(nota: import('../services/notas.api').NotaResumen): boolean {
+    return !!nota.tomadaPor && nota.tomadaPor !== ADMIN_ID
   }
 
   function onVerNota() {
@@ -219,7 +232,11 @@ export function NotasPage() {
             + NV
           </button>
         )}
-        <button className="btn-primario" disabled={!seleccionadaId} onClick={onVerNota}>
+        <button
+          className="btn-primario"
+          disabled={!seleccionadaId || esTomadaPorOtro(notas.find((n) => n.notaId === seleccionadaId)!)}
+          onClick={onVerNota}
+        >
           Ver nota
         </button>
       </div>
@@ -239,20 +256,21 @@ export function NotasPage() {
             <div className="notas-lista-scroll">
               <div className="notas-lista-filas">
               {notasFiltradas.map((nota: NotaResumen) => {
-                const marcada = nota.notaId === seleccionadaId
+                const marcada     = nota.notaId === seleccionadaId
+                const bloqueada   = esTomadaPorOtro(nota)
                 return (
                   <div
                     key={nota.notaId}
-                    className={`nota-fila-item ${marcada ? 'nota-fila-item--activa' : ''}`}
+                    className={`nota-fila-item ${marcada ? 'nota-fila-item--activa' : ''} ${bloqueada ? 'nota-fila-item--bloqueada' : ''}`}
                   >
                     <div
                       className="nota-fila"
                       role="button"
                       tabIndex={0}
                       aria-pressed={marcada}
-                      onClick={() => onSeleccionar(nota.notaId)}
+                      onClick={() => !bloqueada && onSeleccionar(nota.notaId)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSeleccionar(nota.notaId) }
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!bloqueada) onSeleccionar(nota.notaId) }
                       }}
                     >
                       {/* Selección — solo una nota a la vez */}
@@ -285,6 +303,11 @@ export function NotasPage() {
                       {/* Estado */}
                       <div className="nota-fila-estado">
                         <BadgeEstado estado={nota.estado} />
+                        {bloqueada && (
+                          <span className="nota-fila-lock" title="En preparación por otro operador">
+                            <IcoLock />
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
