@@ -478,7 +478,6 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
               ⇔ Equivalente de {paso.item.sku}
             </p>
           )}
-          <p>Cantidad despachada: <strong>{paso.item.cantidadDespachada}</strong></p>
           <p className="paso-instruccion">Escanea el código de barras del producto</p>
           <div className="input-con-camara">
             <input
@@ -512,7 +511,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
       {paso.tipo === 'ingresar_cantidad' && (
         <div className="paso">
           <p>Producto: <strong>{paso.item.skuEquivalente ?? paso.item.sku}</strong> — {paso.item.nombre}</p>
-          <p>Cantidad despachada: <strong>{paso.item.cantidadSolicitada}</strong></p>
+          <p>Cantidad despachada: <strong>{paso.item.cantidadDespachada}</strong></p>
           <label>
             Cantidad física contada
             <input
