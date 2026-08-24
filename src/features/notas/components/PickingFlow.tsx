@@ -400,7 +400,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
           )}
 
           <div className="inicio-acciones">
-            <button className="btn-primario" onClick={handleIniciarPicking} disabled={!tieneStock}>
+            <button className="btn-primario" onClick={handleIniciarPicking}>
               Iniciar picking
             </button>
             <button className="btn-secundario" onClick={() => setPaso({ tipo: 'sin_stock' })}>
