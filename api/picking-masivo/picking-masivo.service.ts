@@ -233,36 +233,43 @@ export const pickingMasivoService = {
       cantidad_asignada: number
     }[] = []
 
-    for (const item of items ?? []) {
-      if (!item.producto_id) continue
+    const itemsValidos = (items ?? []).filter((i) => !!i.producto_id)
+    const productoIds  = itemsValidos.map((i) => i.producto_id as string)
 
-      // FIFO: lotes más antiguos primero, con stock disponible
-      const { data: lotes } = await supabase
-        .from('lotes_inventario')
-        .select(`
-          id,
-          cantidad,
-          posicion_id,
-          creado_en,
-          posiciones_rack ( id, codigo )
-        `)
-        .eq('producto_id', item.producto_id)
-        .eq('activo', true)
-        .eq('en_pasillo', false)
-        .gt('cantidad', 0)
-        .order('creado_en', { ascending: true })
+    // Una sola query para todos los lotes de todos los productos (M2).
+    // Antes: 1 query por item (50 items = 50 queries).
+    const { data: todosLotes } = productoIds.length
+      ? await supabase
+          .from('lotes_inventario')
+          .select('id, producto_id, cantidad, posicion_id, creado_en, posiciones_rack(id, codigo)')
+          .in('producto_id', productoIds)
+          .eq('activo', true)
+          .eq('en_pasillo', false)
+          .gt('cantidad', 0)
+          .order('creado_en', { ascending: true })
+      : { data: [] }
 
-      let restante = item.cantidad_pedida
-      let orden = 1
+    type LoteRaw = { id: string; producto_id: string; cantidad: number; posicion_id: string | null; creado_en: string; posiciones_rack: { id: string; codigo: string } | null }
 
-      for (const lote of lotes ?? []) {
+    const lotesPorProducto = new Map<string, LoteRaw[]>()
+    for (const lote of (todosLotes as LoteRaw[]) ?? []) {
+      const arr = lotesPorProducto.get(lote.producto_id) ?? []
+      arr.push(lote)
+      lotesPorProducto.set(lote.producto_id, arr)
+    }
+
+    for (const item of itemsValidos) {
+      const lotes   = lotesPorProducto.get(item.producto_id as string) ?? []
+      let restante  = item.cantidad_pedida
+      let orden     = 1
+
+      for (const lote of lotes) {
         if (restante <= 0) break
 
         const pos = lote.posiciones_rack as { id: string; codigo: string } | null
         if (!pos) continue
 
         const asignado = Math.min(lote.cantidad, restante)
-
         subtareas.push({
           item_id:           item.id,
           sesion_id:         input.sesionId,
@@ -272,12 +279,8 @@ export const pickingMasivoService = {
           orden_fifo:        orden++,
           cantidad_asignada: asignado,
         })
-
         restante -= asignado
       }
-
-      // Si quedó restante, no hay stock suficiente — las subtareas generadas
-      // cubren lo que hay; el admin lo verá en el dashboard.
     }
 
     if (subtareas.length > 0) {

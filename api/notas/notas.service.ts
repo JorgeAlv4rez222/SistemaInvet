@@ -191,21 +191,26 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
 
   if (!productos?.length) return []
 
-  const result: ProductoConStock[] = []
-  for (const p of productos) {
-    const ubicaciones = await obtenerUbicacionesFifo(p.id)
-    result.push({ productoId: p.id, sku: p.sku, nombre: p.nombre, codigoBarra: p.codigo_barra, stockDisponible: p.stock_total, ubicaciones })
-  }
-  return result
+  const ubicacionesPorProducto = await Promise.all(productos.map((p) => obtenerUbicacionesFifo(p.id)))
+  return productos.map((p, i) => ({
+    productoId:      p.id,
+    sku:             p.sku,
+    nombre:          p.nombre,
+    codigoBarra:     p.codigo_barra,
+    stockDisponible: p.stock_total,
+    ubicaciones:     ubicacionesPorProducto[i],
+  }))
 }
 
 async function enriquecerNotaProducto(
   np: NotaProducto & { productos: { sku: string; nombre: string; codigo_barra: string } | null;
                        productos_equivalente?: { sku: string; codigo_barra: string } | null }
 ): Promise<NotaProductoResumen> {
-  const sku        = np.productos?.sku ?? ''
-  const ubicaciones = await obtenerUbicacionesFifo(np.producto_id)
-  const equivalentes = await obtenerEquivalentesConStock(sku)
+  const sku = np.productos?.sku ?? ''
+  const [ubicaciones, equivalentes] = await Promise.all([
+    obtenerUbicacionesFifo(np.producto_id),
+    obtenerEquivalentesConStock(sku),
+  ])
 
   // Si se pickeó un equivalente, usar su código de barra para la revisión
   const codigoBarra = np.producto_equivalente_id
@@ -245,9 +250,9 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   )
   if (!terminados) return false
 
-  // Leer el estado actual para registrarlo correctamente en el movimiento
-  const { data: notaActual } = await supabase.from('notas_venta').select('estado').eq('id', notaId).single()
-  const estadoAnterior = notaActual?.estado ?? 'pendiente'
+  // El estado anterior siempre es 'preparacion' en este punto del flujo.
+  // Eliminado el SELECT separado de notas_venta para reducir round-trips (M3).
+  const estadoAnterior = 'preparacion'
 
   await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null }).eq('id', notaId)
 
