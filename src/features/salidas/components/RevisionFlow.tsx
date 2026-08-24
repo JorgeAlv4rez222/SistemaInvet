@@ -221,7 +221,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     if (isNaN(cant) || cant <= 0) { setError('Ingresa una cantidad válida'); return }
 
     if (cant !== paso.item.cantidadSolicitada) {
-      setError(`La cantidad debe ser ${paso.item.cantidadSolicitada} — la misma que fue despachada`)
+      setError('Verifique cantidad')
       return
     }
 
