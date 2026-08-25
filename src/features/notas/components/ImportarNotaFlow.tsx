@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { parsearNota }    from '../utils/parsearNota'
 import { productosApi }  from '../../productos/services/productos.api'
 import { notasApi }      from '../services/notas.api'
-import { autoCompletarNotaParaPruebas } from '../utils/autoCompletarPruebas' // TEMPORAL — solo para pruebas
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 type EstadoBusqueda = 'buscando' | 'encontrado' | 'no_encontrado'
@@ -32,7 +31,6 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
   const [paso,          setPaso]          = useState<'upload' | 'preview'>('upload')
   const [procesando,    setProcesando]    = useState(false)
   const [creando,       setCreando]       = useState(false)
-  const [progresoAuto,  setProgresoAuto]  = useState<{ hecho: number; total: number } | null>(null)
   const [errorUI,       setErrorUI]       = useState<string | null>(null)
   const [erroresParseo, setErroresParseo] = useState<string[]>([])
 
@@ -147,10 +145,6 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
           cantidadSolicitada: f.cantidadEditable,
         })),
       })
-
-      // TEMPORAL — solo para pruebas: se omite la etapa de preparación manual
-      // y la nota queda lista de inmediato para "NV despacho".
-      await autoCompletarNotaParaPruebas(adminId, resultado.productos, (hecho, total) => setProgresoAuto({ hecho, total }))
 
       onCreada(resultado.notaId)
     } catch (err) {
@@ -333,7 +327,7 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
               disabled={creando || buscandoAun || totalEncontrados === 0}
             >
               {creando
-                ? (progresoAuto ? `Completando productos… (${progresoAuto.hecho}/${progresoAuto.total})` : 'Creando…')
+                ? 'Creando…'
                 : `Crear nota (${totalEncontrados} productos)`}
             </button>
           </div>
