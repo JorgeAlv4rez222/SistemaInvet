@@ -152,7 +152,6 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
       setErrorUI(msg)
     } finally {
       setCreando(false)
-      setProgresoAuto(null)
     }
   }
 
