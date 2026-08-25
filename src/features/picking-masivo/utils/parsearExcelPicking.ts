@@ -13,16 +13,27 @@ export type ResultadoParseoPicking = {
 
 type Celda = string | number | boolean | null
 
-const ALIAS_CODIGO      = ['codigo', 'sku', 'cod']
-const ALIAS_DESCRIPCION = ['descripcion', 'producto', 'nombre', 'detalle']
-const ALIAS_CANTIDAD    = ['cantidad', 'cantidad pedida', 'cant', 'qty']
+// Orden de prioridad: el alias más específico primero gana sobre los genéricos.
+// Sodimac: VIN = nuestro SKU (columna "VIN (codigo producto)")
+// Imperial: "Codigo producto" = nuestro SKU
+// Genérico: "sku", "codigo", "cod"
+const ALIAS_CODIGO      = ['vin', 'codigo producto', 'codigo', 'cod', 'sku']
+const ALIAS_DESCRIPCION = ['descripcion', 'description', 'producto', 'nombre', 'detalle']
+const ALIAS_CANTIDAD    = ['unidades', 'cantidad pedida', 'cantidad', 'cant', 'qty']
 
 function normalizar(s: string): string {
   return s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
+// Busca en orden de alias (prioridad), no en orden de columnas.
+// Soporta match exacto y match por prefijo (ej: "VIN (codigo producto)" matchea alias "vin").
 function encontrarColumna(encabezados: string[], alias: string[]): number {
-  return encabezados.findIndex((h) => alias.includes(normalizar(h)))
+  const norm = encabezados.map(normalizar)
+  for (const a of alias) {
+    const idx = norm.findIndex((h) => h === a || h.startsWith(a + ' ') || h.startsWith(a + '('))
+    if (idx !== -1) return idx
+  }
+  return -1
 }
 
 export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPicking> {
@@ -47,15 +58,15 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
   const idxDescripcion = encontrarColumna(encabezados, ALIAS_DESCRIPCION)
   const idxCantidad    = encontrarColumna(encabezados, ALIAS_CANTIDAD)
 
-  if (idxCodigo === -1 || idxDescripcion === -1 || idxCantidad === -1) {
-    errores.push('No se encontraron las columnas código / descripción / cantidad en el archivo')
+  if (idxCodigo === -1 || idxCantidad === -1) {
+    errores.push('No se encontraron las columnas código / cantidad en el archivo')
     return { filas: [], errores }
   }
 
   const filas: FilaExcelPicking[] = []
   for (const fila of filasDatos) {
     const codigo      = String(fila[idxCodigo] ?? '').trim()
-    const descripcion = String(fila[idxDescripcion] ?? '').trim()
+    const descripcion = idxDescripcion !== -1 ? String(fila[idxDescripcion] ?? '').trim() : codigo
     const cantidad     = Number(fila[idxCantidad])
     if (!codigo || !Number.isFinite(cantidad) || cantidad <= 0) continue
     filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad) })
