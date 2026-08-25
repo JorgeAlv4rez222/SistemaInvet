@@ -72,13 +72,14 @@ export type NotaResumen = {
 }
 
 export type DetalleNota = {
-  notaId:        string
-  numeroNota:    string
-  nombreCliente: string
-  rutCliente:    string
-  numeroOc:      string | null
-  estado:        string
-  productos:     NotaProductoResumen[]
+  notaId:              string
+  numeroNota:          string
+  nombreCliente:       string
+  rutCliente:          string
+  numeroOc:            string | null
+  comentarioDespacho:  string | null
+  estado:              string
+  productos:           NotaProductoResumen[]
 }
 
 export type RegistrarPickingInput = {
@@ -382,13 +383,14 @@ export const notasService = {
     return {
       ok: true,
       data: {
-        notaId:        data.id,
-        numeroNota:    data.numero_nota,
-        nombreCliente: data.nombre_cliente,
-        rutCliente:    data.rut_cliente,
-        numeroOc:      data.numero_oc,
-        estado:        estadoNota,
-        productos:     productosEnriquecidos,
+        notaId:             data.id,
+        numeroNota:         data.numero_nota,
+        nombreCliente:      data.nombre_cliente,
+        rutCliente:         data.rut_cliente,
+        numeroOc:           data.numero_oc,
+        comentarioDespacho: data.comentario_despacho ?? null,
+        estado:             estadoNota,
+        productos:          productosEnriquecidos,
       },
     }
   },

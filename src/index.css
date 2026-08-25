@@ -3644,6 +3644,31 @@ label {
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
+/* Comentario de despacho en RevisionFlow */
+.rev-comentario-despacho {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: rgba(56,189,248,0.07);
+  border: 1px solid rgba(56,189,248,0.25);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-xs);
+}
+.rev-comentario-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.rev-comentario-texto {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 /* Cuando comparte fila con el botón "Filtro" — crece para empujarlo al extremo derecho */
 .ing-toolbar > .ing-busqueda,
 .notas-toolbar > .ing-busqueda {
@@ -4350,6 +4375,15 @@ label {
 .sal-estado-btn--activo.sal-estado-btn--despachada {
   background: var(--info);
   border-color: var(--info);
+}
+.sal-estado-btn--activo.sal-estado-btn--completa {
+  background: var(--success, #22c55e);
+  border-color: var(--success, #22c55e);
+}
+.sal-tabs-estado {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--spacing-sm);
 }
 .notas-veroc-wrap {
   display: flex;

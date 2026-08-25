@@ -342,9 +342,11 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
         <button className="btn-cerrar" onClick={onCerrar}>✕</button>
       </div>
 
-      <div className="picking-progreso">
-        <span className="pendiente-badge">Pendiente: <strong>{cantidadPendiente}</strong></span>
-      </div>
+      {paso.tipo === 'ingresar_cantidad' && (
+        <div className="picking-progreso">
+          <span className="pendiente-badge">Pendiente: <strong>{cantidadPendiente - pickedSoFar}</strong></span>
+        </div>
+      )}
 
       {/* Indicador de parada multi-lote */}
       {esMultiLote && paso.tipo !== 'inicio' && paso.tipo !== 'resultado' && paso.tipo !== 'sin_stock' && (
@@ -521,11 +523,8 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       {/* INGRESAR CANTIDAD */}
       {paso.tipo === 'ingresar_cantidad' && (
         <div className="paso">
-          <p>Producto: <strong>{paso.codigoProducto}</strong></p>
-          {paradaActual && esMultiLote ? (
+          {paradaActual && esMultiLote && (
             <p>Retirar de este rack: <strong>{paradaActual.cantidadATomar}</strong> unidades</p>
-          ) : (
-            <p>Pendiente: <strong>{cantidadPendiente - pickedSoFar}</strong> unidades</p>
           )}
           <label>
             Cantidad a despachar

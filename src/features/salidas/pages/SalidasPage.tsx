@@ -84,6 +84,7 @@ function RevisionConDetalle({
       nombreCliente={data.nombreCliente}
       rutCliente={data.rutCliente}
       numeroOc={data.numeroOc}
+      comentarioDespacho={data.comentarioDespacho}
       adminId={adminId}
       items={items}
       estadoNota={estadoNota}

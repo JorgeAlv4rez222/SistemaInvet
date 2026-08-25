@@ -142,20 +142,21 @@ function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
 }
 
 interface Props {
-  notaId:        string
-  numeroNota:    string
-  nombreCliente: string
-  rutCliente?:   string | null
-  numeroOc?:     string | null
-  adminId:       string
-  items:         ItemRevision[]
-  estadoNota:    'completa' | 'despachada'
-  nombreChofer:  string | null
-  offline:       boolean
-  onCerrar:      () => void
+  notaId:              string
+  numeroNota:          string
+  nombreCliente:       string
+  rutCliente?:         string | null
+  numeroOc?:           string | null
+  comentarioDespacho?: string | null
+  adminId:             string
+  items:               ItemRevision[]
+  estadoNota:          'completa' | 'despachada'
+  nombreChofer:        string | null
+  offline:             boolean
+  onCerrar:            () => void
 }
 
-export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, numeroOc, adminId, items, estadoNota, nombreChofer, offline, onCerrar }: Props) {
+export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, numeroOc, comentarioDespacho, adminId, items, estadoNota, nombreChofer, offline, onCerrar }: Props) {
   const yaDespachada = estadoNota === 'despachada'
   const rolUsuario = localStorage.getItem('user_rol') ?? ''
   const esAdmin    = rolUsuario === 'admin'
@@ -419,6 +420,14 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
               </button>
             </div>
           ) : null}
+
+          {/* ── Comentario de despacho ── */}
+          {comentarioDespacho && (
+            <div className="rev-comentario-despacho">
+              <span className="rev-comentario-label">Comentario</span>
+              <p className="rev-comentario-texto">{comentarioDespacho}</p>
+            </div>
+          )}
 
           {/* ── Búsqueda de productos por código o nombre ── */}
           <div className="ing-busqueda">

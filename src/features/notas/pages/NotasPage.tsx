@@ -11,7 +11,6 @@ const ESTADO_LABELS: Record<string, string> = {
   completa:    'Completa',
   despachada:  'Despachada',
 }
-const ESTADO_FILTROS = ['', 'pendiente', 'preparacion', 'completa'] as const
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -63,16 +62,15 @@ export function NotasPage() {
   const { offline } = useConectividad()
   const ADMIN_ID    = localStorage.getItem('user_id') ?? ''
   const ROL         = localStorage.getItem('user_rol') ?? ''
-  const [filtroEstado, setFiltroEstado] = useState<string | undefined>(undefined)
+  const [tabActivo,    setTabActivo]    = useState<'pendientes' | 'completas'>('pendientes')
   const [filtroAnio,   setFiltroAnio]   = useState<string | undefined>(undefined)
   const [filtroMes,    setFiltroMes]    = useState<string | undefined>(undefined)
   const [filtroDia,    setFiltroDia]    = useState<string | undefined>(undefined)
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
-  const [estadosAbiertos, setEstadosAbiertos] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [importar, setImportar] = useState(false)
   const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null)
-  const { data, isLoading, isError, refetch } = useNotas(filtroEstado)
+  const { data, isLoading, isError, refetch } = useNotas(undefined)
 
   const notas = data ?? []
 
@@ -83,6 +81,12 @@ export function NotasPage() {
 
   const notasFiltradas = useMemo(() => {
     let lista = notas
+    // Tab principal
+    if (tabActivo === 'pendientes') {
+      lista = lista.filter((n) => n.estado === 'pendiente' || n.estado === 'preparacion')
+    } else {
+      lista = lista.filter((n) => n.estado === 'completa')
+    }
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter((n) => n.numeroNota.toLowerCase().includes(q) || n.nombreCliente.toLowerCase().includes(q))
@@ -90,9 +94,8 @@ export function NotasPage() {
     if (filtroAnio) lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
     if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
     if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
-    lista = lista.filter((n) => n.estado !== 'despachada')
     return lista
-  }, [notas, busqueda, filtroAnio, filtroMes, filtroDia])
+  }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia])
 
   if (importar && ROL === 'admin') {
     return (
@@ -104,10 +107,9 @@ export function NotasPage() {
     )
   }
 
-  const filtrosActivos = [filtroEstado, filtroAnio, filtroMes, filtroDia].filter(Boolean).length
+  const filtrosActivos = [filtroAnio, filtroMes, filtroDia].filter(Boolean).length
 
   function limpiarFiltros() {
-    setFiltroEstado(undefined)
     setFiltroAnio(undefined)
     setFiltroMes(undefined)
     setFiltroDia(undefined)
@@ -127,7 +129,7 @@ export function NotasPage() {
 
   return (
     <div className="notas-page">
-      <h1 className="notas-titulo">NV pendiente de preparacion</h1>
+      <h1 className="notas-titulo">NV preparación</h1>
 
       {offline && <div className="aviso-offline">Sin conexión — modo solo lectura.</div>}
 
@@ -158,33 +160,26 @@ export function NotasPage() {
         </button>
       </div>
 
+      {/* Tabs Pendiente / Completa */}
+      <div className="sal-tabs-estado">
+        <button
+          type="button"
+          className={`sal-estado-btn ${tabActivo === 'pendientes' ? 'sal-estado-btn--activo' : ''}`}
+          onClick={() => { setTabActivo('pendientes'); setSeleccionadaId(null) }}
+        >
+          Pendiente
+        </button>
+        <button
+          type="button"
+          className={`sal-estado-btn ${tabActivo === 'completas' ? 'sal-estado-btn--activo sal-estado-btn--completa' : ''}`}
+          onClick={() => { setTabActivo('completas'); setSeleccionadaId(null) }}
+        >
+          Completa
+        </button>
+      </div>
+
       {filtrosAbiertos && (
         <div className="ing-filtros-panel">
-          <div className="ing-filtro-grupo">
-            <button
-              type="button"
-              className={`ing-filtrar-btn ${estadosAbiertos ? 'ing-filtrar-btn--abierto' : ''}`}
-              aria-expanded={estadosAbiertos}
-              onClick={() => setEstadosAbiertos((v) => !v)}
-            >
-              Estados
-              {filtroEstado && <span className="ing-filtrar-badge">1</span>}
-            </button>
-            {estadosAbiertos && (
-              <div className="ing-filtro-opciones">
-                {ESTADO_FILTROS.map((e) => (
-                  <button
-                    key={e}
-                    className={`filtro-btn ${(filtroEstado ?? '') === e ? 'activo' : ''}`}
-                    onClick={() => setFiltroEstado(e || undefined)}
-                  >
-                    {e ? ESTADO_LABELS[e] : 'Todas'}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="ing-filtro-grupo">
             <span className="ing-filtro-label">Fecha</span>
             <div className="ing-filtro-opciones">
@@ -245,7 +240,12 @@ export function NotasPage() {
       {isError   && <p className="error">Error al cargar notas</p>}
       {!isLoading && !isError && notasFiltradas.length === 0 && (
         <div className="notas-vacio">
-          <p>{filtrosActivos > 0 ? 'Sin resultados para el filtro aplicado' : 'No hay notas de venta'}</p>
+          <p>{filtrosActivos > 0
+            ? 'Sin resultados para el filtro aplicado'
+            : tabActivo === 'pendientes'
+              ? 'No hay notas pendientes de preparación'
+              : 'No hay notas completas'
+          }</p>
         </div>
       )}
 
