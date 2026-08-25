@@ -6,6 +6,7 @@ import { z } from 'zod'
 const crearNotaSchema = z.object({
   adminId: z.string().uuid(), numeroNota: z.string().min(1), nombreCliente: z.string().min(1),
   rutCliente: z.string().min(1), numeroOc: z.string().optional(), archivoNombre: z.string().optional(),
+  comentarioDespacho: z.string().optional(),
   productos: z.array(z.object({ productoId: z.string().uuid(), cantidadSolicitada: z.coerce.number().int().positive() })).min(1),
 })
 const pickingSchema = z.object({

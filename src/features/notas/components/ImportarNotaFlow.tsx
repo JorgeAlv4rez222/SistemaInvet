@@ -37,8 +37,9 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
   const [numeroNota,    setNumeroNota]    = useState('')
   const [nombreCliente, setNombreCliente] = useState('')
   const [rutCliente,    setRutCliente]    = useState('')
-  const [numeroOc,      setNumeroOc]      = useState('')
-  const [filas,         setFilas]         = useState<FilaProducto[]>([])
+  const [numeroOc,            setNumeroOc]            = useState('')
+  const [comentarioDespacho,  setComentarioDespacho]  = useState('')
+  const [filas,               setFilas]               = useState<FilaProducto[]>([])
   const [textoDebug,    setTextoDebug]    = useState<string | null>(null)
 
   // ── Paso 1: parsear PDF ───────────────────────────────────────────────────
@@ -138,8 +139,9 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
         numeroNota:    numeroNota.trim(),
         nombreCliente: nombreCliente.trim(),
         rutCliente:    rutCliente.trim(),
-        numeroOc:      numeroOc.trim() || undefined,
-        archivoNombre: archivoPDF!.name,
+        numeroOc:             numeroOc.trim() || undefined,
+        archivoNombre:        archivoPDF!.name,
+        comentarioDespacho:   comentarioDespacho.trim() || undefined,
         productos: filasValidas.map((f) => ({
           productoId:         f.productoId!,
           cantidadSolicitada: f.cantidadEditable,
@@ -262,6 +264,18 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
               <div>
                 <span className="ing-meta-label">Archivo</span>
                 <span className="ing-meta-valor">{archivoPDF!.name}</span>
+              </div>
+            </div>
+            <div className="ing-meta-item ing-meta-item--full">
+              <div>
+                <span className="ing-meta-label">Comentario para despacho <span className="opcional">opcional</span></span>
+                <textarea
+                  className="ing-meta-textarea"
+                  rows={2}
+                  value={comentarioDespacho}
+                  onChange={(e) => setComentarioDespacho(e.target.value)}
+                  placeholder="Ej: Entregar con chofer propio, horario restringido, etc."
+                />
               </div>
             </div>
           </div>

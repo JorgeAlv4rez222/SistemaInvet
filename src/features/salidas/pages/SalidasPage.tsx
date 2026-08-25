@@ -276,11 +276,6 @@ export function SalidasPage() {
 
       {/* Revisar — se habilita al marcar una nota de la lista */}
       <div className="notas-veroc-wrap">
-        {esAdmin && (
-          <button className="btn-primario" disabled={offline} onClick={() => setVista({ tipo: 'importar' })}>
-            + NV
-          </button>
-        )}
         <button className="btn-primario" disabled={!seleccionadaId || offline} onClick={onRevisar}>
           Revisar
         </button>
@@ -338,6 +333,9 @@ export function SalidasPage() {
                       <div className="nota-fila-principal">
                         <span className="nota-fila-numero">{nota.numeroNota}</span>
                         <span className="nota-fila-cliente">{nota.nombreCliente}</span>
+                        {nota.comentarioDespacho && (
+                          <span className="nota-fila-comentario">{nota.comentarioDespacho}</span>
+                        )}
                       </div>
 
                       {/* Progreso */}

@@ -51,9 +51,10 @@ export const salidasService = {
 
     const result: NotaResumen[] = notas.map((nota) => ({
       ...nota,
-      totalProductos: nota.nota_productos.length,
-      totalRevisados: nota.nota_productos.filter((np) => np.revisado_admin).length,
-      nombreChofer:   nota.despachos?.[0]?.nombre_chofer ?? null,
+      totalProductos:      nota.nota_productos.length,
+      totalRevisados:      nota.nota_productos.filter((np) => np.revisado_admin).length,
+      nombreChofer:        nota.despachos?.[0]?.nombre_chofer ?? null,
+      comentarioDespacho:  nota.comentario_despacho ?? null,
     }))
 
     return { ok: true, data: result }

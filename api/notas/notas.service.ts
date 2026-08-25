@@ -42,12 +42,13 @@ export type NotaProductoResumen = {
 }
 
 export type CrearNotaInput = {
-  adminId:        string
-  numeroNota:     string
-  nombreCliente:  string
-  rutCliente:     string
-  numeroOc?:      string
-  archivoNombre?: string
+  adminId:              string
+  numeroNota:           string
+  nombreCliente:        string
+  rutCliente:           string
+  numeroOc?:            string
+  archivoNombre?:       string
+  comentarioDespacho?:  string
   productos: { productoId: string; cantidadSolicitada: number }[]
 }
 
@@ -415,13 +416,14 @@ export const notasService = {
     const { data: nota, error: errorNota } = await supabase
       .from('notas_venta')
       .insert({
-        numero_nota:    input.numeroNota,
-        nombre_cliente: input.nombreCliente,
-        rut_cliente:    input.rutCliente,
-        numero_oc:      input.numeroOc ?? null,
-        importado_por:  input.adminId,
-        estado:         'pendiente',
-        archivo_nombre: input.archivoNombre ?? null,
+        numero_nota:          input.numeroNota,
+        nombre_cliente:       input.nombreCliente,
+        rut_cliente:          input.rutCliente,
+        numero_oc:            input.numeroOc ?? null,
+        importado_por:        input.adminId,
+        estado:               'pendiente',
+        archivo_nombre:       input.archivoNombre ?? null,
+        comentario_despacho:  input.comentarioDespacho?.trim() || null,
       })
       .select()
       .single()

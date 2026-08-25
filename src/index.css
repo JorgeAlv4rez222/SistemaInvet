@@ -3896,6 +3896,19 @@ label {
   min-height: unset;
 }
 .ing-meta-input:focus { outline: none; border-color: var(--accent); }
+.ing-meta-item--full { grid-column: 1 / -1; }
+.ing-meta-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  resize: vertical;
+  font-family: inherit;
+}
+.ing-meta-textarea:focus { outline: none; border-color: var(--accent); }
 
 /* Barra progreso global */
 /* Secciones pendiente / completo */
@@ -4452,6 +4465,15 @@ label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.nota-fila-comentario {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 32ch;
 }
 .nota-fila-progreso {
   display: flex;
