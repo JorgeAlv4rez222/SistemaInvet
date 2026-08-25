@@ -2277,6 +2277,8 @@ label {
   align-items: center;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 .hist-nota-grupo-nv {
   font-size: var(--font-size-base);
@@ -4918,6 +4920,8 @@ input[type="radio"] {
 
   /* Historial */
   .historial-page { padding: var(--spacing-sm); }
+  .hist-nota-grupo-meta { display: none; }
+  .hist-nota-grupo-nv { font-size: var(--font-size-sm); }
 
   /* Ingresos */
   .ingresos-page { padding: var(--spacing-sm); }
