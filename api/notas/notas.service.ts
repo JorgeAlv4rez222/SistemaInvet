@@ -342,9 +342,9 @@ export const notasService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
     }
 
-    // Si hay operador, intentar tomar la nota (bloqueo de concurrencia).
-    // tomar_nota devuelve false si otro operador ya la tiene dentro del timeout de 10 min.
-    if (usuarioId && (data.estado === 'pendiente' || data.estado === 'preparacion')) {
+    // Solo bloquear si la nota ya está en preparacion (primer pick hecho).
+    // En pendiente cualquiera puede verla; tomar_nota se llama en registrarPicking al primer pick.
+    if (usuarioId && data.estado === 'preparacion') {
       const { data: tomada, error: errorTomar } = await supabase
         .rpc('tomar_nota', { p_nota_id: notaId, p_usuario_id: usuarioId })
 
