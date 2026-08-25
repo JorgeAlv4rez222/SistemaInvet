@@ -148,9 +148,17 @@ const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL', 'BO'] as const
 
 //Helpers
 
+// Cache en memoria: los workers de Cloudflare reutilizan instancias entre requests,
+// así que este Map persiste y evita una query a BD por cada operación admin (M6).
+const _adminCache = new Map<string, { esAdmin: boolean; expiresAt: number }>()
+
 async function verificarAdmin(adminId: string): Promise<boolean> {
+  const cached = _adminCache.get(adminId)
+  if (cached && cached.expiresAt > Date.now()) return cached.esAdmin
   const { data } = await supabase.from('usuarios').select('rol').eq('id', adminId).single()
-  return data?.rol === 'admin'
+  const esAdmin = data?.rol === 'admin'
+  _adminCache.set(adminId, { esAdmin, expiresAt: Date.now() + 30_000 })
+  return esAdmin
 }
 
 async function obtenerUbicacionesFifo(productoId: string): Promise<Ubicacion[]> {

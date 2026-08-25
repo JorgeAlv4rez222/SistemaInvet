@@ -117,13 +117,15 @@ async function generarCodigoImportacion(año: number): Promise<string> {
   return data as string
 }
 
+const _adminCache = new Map<string, { esAdmin: boolean; expiresAt: number }>()
+
 async function verificarAdmin(adminId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', adminId)
-    .single()
-  return data?.rol === 'admin'
+  const cached = _adminCache.get(adminId)
+  if (cached && cached.expiresAt > Date.now()) return cached.esAdmin
+  const { data } = await supabase.from('usuarios').select('rol').eq('id', adminId).single()
+  const esAdmin = data?.rol === 'admin'
+  _adminCache.set(adminId, { esAdmin, expiresAt: Date.now() + 30_000 })
+  return esAdmin
 }
 
 //Service
@@ -597,20 +599,8 @@ export const ingresosService = {
     }
   },
 
-  // Interno: actualiza estado de importación según detalles
+  // Interno: recalcula estado de importación en una sola transacción BD (M4).
   async _recalcularEstadoImportacion(importacionId: string): Promise<void> {
-    const { data: detalles } = await supabase
-      .from('importacion_detalles')
-      .select('estado')
-      .eq('importacion_id', importacionId)
-
-    if (!detalles?.length) return
-
-    const estados  = detalles.map((d) => d.estado)
-    const nuevo    = estados.every((e) => e === 'completa') ? 'completa'
-                   : estados.some((e) => e !== 'pendiente') ? 'parcial'
-                   : 'pendiente'
-
-    await supabase.from('importaciones').update({ estado: nuevo }).eq('id', importacionId)
+    await supabase.rpc('recalcular_estado_importacion', { p_importacion_id: importacionId })
   },
 }

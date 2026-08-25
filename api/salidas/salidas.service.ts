@@ -1,5 +1,15 @@
 // @ts-nocheck
 import { supabase } from '../lib/supabase/client'
+
+const _adminCache = new Map<string, { esAdmin: boolean; expiresAt: number }>()
+async function verificarAdmin(adminId: string): Promise<boolean> {
+  const cached = _adminCache.get(adminId)
+  if (cached && cached.expiresAt > Date.now()) return cached.esAdmin
+  const { data } = await supabase.from('usuarios').select('rol').eq('id', adminId).single()
+  const esAdmin = data?.rol === 'admin'
+  _adminCache.set(adminId, { esAdmin, expiresAt: Date.now() + 30_000 })
+  return esAdmin
+}
 import type { ServiceResult } from '../../src/shared/types/base'
 import type { Database } from '../lib/supabase/types'
 
@@ -50,18 +60,8 @@ export const salidasService = {
   },
 
   async validarProductoRevision(input: ValidarProductoInput): Promise<ServiceResult<ValidarProductoResult>> {
-    // TC-SAL-004: verificar rol admin
-    const { data: usuario, error: errorUsuario } = await supabase
-      .from('usuarios')
-      .select('rol')
-      .eq('id', input.adminId)
-      .single()
-
-    if (errorUsuario || !usuario) {
-      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Usuario no encontrado' } }
-    }
-
-    if (usuario.rol !== 'admin') {
+    // TC-SAL-004: verificar rol admin (con cache de 30 seg, M6)
+    if (!(await verificarAdmin(input.adminId))) {
       return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Solo el Admin puede revisar notas para despacho' } }
     }
 
