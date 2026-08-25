@@ -344,7 +344,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
 
       {paso.tipo === 'ingresar_cantidad' && (
         <div className="picking-progreso">
-          <span className="pendiente-badge">Pendiente: <strong>{cantidadPendiente - pickedSoFar}</strong></span>
+          <span className="pendiente-badge">Solicitado: <strong>{cantidadPendiente - pickedSoFar}</strong></span>
         </div>
       )}
 
@@ -527,7 +527,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <p>Retirar de este rack: <strong>{paradaActual.cantidadATomar}</strong> unidades</p>
           )}
           <label>
-            Cantidad a despachar
+            Ingrese cantidad:
             <input
               type="number"
               min={1}

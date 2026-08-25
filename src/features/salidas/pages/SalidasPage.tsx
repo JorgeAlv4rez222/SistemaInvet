@@ -334,9 +334,6 @@ export function SalidasPage() {
                       <div className="nota-fila-principal">
                         <span className="nota-fila-numero">{nota.numeroNota}</span>
                         <span className="nota-fila-cliente">{nota.nombreCliente}</span>
-                        {nota.comentarioDespacho && (
-                          <span className="nota-fila-comentario">{nota.comentarioDespacho}</span>
-                        )}
                       </div>
 
                       {/* Progreso */}
