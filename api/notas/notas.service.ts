@@ -342,24 +342,21 @@ export const notasService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
     }
 
-    // Solo bloquear si la nota ya está en preparacion (primer pick hecho).
-    // En pendiente cualquiera puede verla; tomar_nota se llama en registrarPicking al primer pick.
-    if (usuarioId && data.estado === 'preparacion') {
-      const { data: tomada, error: errorTomar } = await supabase
-        .rpc('tomar_nota', { p_nota_id: notaId, p_usuario_id: usuarioId })
-
-      if (errorTomar) {
-        return { ok: false, error: { code: 'DB_ERROR', message: errorTomar.message } }
-      }
-
-      if (!tomada) {
-        return {
-          ok: false,
-          error: {
-            code: 'CONFLICT_NOTA_TOMADA',
-            message: 'Esta nota está siendo preparada por otro operador',
-          },
-        }
+    // Bloquear si la nota está en preparacion Y tomada por un operador distinto.
+    // No llamamos tomar_nota aquí para evitar side-effects (el RPC cambia estado
+    // y puede retornar false para el mismo usuario si el lock aún está activo).
+    if (
+      usuarioId &&
+      data.estado === 'preparacion' &&
+      data.tomada_por &&
+      data.tomada_por !== usuarioId
+    ) {
+      return {
+        ok: false,
+        error: {
+          code: 'CONFLICT_NOTA_TOMADA',
+          message: 'Esta nota está siendo preparada por otro operador',
+        },
       }
     }
 
