@@ -4,6 +4,8 @@ import { TIPOS_MOVIMIENTO, TIPO_LABELS } from '../services/historial.api'
 import type { MovimientoHistorial, ObtenerMovimientosInput, OCResumen, ProductoEnOC } from '../services/historial.api'
 import { useNotas } from '../../notas/hooks/useNotas'
 import type { NotaResumen } from '../../notas/services/notas.api'
+import { useSesionesPicking } from '../../picking-masivo/hooks/usePickingMasivo'
+import type { SesionResumen } from '../../picking-masivo/services/picking-masivo.api'
 
 const LIMITE = 50
 
@@ -913,12 +915,69 @@ function IngresosHistorialView() {
   )
 }
 
+// ── Vista Picking Masivo despachado ───────────────────────────────────────
+
+function formatFechaPM(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return iso.slice(0, 10).split('-').reverse().join('-')
+}
+
+function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
+  const fecha = formatFechaPM(sesion.creado_en)
+  return (
+    <div className="nota-fila-item">
+      <div className="nota-fila nota-fila--hist">
+        <div className="nota-fila-principal">
+          <span className="nota-fila-numero">{sesion.numero_oc}</span>
+          <span className="nota-fila-cliente">{sesion.nombre_cliente ?? '—'}</span>
+        </div>
+        <span className="nota-fila-fecha">{fecha}</span>
+        <div className="nota-fila-estado">
+          <span className="badge badge-despachado">Despachado</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PickingHistorialView() {
+  const { data, isLoading, isError } = useSesionesPicking('despachado')
+  const sesiones = (data as SesionResumen[] | undefined) ?? []
+
+  return (
+    <div className="hist-notas-view">
+      <h2 className="hing-titulo">Picking Masivo — Despachado</h2>
+      {isLoading && <div className="hist-cargando"><span className="spinner" /><span>Cargando sesiones…</span></div>}
+      {isError   && <p className="error">Error al cargar sesiones</p>}
+      {!isLoading && !isError && (
+        <>
+          <p className="notas-conteo">{sesiones.length} sesión{sesiones.length !== 1 ? 'es' : ''}</p>
+          {sesiones.length === 0
+            ? <p className="vacio">No hay sesiones despachadas</p>
+            : (
+              <div className="notas-lista-panel">
+                <div className="notas-lista-scroll">
+                  <div className="notas-lista-filas">
+                    {sesiones.map((s) => (
+                      <SesionPickingCard key={s.id} sesion={s} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Página principal ───────────────────────────────────────────────────────
 
 type ErrorFiltro = { desde?: string; hasta?: string; rango?: string }
 
 export function HistorialPage() {
-  const [vista,      setVista]      = useState<'movimientos' | 'notas' | 'ingresos'>('movimientos')
+  const [vista,      setVista]      = useState<'movimientos' | 'notas' | 'ingresos' | 'picking'>('movimientos')
   const [filtros,    setFiltros]    = useState<ObtenerMovimientosInput | null>(null)
   const [detalle,    setDetalle]    = useState<DetalleContexto>(null)
   const [tipoInput,  setTipoInput]  = useState('')
@@ -1010,6 +1069,15 @@ export function HistorialPage() {
                 </svg>
               ),
             },
+            {
+              key: 'picking',
+              label: 'PM',
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
+                  <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                </svg>
+              ),
+            },
           ] as { key: typeof vista; label: string; icon: React.ReactNode }[]
         ).map(({ key, label, icon }) => (
           <button
@@ -1028,6 +1096,8 @@ export function HistorialPage() {
       </div>
 
       {vista === 'ingresos' && <IngresosHistorialView />}
+
+      {vista === 'picking' && <PickingHistorialView />}
 
       {vista === 'notas' && (
         <NotasHistorialView onDetalle={(notaId) => setDetalle({ tipo: 'nota', notaId, numero: '' })} />
