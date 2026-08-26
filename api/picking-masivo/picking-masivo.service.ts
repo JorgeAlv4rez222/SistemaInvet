@@ -668,6 +668,68 @@ export const pickingMasivoService = {
     }
   },
 
+  // ── 14b. Buscar ítem por código de barras (flujo sin LPN — Sodimac) ──────
+  async buscarItem(sesionId: string, termino: string): Promise<ServiceResult<{
+    itemId:              string
+    codigo:              string
+    descripcion:         string
+    cantidadDespachada:  number
+    tienda:              string | null
+  }>> {
+    // Buscar por codigo_barra primero, luego por codigo
+    let query = supabase
+      .from('items_picking_masivo')
+      .select(`id, codigo, descripcion, tienda,
+        subtareas_picking_masivo ( cantidad_despachada, estado )`)
+      .eq('sesion_id', sesionId)
+      .eq('codigo_barra', termino)
+      .limit(1)
+
+    let { data: items } = await query
+
+    if (!items || items.length === 0) {
+      const r2 = await supabase
+        .from('items_picking_masivo')
+        .select(`id, codigo, descripcion, tienda,
+          subtareas_picking_masivo ( cantidad_despachada, estado )`)
+        .eq('sesion_id', sesionId)
+        .ilike('codigo', termino)
+        .limit(1)
+      items = r2.data
+    }
+
+    if (!items || items.length === 0) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Producto no encontrado en esta sesión' } }
+    }
+
+    const item = items[0] as any
+    const cantidadDespachada = (item.subtareas_picking_masivo as any[])
+      .reduce((sum: number, s: any) => sum + (s.cantidad_despachada ?? 0), 0)
+
+    return {
+      ok: true,
+      data: {
+        itemId:             item.id,
+        codigo:             item.codigo,
+        descripcion:        item.descripcion,
+        cantidadDespachada,
+        tienda:             item.tienda ?? null,
+      },
+    }
+  },
+
+  // ── 14c. Validar ítem por id (flujo sin LPN — Sodimac) ───────────────────
+  async validarItem(sesionId: string, itemId: string): Promise<ServiceResult<{ ok: boolean }>> {
+    const { error } = await supabase
+      .from('items_picking_masivo')
+      .update({ lpn_validado: true, lpn_validado_en: new Date().toISOString() })
+      .eq('id', itemId)
+      .eq('sesion_id', sesionId)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { ok: true } }
+  },
+
   // ── 14. Despachar sesión (admin) ─────────────────────────────────────────
   async despacharSesion(input: { sesionId: string; usuarioId: string; nombreChofer: string }): Promise<ServiceResult<{ sesionId: string }>> {
     const { data: sesion } = await supabase

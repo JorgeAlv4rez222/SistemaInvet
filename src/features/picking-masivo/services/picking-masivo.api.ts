@@ -87,6 +87,12 @@ export const pickingMasivoApi = {
   validarLpn: (body: { sesionId: string; lpn: string }) =>
     apiClient.post<{ itemId: string; codigo: string; descripcion: string; cantidadPedida: number; tienda: string | null; lpnValidado: boolean }>('/picking-masivo?accion=validar-lpn', body),
 
+  buscarItem: (body: { sesionId: string; termino: string }) =>
+    apiClient.post<{ itemId: string; codigo: string; descripcion: string; cantidadDespachada: number; tienda: string | null }>('/picking-masivo?accion=buscar-item', body),
+
+  validarItem: (body: { sesionId: string; itemId: string }) =>
+    apiClient.post<{ ok: boolean }>('/picking-masivo?accion=validar-item', body),
+
   despacharSesion: (body: { sesionId: string; usuarioId: string; nombreChofer: string }) =>
     apiClient.post<{ sesionId: string }>('/picking-masivo?accion=despachar-sesion', body),
 

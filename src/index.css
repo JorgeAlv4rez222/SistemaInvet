@@ -6013,6 +6013,10 @@ input[type="radio"] {
 .pm-despacho-validado-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pm-despacho-validado-codigo { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-despacho-validado-tienda { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.pm-despacho-validado-desc  { font-size: var(--font-size-sm); color: var(--text-secondary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-despacho-fase-label     { font-size: var(--font-size-sm); font-weight: 600; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--spacing-sm); }
+.pm-despacho-lpn-pendiente  { opacity: 0.5; }
+.pm-despacho-lpn-pendiente-icon { color: var(--text-secondary); font-size: 1rem; }
 .pm-despacho-validado-cant { font-size: var(--font-size-sm); color: var(--text-muted); white-space: nowrap; }
 .pm-despacho-validado-check { color: var(--success); font-size: 1rem; font-weight: 700; }
 .pm-despacho-validado-fila--click { cursor: pointer; }
@@ -6083,6 +6087,9 @@ input[type="radio"] {
 .pm-cola-progreso-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
 
 /* ── Picking Masivo — cola de trabajo (lista) ── */
+.pm-cola-busqueda { margin-bottom: var(--spacing-md); }
+.pm-cola-busqueda input { width: 100%; padding: 0.65rem 1rem; background: var(--bg-elevated); border: 2px solid var(--accent); border-radius: var(--radius-md); color: var(--text-primary); font-size: var(--font-size-base); outline: none; }
+.pm-cola-busqueda input::placeholder { color: var(--text-muted); }
 .pm-cola-lista { display: flex; flex-direction: column; gap: 10px; }
 .pm-cola-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md); border: 2px solid #3a3f4a; border-radius: 14px; background: var(--bg-elevated); }
 .pm-cola-fila--bloqueada { opacity: 0.5; }

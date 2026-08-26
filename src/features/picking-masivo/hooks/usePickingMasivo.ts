@@ -90,6 +90,18 @@ export function useValidarLpn(sesionId: string) {
   })
 }
 
+export function useBuscarItem() {
+  return useMutation({ mutationFn: pickingMasivoApi.buscarItem })
+}
+
+export function useValidarItem(sesionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: pickingMasivoApi.validarItem,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] }),
+  })
+}
+
 export function useDespacharSesion() {
   const qc = useQueryClient()
   return useMutation({

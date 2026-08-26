@@ -223,6 +223,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : res.status(result.error.code === 'NOT_FOUND' ? 404 : 500).json({ error: result.error })
     }
 
+    if (accion === 'buscar-item') {
+      const { sesionId, termino } = req.body as { sesionId: string; termino: string }
+      if (!sesionId || !termino) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId y termino requeridos' } })
+      const result = await pickingMasivoService.buscarItem(sesionId, termino)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(result.error.code === 'NOT_FOUND' ? 404 : 500).json({ error: result.error })
+    }
+
+    if (accion === 'validar-item') {
+      const { sesionId, itemId } = req.body as { sesionId: string; itemId: string }
+      if (!sesionId || !itemId) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId y itemId requeridos' } })
+      const result = await pickingMasivoService.validarItem(sesionId, itemId)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(500).json({ error: result.error })
+    }
+
     if (accion === 'despachar-sesion') {
       const parsed = despacharSesionSchema.safeParse(req.body)
       if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })

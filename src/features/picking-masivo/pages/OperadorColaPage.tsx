@@ -21,6 +21,7 @@ export function OperadorColaPage() {
   const [error, setError]             = useState<string | null>(null)
   const [filtro, setFiltro]           = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
   const [detalle, setDetalle]         = useState<SubtareaResumen | null>(null)
+  const [busqueda, setBusqueda]       = useState('')
 
   const subtareas = data ?? []
   const tengoPropias = subtareas.some((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
@@ -33,6 +34,14 @@ export function OperadorColaPage() {
     if (filtro === 'completas') return s.estado === 'completado'
     return true
   })
+
+  const termino = busqueda.trim().toLowerCase()
+  const subtareasVisibles = termino
+    ? subtareasFiltradas.filter((s) =>
+        s.items_picking_masivo?.codigo?.toLowerCase().includes(termino) ||
+        s.items_picking_masivo?.descripcion?.toLowerCase().includes(termino)
+      )
+    : subtareasFiltradas
 
   const cntMias      = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
   const cntTomadas   = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por !== operadorId).length
@@ -103,15 +112,25 @@ export function OperadorColaPage() {
         <button className={`filtro-btn ${filtro === 'completas' ? 'activo' : ''}`} onClick={() => setFiltro('completas')}>Completas {cntCompletas > 0 && <span className="filtro-badge">{cntCompletas}</span>}</button>
       </div>
 
+      <div className="ing-busqueda pm-cola-busqueda">
+        <input
+          type="search"
+          placeholder="Buscar por código o descripción…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+
       {isLoading && <p className="cargando">Cargando cola…</p>}
       {isError   && <p className="error">Error al cargar la cola</p>}
-      {!isLoading && !isError && subtareasFiltradas.length === 0 && (
-        <div className="notas-vacio"><p>{filtro === 'todas' ? 'No hay subtareas pendientes' : 'Sin resultados para este filtro'}</p></div>
+      {!isLoading && !isError && subtareasVisibles.length === 0 && (
+        <div className="notas-vacio"><p>{busqueda ? 'Sin resultados para esa búsqueda' : filtro === 'todas' ? 'No hay subtareas pendientes' : 'Sin resultados para este filtro'}</p></div>
       )}
 
-      {!isLoading && !isError && subtareasFiltradas.length > 0 && (
+      {!isLoading && !isError && subtareasVisibles.length > 0 && (
         <div className="pm-cola-lista">
-          {subtareasFiltradas.map((sub: SubtareaResumen) => {
+          {subtareasVisibles.map((sub: SubtareaResumen) => {
             const esMia          = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
             const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
             const esParcial      = sub.estado === 'parcial' || sub.estado === 'sin_stock'
