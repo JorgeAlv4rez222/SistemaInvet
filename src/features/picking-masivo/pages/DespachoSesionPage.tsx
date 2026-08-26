@@ -461,22 +461,22 @@ export function DespachoSesionPage() {
                         <div className="pm-despacho-validado-info" style={{ flex: 1 }}>
                           <span className="pm-despacho-validado-codigo">{v.codigo}</span>
                           <span className="pm-despacho-validado-desc">{v.descripcion}</span>
+                          {expandido && (
+                            <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(103, 207, 232, 0.15)', border: '1px solid rgba(103, 207, 232, 0.35)', display: 'flex', gap: 'var(--spacing-lg)' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Solicitado OC</span>
+                                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Enviado</span>
+                                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <span className="pm-despacho-validado-cant">{v.cantidadDespachada}</span>
                         <span className="pm-despacho-validado-check">✓</span>
                       </div>
-                      {expandido && (
-                        <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)', display: 'flex', gap: 'var(--spacing-lg)' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Solicitado OC</span>
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Enviado</span>
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )
                 })
