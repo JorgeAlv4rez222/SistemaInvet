@@ -5757,8 +5757,17 @@ input[type="radio"] {
 
   /* ── Notas ── */
   .notas-lista-scroll { max-height: 58vh; }
-  .nota-fila { grid-template-columns: 28px 180px 1fr 110px 90px; gap: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); }
-  .nota-fila-fecha { display: flex; }
+  .nota-fila {
+    grid-template-columns: 28px 1fr auto;
+    grid-template-rows: auto auto;
+    gap: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .nota-fila-check    { grid-row: 1 / 3; align-self: center; }
+  .nota-fila-principal { grid-column: 2; grid-row: 1; }
+  .nota-fila-estado   { grid-column: 3; grid-row: 1; justify-content: flex-end; }
+  .nota-fila-progreso { grid-column: 2; grid-row: 2; flex-direction: column; }
+  .nota-fila-fecha    { grid-column: 3; grid-row: 2; display: flex; justify-content: flex-end; font-size: 11px; color: var(--text-muted); white-space: nowrap; align-items: flex-end; }
 
   /* ── Etiquetas ── */
   .etiquetas-controles {
@@ -6059,8 +6068,19 @@ input[type="radio"] {
   .pm-item-detalle-lpn { font-size: var(--font-size-lg); }
 
   /* PickingMasivoPage tablet */
-  .pm-sesion-nombre { font-size: var(--font-size-base); }
-  .pm-sesion-fila { padding: var(--spacing-md) var(--spacing-lg); min-height: 64px; }
+  .pm-sesion-nombre { font-size: var(--font-size-base); white-space: normal; overflow: visible; text-overflow: unset; }
+  .pm-sesion-fila {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    min-height: auto;
+    align-items: start;
+  }
+  .pm-sesion-info     { grid-column: 1; grid-row: 1; min-width: 0; }
+  .pm-sesion-progreso { grid-column: 1; grid-row: 2; }
+  .pm-sesion-fecha    { grid-column: 2; grid-row: 2; text-align: right; align-self: center; }
+  .pm-sesion-fila > .badge { grid-column: 2; grid-row: 1; align-self: start; white-space: nowrap; }
 
   /* ConfirmarSubtarea tablet */
   .pm-confirmar-input { font-size: var(--font-size-lg); min-height: 56px; }
