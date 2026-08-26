@@ -178,7 +178,12 @@ export function SesionDetallePage() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="pm-sesion-info-card">
-        <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+          {sesion.numero_oc_pedido && (
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>OC: <strong style={{ color: 'var(--text-primary)' }}>{sesion.numero_oc_pedido}</strong></span>
+          )}
+        </div>
         <div className="pm-sesion-info-entrega">
           <span className="pm-sesion-info-entrega-label">Fecha de entrega</span>
           <span className="pm-sesion-info-entrega-fecha">{sesion.numero_oc}</span>
