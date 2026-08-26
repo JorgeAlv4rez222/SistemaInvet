@@ -298,7 +298,7 @@ export function SesionDetallePage() {
                     <span className="pm-item-detalle-valor">{item.codigo}</span>
                   </div>
                   <div className="pm-item-detalle-fila">
-                    <span className="pm-item-detalle-label">Cantidad</span>
+                    <span className="pm-item-detalle-label">Cantidad OC</span>
                     <span className="pm-item-detalle-valor">{item.cantidad_pedida}</span>
                   </div>
                   {sesionTieneLpn && (

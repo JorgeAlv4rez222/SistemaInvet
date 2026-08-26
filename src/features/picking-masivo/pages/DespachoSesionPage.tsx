@@ -83,6 +83,7 @@ export function DespachoSesionPage() {
 
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
+  const [busquedaSodimac, setBusquedaSodimac]       = useState('')
 
   const inputRef    = useRef<HTMLInputElement>(null)
   const lpnInputRef = useRef<HTMLInputElement>(null)
@@ -393,6 +394,15 @@ export function DespachoSesionPage() {
       {/* Lista de productos validados (fase 1) */}
       {(!sesionTieneLpn ? faseSodimac === 'productos' : true) && (validados.length > 0 || (items && items.length > 0)) && (
         <div className="pm-despacho-validados-card">
+          {!sesionTieneLpn && (
+            <input
+              type="search"
+              placeholder="Buscar por código o nombre…"
+              value={busquedaSodimac}
+              onChange={(e) => setBusquedaSodimac(e.target.value)}
+              style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
+            />
+          )}
           <div className="pm-despacho-validados-header">
             <p className="pm-despacho-validados-titulo">
               {filtroPendientes ? 'Pendientes' : `Productos Validados (${validados.length})`}
@@ -448,7 +458,10 @@ export function DespachoSesionPage() {
                       </div>
                     )
                   })
-              : validadosSodimac.map((v) => {
+              : validadosSodimac.filter((v) => {
+                    const q = busquedaSodimac.trim().toLowerCase()
+                    return !q || v.codigo.toLowerCase().includes(q) || v.descripcion.toLowerCase().includes(q)
+                  }).map((v) => {
                   const expandido = productoExpandido === v.itemId
                   return (
                     <div
