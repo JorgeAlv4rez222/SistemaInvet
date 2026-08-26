@@ -222,12 +222,10 @@ export function DespachoSesionPage() {
               <span className="pm-despacho-modal-label">OC</span>
               <span className="pm-despacho-modal-valor">{sesion.numero_oc}</span>
             </div>
-            {detalleLpn.tienda && (
-              <div className="pm-despacho-modal-fila">
-                <span className="pm-despacho-modal-label">Tienda</span>
-                <span className="pm-despacho-modal-valor">{detalleLpn.tienda}</span>
-              </div>
-            )}
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">Tienda</span>
+              <span className="pm-despacho-modal-valor">{detalleLpn.tienda ?? '—'}</span>
+            </div>
             <div className="pm-despacho-modal-fila">
               <span className="pm-despacho-modal-label">Cantidad</span>
               <span className="pm-despacho-modal-valor"><strong>{detalleLpn.cantidadPedida}</strong></span>
