@@ -34,7 +34,7 @@ export function useRealtimeSesion(sesionId: string | null) {
         event: '*', schema: 'public', table: 'subtareas_picking_masivo', filter: `sesion_id=eq.${sesionId}`,
       }, () => {
         qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] })
-        qc.invalidateQueries({ queryKey: ['picking-masivo', 'cola', sesionId] })
+        qc.refetchQueries({ queryKey: ['picking-masivo', 'cola', sesionId] })
       })
       .subscribe()
 

@@ -20,10 +20,11 @@ export function useSesionPicking(id: string | null) {
 
 export function useColaSubtareas(sesionId: string | null) {
   return useQuery({
-    queryKey:  ['picking-masivo', 'cola', sesionId],
-    queryFn:   () => pickingMasivoApi.colaSubtareas(sesionId!),
-    enabled:   !!sesionId,
-    staleTime: 0,
+    queryKey:       ['picking-masivo', 'cola', sesionId],
+    queryFn:        () => pickingMasivoApi.colaSubtareas(sesionId!),
+    enabled:        !!sesionId,
+    staleTime:      0,
+    refetchInterval: 2000,
   })
 }
 

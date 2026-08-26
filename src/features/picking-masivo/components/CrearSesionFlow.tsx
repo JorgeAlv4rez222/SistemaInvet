@@ -179,7 +179,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
               <IcoBack /> Volver
             </button>
             <button className="btn-primario" disabled={validarExcel.isPending} onClick={handleValidar}>
-              {validarExcel.isPending ? 'Validando…' : 'Validar'}
+              {validarExcel.isPending ? 'Cargando…' : 'Cargar'}
             </button>
           </div>
         </div>
