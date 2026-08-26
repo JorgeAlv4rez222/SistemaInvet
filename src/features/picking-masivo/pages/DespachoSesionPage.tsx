@@ -339,7 +339,7 @@ export function DespachoSesionPage() {
   return (
     <div className="notas-page pm-despacho-page">
       <div className="pm-despacho-header">
-        <button className="btn-volver" onClick={() => navigate('/picking-masivo')}>← Volver</button>
+        <button className="btn-volver" onClick={() => navigate(`/picking-masivo/${sesionId}`)}>← Volver</button>
         <div className="pm-despacho-titulo-wrap" style={{ fontSize: '1.75rem' }}>
           <span className="pm-despacho-titulo-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
           <span className="pm-despacho-titulo-sep">—</span>

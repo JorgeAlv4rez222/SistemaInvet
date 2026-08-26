@@ -304,6 +304,10 @@ export function SesionDetallePage() {
                     <span className="pm-item-detalle-label">Cantidad OC</span>
                     <span className="pm-item-detalle-valor">{item.cantidad_pedida}</span>
                   </div>
+                  <div className="pm-item-detalle-fila">
+                    <span className="pm-item-detalle-label">Enviado</span>
+                    <span className="pm-item-detalle-valor" style={{ color: item.cantidad_despachada < item.cantidad_pedida ? 'var(--warning)' : 'var(--success)' }}>{item.cantidad_despachada}</span>
+                  </div>
                   {sesionTieneLpn && (
                     <div className="pm-item-detalle-fila">
                       <span className="pm-item-detalle-label">LPN</span>
