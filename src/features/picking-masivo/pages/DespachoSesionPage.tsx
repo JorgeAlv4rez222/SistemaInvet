@@ -261,7 +261,7 @@ export function DespachoSesionPage() {
     const lpnTrimmed = lpn.trim()
     if (!lpnTrimmed) return
     setErrorLpnScan(null)
-    const entry = lpnsExcel.find((e) => e.lpn === lpnTrimmed)
+    const entry = lpnsExcel.find((e) => lpnTrimmed === e.lpn || lpnTrimmed.endsWith(e.lpn))
     if (!entry) {
       setErrorLpnScan(`LPN "${lpnTrimmed}" no está en la lista de esta OC`)
       setLpnScanInput('')
