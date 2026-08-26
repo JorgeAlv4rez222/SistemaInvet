@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import * as XLSX from 'xlsx'
 import { useCancelarSesion, useSesionPicking } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -118,6 +119,46 @@ export function SesionDetallePage() {
   const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
   const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
 
+  function descargarExcel() {
+    const ESTADO_LABEL: Record<string, string> = {
+      completado: 'Completado',
+      parcial:    'Parcial',
+      sin_stock:  'Sin stock',
+      libre:      'Pendiente',
+      bloqueado:  'En progreso',
+    }
+
+    const filas: Record<string, unknown>[] = []
+
+    for (const item of sesion.items) {
+      for (const sub of item.subtareas_picking_masivo) {
+        filas.push({
+          'UPC / EAN':           item.codigo_barra ?? '—',
+          'Descripción':         item.descripcion ?? item.codigo,
+          'Código':              item.codigo,
+          'Cant. Solicitada':    sub.cantidad_asignada,
+          'Cant. Despachada':    sub.cantidad_despachada ?? 0,
+          'Diferencia':          (sub.cantidad_despachada ?? 0) - sub.cantidad_asignada,
+          'Estado':              ESTADO_LABEL[sub.estado] ?? sub.estado,
+          'Motivo diferencia':   sub.motivo_diferencia ?? '',
+        })
+      }
+    }
+
+    const ws = XLSX.utils.json_to_sheet(filas)
+    // Anchos de columna
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 40 }, { wch: 16 },
+      { wch: 16 }, { wch: 16 }, { wch: 12 },
+      { wch: 14 }, { wch: 30 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
+    const nombre = `picking-${sesion.nombre_cliente ?? sesion.numero_oc}-${sesion.numero_oc}.xlsx`
+      .replace(/[^a-zA-Z0-9\-_.]/g, '_')
+    XLSX.writeFile(wb, nombre)
+  }
+
   return (
     <div className="notas-page">
       <div className="pm-sesion-detalle-header">
@@ -140,14 +181,17 @@ export function SesionDetallePage() {
         </div>
       </div>
 
-      {sesion.estado === 'completada' && (
-        <button
-          className="btn-primario"
-          style={{ marginBottom: 'var(--spacing-md)' }}
-          onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}
-        >
-          Validar Entrega →
-        </button>
+      {(sesion.estado === 'completada' || sesion.estado === 'despachado') && (
+        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap', marginBottom: 'var(--spacing-md)' }}>
+          {sesion.estado === 'completada' && (
+            <button className="btn-primario" onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}>
+              Validar Entrega →
+            </button>
+          )}
+          <button className="btn-secundario" onClick={descargarExcel}>
+            ↓ Descargar detalle Excel
+          </button>
+        </div>
       )}
 
       {puedeCancelar && (
