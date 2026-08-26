@@ -221,12 +221,6 @@ export function ConfirmarSubtareaPage() {
           </label>
         )}
 
-        {barcodeOk && (
-          <div className="pm-confirmar-barcode-ok">
-            ✓ Producto verificado
-          </div>
-        )}
-
         {/* Cantidad — visible solo si barcode está ok */}
         {barcodeOk && (
           <>
@@ -266,6 +260,10 @@ export function ConfirmarSubtareaPage() {
                 Producto equivalente
               </button>
             )}
+
+            <div className="pm-confirmar-barcode-ok">
+              ✓ Producto verificado
+            </div>
 
             {equivalenteActivo && (
               <div className="ing-busqueda">
