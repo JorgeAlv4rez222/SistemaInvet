@@ -95,6 +95,9 @@ export function SesionDetallePage() {
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
+  const [lpnYaUsado, setLpnYaUsado]    = useState(() => {
+    try { return localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1' } catch { return false }
+  })
 
   const toggleExpandido = useCallback((id: string) => {
     setExpandido((prev) => {
@@ -204,13 +207,17 @@ export function SesionDetallePage() {
           <button className="btn-secundario" onClick={descargarExcel}>
             ↓ Descargar detalle Excel
           </button>
-          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados */}
+          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados, una sola vez */}
           {!sesionTieneLpn && (
             <button
               className="btn-primario"
-              disabled={!todosProductosValidados}
-              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : undefined}
-              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
+              disabled={!todosProductosValidados || lpnYaUsado}
+              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : lpnYaUsado ? 'Validación de LPN ya iniciada' : undefined}
+              onClick={() => {
+                try { localStorage.setItem(`pm_lpn_started_${sesionId}`, '1') } catch {}
+                setLpnYaUsado(true)
+                navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)
+              }}
             >
               Validar LPN →
             </button>

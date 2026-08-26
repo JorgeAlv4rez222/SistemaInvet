@@ -356,6 +356,11 @@ export function DespachoSesionPage() {
       {/* ── FASE 1: Escáner productos (LPN o código de barra según cliente) ── */}
       {sesion.estado === 'completada' && (!sesionTieneLpn ? faseSodimac === 'productos' : true) && (
         <div className="pm-despacho-scanner-card">
+          {!sesionTieneLpn && todosProductosValidados && (
+            <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid var(--success)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+              ✓ Todos los productos validados. Confirma la preparación para continuar.
+            </div>
+          )}
           <label className="pm-confirmar-label">
             {sesionTieneLpn ? 'Escanear LPN' : 'Escanear código de barra'}
             <div className="pm-confirmar-barcode-row">
@@ -368,9 +373,11 @@ export function DespachoSesionPage() {
                 onChange={(e) => { setScanInput(e.target.value); setErrorScan(null) }}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return
+                  if (!sesionTieneLpn && todosProductosValidados) return
                   sesionTieneLpn ? handleBuscarLpn(scanInput) : handleBuscarItem(scanInput)
                 }}
-                autoFocus
+                disabled={!sesionTieneLpn && todosProductosValidados}
+                autoFocus={!((!sesionTieneLpn) && todosProductosValidados)}
                 autoComplete="off"
               />
               <BarcodeScanner
@@ -382,7 +389,7 @@ export function DespachoSesionPage() {
           {errorScan && <p className="pm-confirmar-barcode-error">{errorScan}</p>}
           <button
             className="btn-primario pm-despacho-scan-btn"
-            disabled={!scanInput.trim() || isPending}
+            disabled={!scanInput.trim() || isPending || (!sesionTieneLpn && todosProductosValidados)}
             onClick={() => sesionTieneLpn ? handleBuscarLpn(scanInput) : handleBuscarItem(scanInput)}
           >
             {isPending ? 'Buscando…' : 'Buscar'}
@@ -534,11 +541,25 @@ export function DespachoSesionPage() {
         <>
           <div className="pm-despacho-scanner-card">
             <div className="pm-despacho-fase-label" style={{ color: 'white' }}>Validación de LPN</div>
-            {lpnsExcel.length === 0 && (
-              <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid var(--warning)', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--warning)' }}>
-                ⚠️ No hay Excel cargado. Carga el archivo de LPNs desde la pantalla de detalle (botón "Validar LPN →").
-              </div>
-            )}
+            {/* Carga de Excel LPN directamente en esta pantalla */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoExcel(f) }}
+              />
+              <button
+                type="button"
+                className="btn-secundario"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontSize: '0.85rem' }}
+              >
+                📎 {lpnsExcel.length > 0 ? `Excel cargado (${lpnsExcel.length} LPNs)` : 'Cargar Excel de LPNs'}
+              </button>
+              {errorExcel && <span style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>{errorExcel}</span>}
+            </div>
             <label className="pm-confirmar-label">
               Escanear LPN
               <div className="pm-confirmar-barcode-row">
