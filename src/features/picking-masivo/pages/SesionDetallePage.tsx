@@ -93,6 +93,8 @@ export function SesionDetallePage() {
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
+  const [busqueda, setBusqueda]         = useState('')
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
 
   const toggleExpandido = useCallback((id: string) => {
     setExpandido((prev) => {
@@ -232,8 +234,39 @@ export function SesionDetallePage() {
         </div>
       )}
 
+      {/* Barra de búsqueda y filtros */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+        <input
+          type="search"
+          placeholder="Buscar por código o nombre…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{ flex: 1, minWidth: '180px', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}
+        />
+        {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFiltroEstado(f)}
+            style={{
+              padding: '0.5rem 0.9rem', borderRadius: '0.5rem', border: '1px solid var(--border)', fontSize: 'var(--font-size-xs)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+              background: filtroEstado === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--primary)') : 'var(--surface)',
+              color: filtroEstado === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
+            }}
+          >
+            {f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}
+          </button>
+        ))}
+      </div>
+
       <div className="ing-productos-lista pm-items-lista">
-        {sesion.items.map((item) => {
+        {sesion.items
+          .filter((item) => {
+            const q = busqueda.trim().toLowerCase()
+            const matchBusqueda = !q || item.codigo.toLowerCase().includes(q) || (item.descripcion ?? '').toLowerCase().includes(q)
+            const matchFiltro = filtroEstado === 'todos' || item.estado === filtroEstado
+            return matchBusqueda && matchFiltro
+          })
+          .map((item) => {
           const abierto = expandido.has(item.id)
           return (
             <div key={item.id} className="ing-prod-item pm-item-card">
