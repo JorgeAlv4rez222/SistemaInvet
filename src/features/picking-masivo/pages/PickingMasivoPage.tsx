@@ -66,7 +66,7 @@ export function PickingMasivoPage() {
                       >
                         <div className="pm-sesion-info">
                           <span className="pm-sesion-nombre">{s.nombre_cliente ?? s.numero_oc}</span>
-                          <span className="pm-sesion-oc">OC {s.numero_oc}</span>
+                          <span className="pm-sesion-oc">Entrega: {s.numero_oc}</span>
                         </div>
 
                         <div className="pm-sesion-progreso">

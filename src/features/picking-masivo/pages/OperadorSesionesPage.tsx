@@ -30,7 +30,7 @@ export function OperadorSesionesPage() {
                   <div key={s.id} className="pm-op-sesion-item">
                     <div className="pm-op-sesion-info">
                       <span className="pm-op-sesion-nombre">{s.nombre_cliente ?? s.numero_oc}</span>
-                      <span className="pm-op-sesion-oc">{s.numero_oc}</span>
+                      <span className="pm-op-sesion-oc">Entrega: {s.numero_oc}</span>
                     </div>
                     <div className="pm-op-sesion-progreso">
                       <div className="nota-progreso-barra">
