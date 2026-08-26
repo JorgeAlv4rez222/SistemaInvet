@@ -57,6 +57,7 @@ export type ValidarExcelResult = {
     stockTotal?:   number
     codigoBarra?:  string
     lpn?:          string
+    tienda?:       string
     ok:            boolean
   }[]
 }
