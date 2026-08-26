@@ -116,6 +116,9 @@ export function OperadorColaPage() {
             return (
               <div key={sub.id} className={`pm-cola-fila ${bloqueadaXOtro ? 'pm-cola-fila--bloqueada' : ''} ${esParcial ? 'pm-cola-fila--parcial' : ''}`}>
                 <div className="pm-cola-fila-info">
+                  {sub.items_picking_masivo?.descripcion && sub.items_picking_masivo.descripcion !== sub.items_picking_masivo.codigo && (
+                    <span className="pm-cola-fila-nombre">{sub.items_picking_masivo.descripcion}</span>
+                  )}
                   <span className="pm-cola-fila-codigo">{sub.items_picking_masivo?.codigo}</span>
                   <div className="pm-cola-fila-meta">
                     {sub.posicion_codigo !== '—' && (
