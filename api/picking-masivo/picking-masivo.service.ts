@@ -354,7 +354,7 @@ export const pickingMasivoService = {
   async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase
       .from('sesiones_picking_masivo')
-      .select('id, numero_oc, nombre_cliente, numero_oc_pedido, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por')
+      .select('id, numero_oc, nombre_cliente, numero_oc_pedido, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por, despachado_en, despachado_por, nombre_chofer, creado_por_usuario:usuarios!sesiones_picking_masivo_creado_por_fkey(nombre), despachado_por_usuario:usuarios!sesiones_picking_masivo_despachado_por_fkey(nombre)')
       .order('creado_en', { ascending: false })
 
     if (estado) q = q.eq('estado', estado)

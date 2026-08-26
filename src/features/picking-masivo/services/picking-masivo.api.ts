@@ -14,17 +14,21 @@ export type {
 }
 
 export type SesionResumen = {
-  id:                 string
-  numero_oc:          string
-  nombre_cliente:     string | null
-  numero_oc_pedido:   string | null
-  estado:             'validando' | 'activa' | 'completada' | 'despachado' | 'cancelada'
-  total_items:        number
-  items_completados:  number
-  archivo_nombre:     string | null
-  creado_en:          string
-  activada_en:        string | null
-  completada_en:      string | null
+  id:                    string
+  numero_oc:             string
+  nombre_cliente:        string | null
+  numero_oc_pedido:      string | null
+  estado:                'validando' | 'activa' | 'completada' | 'despachado' | 'cancelada'
+  total_items:           number
+  items_completados:     number
+  archivo_nombre:        string | null
+  creado_en:             string
+  activada_en:           string | null
+  completada_en:         string | null
+  despachado_en:         string | null
+  nombre_chofer:         string | null
+  creado_por_usuario:    { nombre: string } | null
+  despachado_por_usuario: { nombre: string } | null
 }
 
 export type SubtareaResumen = {

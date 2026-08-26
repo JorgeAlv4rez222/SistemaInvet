@@ -932,8 +932,12 @@ function formatFechaPM(iso: string | null | undefined): string {
 }
 
 function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
-  const fecha    = formatFechaPM(sesion.creado_en)
   const navigate = useNavigate()
+  const creadoPor     = (sesion as any).creado_por_usuario?.nombre ?? null
+  const despachPor    = (sesion as any).despachado_por_usuario?.nombre ?? null
+  const fechaCreacion = formatFechaPM(sesion.creado_en)
+  const fechaDespacho = formatFechaPM((sesion as any).despachado_en)
+  const chofer        = (sesion as any).nombre_chofer ?? null
   return (
     <div
       className="nota-fila-item"
@@ -943,15 +947,26 @@ function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
       onClick={() => navigate(`/picking-masivo/${sesion.id}`)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/picking-masivo/${sesion.id}`) }}
     >
+      {/* Cabecera: OC + cliente + estado */}
       <div className="nota-fila nota-fila--hist">
         <div className="nota-fila-principal">
           <span className="nota-fila-numero">{sesion.numero_oc}</span>
           <span className="nota-fila-cliente">{sesion.nombre_cliente ?? '—'}</span>
         </div>
-        <span className="nota-fila-fecha">{fecha}</span>
-        <div className="nota-fila-estado">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span className="nota-fila-fecha">{fechaCreacion}</span>
           <span className={`badge badge-${sesion.estado}`}>{ESTADO_PM_LABELS[sesion.estado] ?? sesion.estado}</span>
         </div>
+      </div>
+      {/* Línea de auditoría */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1.25rem', padding: '0.35rem 0.75rem 0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        {creadoPor && (
+          <span>📋 Creado por <strong style={{ color: 'var(--text-secondary)' }}>{creadoPor}</strong> el {fechaCreacion}</span>
+        )}
+        {despachPor && (
+          <span>🚚 Despachado por <strong style={{ color: 'var(--text-secondary)' }}>{despachPor}</strong> el {fechaDespacho}{chofer ? ` · chofer: ${chofer}` : ''}</span>
+        )}
+        <span>📦 {sesion.items_completados}/{sesion.total_items} ítems</span>
       </div>
     </div>
   )
