@@ -69,18 +69,7 @@ export function PickingMasivoPage() {
                           <span className="pm-sesion-oc">Entrega: {s.numero_oc}</span>
                         </div>
 
-                        <div className="pm-sesion-progreso">
-                          <div className="nota-progreso-barra">
-                            <div
-                              className="nota-progreso-fill"
-                              style={{
-                                width: `${pct}%`,
-                                background: pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--danger)',
-                              }}
-                            />
-                          </div>
-                          <span className="nota-progreso-texto">{s.items_completados}/{s.total_items} · {pct}%</span>
-                        </div>
+                        <span className="nota-progreso-texto pm-sesion-progreso">{s.items_completados}/{s.total_items} · {pct}%</span>
 
                         <span className="pm-sesion-fecha">{formatearFecha(s.creado_en)}</span>
 
