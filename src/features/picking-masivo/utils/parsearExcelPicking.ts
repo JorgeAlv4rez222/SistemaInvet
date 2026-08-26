@@ -45,9 +45,10 @@ function encontrarColumna(encabezados: string[], alias: string[]): number {
 export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPicking> {
   const errores: string[] = []
   const buffer = await file.arrayBuffer()
-  const wb     = XLSX.read(buffer, { type: 'array' })
+  // cellText:true preserva el formato de celda (ej: "09290" no pierde el cero inicial)
+  const wb     = XLSX.read(buffer, { type: 'array', cellText: true, cellDates: true })
   const ws     = wb.Sheets[wb.SheetNames[0]]
-  const data   = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null })
+  const data   = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null, raw: false })
 
   const primeraFila = data.find((f) => f.some((c) => c !== null && c !== ''))
   if (!primeraFila) {
