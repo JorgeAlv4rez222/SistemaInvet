@@ -218,6 +218,10 @@ export function DespachoSesionPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="modal-titulo">{detalleLpn.codigo}</h3>
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">OC</span>
+              <span className="pm-despacho-modal-valor">{sesion.numero_oc}</span>
+            </div>
             {detalleLpn.tienda && (
               <div className="pm-despacho-modal-fila">
                 <span className="pm-despacho-modal-label">Tienda</span>
