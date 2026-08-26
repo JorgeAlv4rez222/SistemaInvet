@@ -180,9 +180,9 @@ export function SesionDetallePage() {
       <div className="pm-sesion-info-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
-          {sesion.numero_oc_pedido && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>OC: <strong style={{ color: 'var(--text-primary)' }}>{sesion.numero_oc_pedido}</strong></span>
-          )}
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            OC: <strong style={{ color: 'var(--text-primary)' }}>{sesion.numero_oc_pedido ?? sesion.numero_oc}</strong>
+          </span>
         </div>
         <div className="pm-sesion-info-entrega">
           <span className="pm-sesion-info-entrega-label">Fecha de entrega</span>

@@ -66,10 +66,8 @@ export function PickingMasivoPage() {
                       >
                         <div className="pm-sesion-info">
                           <span className="pm-sesion-nombre">{s.nombre_cliente ?? s.numero_oc}</span>
-                          <span className="pm-sesion-oc">Entrega: {s.numero_oc}</span>
+                          <span className="pm-sesion-oc">Entrega: <strong style={{ color: '#67cfe8' }}>{s.numero_oc}</strong></span>
                         </div>
-
-                        <span className="nota-progreso-texto pm-sesion-progreso">{s.items_completados}/{s.total_items} · {pct}%</span>
 
                         <span className="pm-sesion-fecha">{formatearFecha(s.creado_en)}</span>
 

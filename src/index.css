@@ -6224,9 +6224,8 @@ input[type="radio"] {
 .pm-sesion-fila:hover { background: var(--bg-elevated); }
 .pm-sesion-fila > .badge { justify-self: end; white-space: nowrap; }
 .pm-sesion-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pm-sesion-nombre { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-sesion-nombre { font-size: var(--font-size-base); font-weight: 800; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-sesion-oc { font-size: var(--font-size-xs); color: var(--text-secondary); }
-.pm-sesion-progreso { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pm-sesion-fecha { font-size: var(--font-size-xs); font-weight: 700; color: var(--text-primary); white-space: nowrap; text-align: right; }
 
 .pm-op-sesion-item {
