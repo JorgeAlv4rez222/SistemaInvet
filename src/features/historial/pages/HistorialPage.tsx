@@ -158,7 +158,7 @@ function MovimientoCard({
 
           {m.notaNumero && m.notaVentaId && onDetalle && (
             <button
-              className="inline-flex items-center text-[12px] font-bold text-[#4ade80] bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.3)] rounded px-2.5 py-1.5 min-h-8 cursor-pointer transition-colors hover:bg-[rgba(74,222,128,0.22)]"
+              className="hist-ver-nota-btn inline-flex items-center text-[12px] font-bold text-[#4ade80] bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.3)] rounded px-2.5 py-1.5 min-h-8 cursor-pointer transition-colors hover:bg-[rgba(74,222,128,0.22)]"
               onClick={() => onDetalle({ tipo: 'nota', notaId: m.notaVentaId!, numero: m.notaNumero! })}
             >
               Nota {m.notaNumero}
@@ -214,7 +214,7 @@ function NotaGrupoCard({
           </span>
           {onDetalle && primero.notaVentaId && (
             <button
-              className="inline-flex items-center text-[12px] font-bold text-[#4ade80] bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.3)] rounded px-2.5 py-1.5 min-h-8 cursor-pointer transition-colors hover:bg-[rgba(74,222,128,0.22)]"
+              className="hist-ver-nota-btn inline-flex items-center text-[12px] font-bold text-[#4ade80] bg-[rgba(74,222,128,0.12)] border border-[rgba(74,222,128,0.3)] rounded px-2.5 py-1.5 min-h-8 cursor-pointer transition-colors hover:bg-[rgba(74,222,128,0.22)]"
               onClick={(e) => { e.stopPropagation(); onDetalle({ tipo: 'nota', notaId: primero.notaVentaId!, numero }) }}
             >
               Ver nota

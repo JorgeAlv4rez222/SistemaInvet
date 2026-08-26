@@ -23,6 +23,7 @@ import { SesionDetallePage }      from './features/picking-masivo/pages/SesionDe
 import { OperadorSesionesPage }   from './features/picking-masivo/pages/OperadorSesionesPage'
 import { OperadorColaPage }       from './features/picking-masivo/pages/OperadorColaPage'
 import { ConfirmarSubtareaPage }  from './features/picking-masivo/pages/ConfirmarSubtareaPage'
+import { DespachoSesionPage }    from './features/picking-masivo/pages/DespachoSesionPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation()
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/picking-masivo/operador"                             element={<Protected><OperadorSesionesPage /></Protected>} />
       <Route path="/picking-masivo/operador/:id"                         element={<Protected><OperadorColaPage /></Protected>} />
       <Route path="/picking-masivo/operador/:id/confirmar/:subtareaId"   element={<Protected><ConfirmarSubtareaPage /></Protected>} />
+      <Route path="/picking-masivo/:id/despacho"                         element={<Protected><DespachoSesionPage /></Protected>} />
     </Routes>
   )
 }

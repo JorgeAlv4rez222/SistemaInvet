@@ -292,7 +292,8 @@ label {
 .badge-validando,
 .badge-en-progreso    { background: rgba(56,189,248,0.15);  color: var(--info); }
 .badge-activa         { background: rgba(56,189,248,0.15);  color: var(--info); }
-.badge-completada     { background: rgba(34,197,94,0.15);   color: var(--success); }
+.badge-completada,
+.badge-completado     { background: rgba(34,197,94,0.15);   color: var(--success); }
 .badge-cancelada      { background: rgba(239,68,68,0.15);   color: var(--danger); }
 .badge-libre          { background: rgba(56,189,248,0.15);  color: var(--info); }
 .badge-bloqueado      { background: rgba(245,158,11,0.15);  color: var(--warning); }
@@ -2097,7 +2098,9 @@ label {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  max-width: 900px;
+  max-width: 768px;
+  margin: 0 auto;
+  width: 100%;
 }
 .historial-titulo {
   font-size: var(--font-size-xl);
@@ -2286,6 +2289,7 @@ label {
   color: #4ade80;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .hist-nota-grupo-badges {
   display: flex;
@@ -4312,7 +4316,7 @@ label {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: var(--accent-light);
+  color: var(--text-primary);
 }
 .excel-td--num {
   text-align: center;
@@ -4913,6 +4917,13 @@ input[type="radio"] {
   .home-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Tablet / Pistola Zebra (≤768px): ocultar meta en historial ── */
+@media (max-width: 768px) {
+  .hist-nota-grupo-meta { display: none; }
+  .hist-ver-nota-btn { display: none; }
+  .hist-nota-grupo-nv { flex-shrink: 0; min-width: max-content; }
+}
+
 /* ── Pistola Zebra (≤480px): layout apilado ── */
 @media (max-width: 480px) {
   /* Página de productos */
@@ -4920,7 +4931,6 @@ input[type="radio"] {
 
   /* Historial */
   .historial-page { padding: var(--spacing-sm); }
-  .hist-nota-grupo-meta { display: none; }
   .hist-nota-grupo-nv { font-size: var(--font-size-sm); }
 
   /* Ingresos */
@@ -5925,6 +5935,269 @@ input[type="radio"] {
   margin-top: var(--spacing-md);
 }
 .pm-confirmar-btn { flex: 1; min-height: 64px; font-size: var(--font-size-base); }
+.pm-confirmar-lpn { font-size: var(--font-size-base); font-weight: 600; color: var(--accent); letter-spacing: 0.03em; }
+.pm-confirmar-barcode-ok { padding: var(--spacing-sm) var(--spacing-md); background: color-mix(in srgb, var(--success) 15%, transparent); border: 1px solid var(--success); border-radius: var(--radius-sm); color: var(--success); font-weight: 600; font-size: var(--font-size-sm); }
+.pm-confirmar-barcode-error { font-size: var(--font-size-xs); color: var(--danger); margin-top: 4px; }
+.pm-confirmar-input--error { border-color: var(--danger) !important; }
+.pm-card--parcial { border-left: 3px solid var(--warning); }
+.pm-card-lpn { font-size: var(--font-size-xs); color: var(--accent); font-weight: 600; margin-top: 2px; }
+.badge-parcial    { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 2px 8px; font-size: var(--font-size-xs); font-weight: 600; }
+.badge-despachado { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); border: 1px solid var(--success); border-radius: var(--radius-sm); padding: 2px 8px; font-size: var(--font-size-xs); font-weight: 600; }
+
+/* ── Picking Masivo — meta de sesión ── */
+.pm-sesion-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+.pm-sesion-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 56px;
+  justify-content: center;
+}
+.pm-sesion-meta-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pm-sesion-meta-valor {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Picking Masivo — pantalla LPN post-confirmación ── */
+.pm-lpn-confirmado-page { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+.pm-lpn-confirmado-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--spacing-md); text-align: center; padding: var(--spacing-xl); }
+.pm-lpn-confirmado-check { font-size: 3rem; color: var(--success); }
+.pm-lpn-confirmado-titulo { font-size: var(--font-size-xl); font-weight: 700; color: var(--text-primary); }
+.pm-lpn-confirmado-label { font-size: var(--font-size-sm); color: var(--text-muted); }
+.pm-lpn-confirmado-codigo { font-size: 2.5rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); background: var(--bg-surface); border: 2px solid var(--accent); border-radius: var(--radius-md); padding: var(--spacing-md) var(--spacing-xl); }
+.pm-lpn-confirmado-btn { min-width: 240px; min-height: var(--touch-target); font-size: var(--font-size-base); }
+
+/* ── Picking Masivo — pantalla de despacho (admin) ── */
+.pm-despacho-page { max-width: 720px; margin: 0 auto; }
+.pm-despacho-header { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.pm-despacho-titulo-wrap { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+.pm-despacho-titulo-cliente { font-size: inherit; font-weight: 700; color: var(--text-primary); }
+.pm-despacho-titulo-sep { color: var(--text-muted); font-weight: 300; }
+.pm-despacho-titulo-label { font-size: inherit; font-weight: 700; color: var(--accent); }
+.pm-despacho-barra { width: 100%; height: 10px; background: var(--bg-surface); border-radius: 99px; overflow: hidden; }
+.pm-despacho-barra-fill { height: 100%; background: var(--success); border-radius: 99px; transition: width 0.3s ease; }
+.pm-despacho-scanner-card { display: flex; flex-direction: column; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-lg); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-elevated); }
+.pm-despacho-validados-card { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); padding: var(--spacing-md) var(--spacing-lg); margin-bottom: var(--spacing-lg); }
+.pm-despacho-scan-btn { min-height: var(--touch-target); font-size: var(--font-size-base); }
+.pm-despacho-validados { margin-top: var(--spacing-lg); }
+.pm-despacho-validados-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--spacing-sm); }
+.pm-despacho-validados-titulo { font-size: var(--font-size-sm); color: var(--text-secondary); font-weight: 600; margin: 0; }
+.pm-despacho-validados-ratio { font-size: var(--font-size-sm); font-weight: 700; color: var(--text-primary); }
+.pm-despacho-validado-fila { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); }
+.pm-despacho-validado-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pm-despacho-validado-codigo { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-despacho-validado-tienda { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.pm-despacho-validado-cant { font-size: var(--font-size-sm); color: var(--text-muted); white-space: nowrap; }
+.pm-despacho-validado-check { color: var(--success); font-size: 1rem; font-weight: 700; }
+.pm-despacho-validado-fila--click { cursor: pointer; }
+.pm-despacho-validado-fila--click:hover { background: var(--bg-elevated); border-radius: var(--radius-sm); }
+.pm-despacho-modal { min-width: 280px; }
+.pm-despacho-modal-fila { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-sm) 0; border-bottom: 3px solid var(--border); gap: var(--spacing-md); }
+.pm-despacho-modal-fila:last-of-type { border-bottom: none; }
+.pm-despacho-modal-label { font-size: var(--font-size-sm); color: var(--text-secondary); flex-shrink: 0; }
+.pm-despacho-modal-valor { font-size: var(--font-size-base); color: var(--text-primary); text-align: right; }
+.pm-despacho-ultimo { display: flex; align-items: flex-start; gap: var(--spacing-md); padding: var(--spacing-md); background: color-mix(in srgb, var(--success) 10%, transparent); border: 1px solid var(--success); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); }
+.pm-despacho-ultimo-check { font-size: 1.5rem; color: var(--success); flex-shrink: 0; }
+.pm-despacho-ultimo-info { display: flex; flex-direction: column; gap: 2px; }
+.pm-despacho-ultimo-codigo { font-weight: 700; color: var(--text-primary); font-size: var(--font-size-base); }
+.pm-despacho-ultimo-desc { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.pm-despacho-ultimo-cant { font-size: var(--font-size-sm); color: var(--text-muted); }
+.pm-despacho-despachar-btn { width: 100%; min-height: 56px; font-size: var(--font-size-base); margin-top: var(--spacing-md); }
+.pm-despacho-completado { text-align: center; padding: var(--spacing-lg); font-size: var(--font-size-lg); font-weight: 700; color: var(--success); }
+
+/* ── Picking Masivo — responsive tablet (481px+) ── */
+@media (min-width: 481px) {
+  .pm-despacho-page { max-width: 760px; }
+  .pm-despacho-titulo-wrap { font-size: 2rem; }
+  .pm-despacho-scanner-card { padding: var(--spacing-lg) var(--spacing-xl, 2rem); }
+  .pm-despacho-validados-card { padding: var(--spacing-lg) var(--spacing-xl, 2rem); }
+  .pm-despacho-scan-btn { font-size: var(--font-size-lg); min-height: 56px; }
+  .pm-despacho-validados-titulo { font-size: var(--font-size-base); }
+  .pm-despacho-validados-ratio { font-size: var(--font-size-base); }
+  .pm-despacho-validado-codigo { font-size: var(--font-size-base); }
+  .pm-despacho-despachar-btn { min-height: 64px; font-size: var(--font-size-lg); }
+
+  /* SesionDetallePage tablet */
+  .pm-sesion-detalle-header { gap: var(--spacing-lg); }
+  .pm-sesion-info-card { padding: var(--spacing-lg) var(--spacing-xl, 2rem); }
+  .pm-sesion-info-cliente { font-size: var(--font-size-lg); }
+  .pm-sesion-info-entrega-fecha { font-size: var(--font-size-lg); }
+  .pm-item-card .ing-prod-fila { padding: var(--spacing-md) var(--spacing-lg); min-height: 56px; }
+  .pm-item-detalle { padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg); }
+  .pm-item-detalle-label { font-size: var(--font-size-sm); }
+  .pm-item-detalle-valor { font-size: var(--font-size-base); }
+  .pm-item-detalle-lpn { font-size: var(--font-size-lg); }
+
+  /* PickingMasivoPage tablet */
+  .pm-sesion-nombre { font-size: var(--font-size-base); }
+  .pm-sesion-fila { padding: var(--spacing-md) var(--spacing-lg); min-height: 64px; }
+
+  /* ConfirmarSubtarea tablet */
+  .pm-confirmar-input { font-size: var(--font-size-lg); min-height: 56px; }
+}
+
+/* ── Picking Masivo — fila barcode + cámara ── */
+.pm-confirmar-barcode-row { display: flex; gap: var(--spacing-sm); align-items: center; }
+.pm-confirmar-barcode-row .pm-confirmar-input { flex: 1; }
+.pm-confirmar-barcode-row .btn-camara { flex-shrink: 0; }
+
+/* ── Picking Masivo — tarjeta sesión en cola ── */
+.pm-cola-sesion-card { display: flex; flex-direction: column; gap: 2px; padding: var(--spacing-md); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--spacing-md); }
+.pm-cola-sesion-nombre { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); }
+.pm-cola-sesion-fecha { font-size: var(--font-size-sm); color: var(--text-secondary); }
+
+/* ── Picking Masivo — cola de trabajo (lista) ── */
+.pm-cola-lista { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.pm-cola-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md); border-bottom: 1px solid var(--border); }
+.pm-cola-fila:last-child { border-bottom: none; }
+.pm-cola-fila--bloqueada { opacity: 0.5; }
+.pm-cola-fila--parcial { background: color-mix(in srgb, var(--warning) 8%, transparent); }
+.pm-cola-fila-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.pm-cola-fila-codigo { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); }
+.pm-cola-fila-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pm-cola-fila-pos { font-size: var(--font-size-xs); color: var(--text-muted); background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px; }
+.pm-cola-fila-lpn { font-size: var(--font-size-xs); font-weight: 600; color: var(--accent); }
+.pm-cola-fila-cant { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.pm-cola-fila-accion { flex-shrink: 0; }
+
+/* ── Picking Masivo — fila de ítem en detalle sesión ── */
+.pm-item-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); cursor: default; }
+.pm-item-fila:hover { background: var(--bg-elevated); }
+
+/* ── Picking Masivo — resultado validación Excel ── */
+.pm-validado-resumen { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--spacing-md); }
+.pm-alertas-lista { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--spacing-lg); }
+.pm-alerta-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: 10px var(--spacing-md); border-bottom: 1px solid var(--border); }
+.pm-alerta-fila:last-child { border-bottom: none; }
+.pm-alerta-fila:nth-child(even) { background: var(--bg-elevated); }
+.pm-alerta-izq { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pm-alerta-codigo { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); }
+.pm-alerta-stock { font-size: var(--font-size-xs); color: var(--text-muted); }
+
+/* ── Picking Masivo — lista de sesiones (operador) ── */
+/* ── Picking Masivo: lista de ítems con borde ── */
+.pm-items-lista {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.pm-item-card {
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+}
+.pm-item-card:last-child { border-bottom: none !important; }
+.pm-item-header { cursor: pointer; user-select: none; }
+.pm-item-header:hover { background: var(--bg-elevated); }
+.pm-item-chevron { font-size: 0.65rem; color: var(--text-muted); flex-shrink: 0; }
+.pm-item-detalle { padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md); display: flex; flex-direction: column; gap: var(--spacing-xs); border: 3px solid var(--accent); border-radius: var(--radius-lg, 12px); background: var(--accent-light); margin: 0 var(--spacing-sm) var(--spacing-sm); }
+.pm-item-detalle-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
+.pm-item-detalle-label { font-size: var(--font-size-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.pm-item-detalle-valor { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); text-align: right; }
+.pm-item-detalle-lpn { font-family: monospace; font-size: var(--font-size-base); color: var(--accent); }
+.pm-item-detalle-sin-lpn { color: var(--text-muted); font-weight: 400; font-style: italic; }
+
+/* ── Picking Masivo: tarjeta info sesión ── */
+.pm-sesion-info-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  margin-bottom: var(--spacing-md);
+}
+.pm-sesion-info-cliente {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-sesion-info-entrega {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+}
+.pm-sesion-info-entrega-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pm-sesion-info-entrega-fecha {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ── Picking Masivo: detalle sesión header ── */
+.pm-sesion-detalle-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+/* ── Picking Masivo: lista de sesiones (admin) ── */
+.pm-sesion-fila {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr minmax(140px, 200px) auto auto;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  text-align: left;
+}
+.pm-sesion-fila:hover { background: var(--bg-elevated); }
+.pm-sesion-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pm-sesion-nombre { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-sesion-oc { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.pm-sesion-progreso { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pm-sesion-fecha { font-size: var(--font-size-xs); font-weight: 700; color: var(--text-primary); white-space: nowrap; text-align: right; }
+
+.pm-op-sesion-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+}
+.pm-op-sesion-item:last-child { border-bottom: none; }
+.pm-op-sesion-item:hover { background: var(--bg-elevated); }
+.pm-op-sesion-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pm-op-sesion-nombre { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-op-sesion-oc { font-size: var(--font-size-xs); color: var(--text-secondary); }
+.pm-op-sesion-progreso { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.pm-op-sesion-btn { flex-shrink: 0; }
 
 @layer base {
   * {

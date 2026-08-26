@@ -4,6 +4,9 @@ export type FilaExcelPicking = {
   codigo:         string
   descripcion:    string
   cantidadPedida: number
+  codigoBarra?:   string
+  lpn?:           string
+  tienda?:        string
 }
 
 export type ResultadoParseoPicking = {
@@ -17,9 +20,12 @@ type Celda = string | number | boolean | null
 // Sodimac: VIN = nuestro SKU (columna "VIN (codigo producto)")
 // Imperial: "Codigo producto" = nuestro SKU
 // Genérico: "sku", "codigo", "cod"
-const ALIAS_CODIGO      = ['vin', 'codigo producto', 'codigo', 'cod', 'sku']
-const ALIAS_DESCRIPCION = ['descripcion', 'description', 'producto', 'nombre', 'detalle']
-const ALIAS_CANTIDAD    = ['unidades', 'cantidad pedida', 'cantidad', 'cant', 'qty']
+const ALIAS_CODIGO       = ['vin', 'codigo producto', 'codigo', 'cod', 'sku']
+const ALIAS_DESCRIPCION  = ['descripcion', 'description', 'producto', 'nombre', 'detalle']
+const ALIAS_CANTIDAD     = ['unidades', 'cantidad pedida', 'cantidad', 'cant', 'qty']
+const ALIAS_CODIGO_BARRA = ['upc', 'ean13', 'ean', 'codigo barra', 'codigo de barra', 'barcode']
+const ALIAS_LPN          = ['lpn']
+const ALIAS_TIENDA       = ['tienda', 'store', 'sucursal']
 
 function normalizar(s: string): string {
   return s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -57,6 +63,9 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
   const idxCodigo      = encontrarColumna(encabezados, ALIAS_CODIGO)
   const idxDescripcion = encontrarColumna(encabezados, ALIAS_DESCRIPCION)
   const idxCantidad    = encontrarColumna(encabezados, ALIAS_CANTIDAD)
+  const idxCodigoBarra = encontrarColumna(encabezados, ALIAS_CODIGO_BARRA)
+  const idxLpn         = encontrarColumna(encabezados, ALIAS_LPN)
+  const idxTienda      = encontrarColumna(encabezados, ALIAS_TIENDA)
 
   if (idxCodigo === -1 || idxCantidad === -1) {
     errores.push('No se encontraron las columnas código / cantidad en el archivo')
@@ -67,9 +76,12 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
   for (const fila of filasDatos) {
     const codigo      = String(fila[idxCodigo] ?? '').trim()
     const descripcion = idxDescripcion !== -1 ? String(fila[idxDescripcion] ?? '').trim() : codigo
-    const cantidad     = Number(fila[idxCantidad])
+    const cantidad    = Number(fila[idxCantidad])
     if (!codigo || !Number.isFinite(cantidad) || cantidad <= 0) continue
-    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad) })
+    const codigoBarra = idxCodigoBarra !== -1 ? String(fila[idxCodigoBarra] ?? '').trim() || undefined : undefined
+    const lpn         = idxLpn !== -1         ? String(fila[idxLpn] ?? '').trim() || undefined : undefined
+    const tienda      = idxTienda !== -1      ? String(fila[idxTienda] ?? '').trim() || undefined : undefined
+    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad), codigoBarra, lpn, tienda })
   }
 
   if (filas.length === 0) errores.push('No se encontraron filas válidas en el archivo')

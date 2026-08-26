@@ -17,7 +17,7 @@ export type SesionResumen = {
   id:               string
   numero_oc:        string
   nombre_cliente:   string | null
-  estado:           'validando' | 'activa' | 'completada' | 'cancelada'
+  estado:           'validando' | 'activa' | 'completada' | 'despachado' | 'cancelada'
   total_items:      number
   items_completados: number
   archivo_nombre:   string | null
@@ -36,11 +36,14 @@ export type SubtareaResumen = {
   bloqueado_por:     string | null
   bloqueado_en:      string | null
   item_id:           string
+  motivo_diferencia: string | null
   items_picking_masivo: {
     codigo:            string
     descripcion:       string
     cantidad_pedida:   number
     cantidad_despachada: number
+    codigo_barra:      string | null
+    lpn:               string | null
   } | null
 }
 
@@ -72,6 +75,18 @@ export const pickingMasivoApi = {
 
   liberarPropias: (body: LiberarPropiasInput) =>
     apiClient.post<{ liberadas: number }>('/picking-masivo?accion=liberar-propias', body),
+
+  editarParcial: (body: { subtareaId: string; usuarioId: string; cantidadDespachada: number; motivo?: string }) =>
+    apiClient.post<{ subtareaId: string }>('/picking-masivo?accion=editar-parcial', body),
+
+  buscarLpn: (body: { sesionId: string; lpn: string }) =>
+    apiClient.post<{ itemId: string; codigo: string; descripcion: string; cantidadPedida: number; tienda: string | null }>('/picking-masivo?accion=buscar-lpn', body),
+
+  validarLpn: (body: { sesionId: string; lpn: string }) =>
+    apiClient.post<{ itemId: string; codigo: string; descripcion: string; cantidadPedida: number; tienda: string | null; lpnValidado: boolean }>('/picking-masivo?accion=validar-lpn', body),
+
+  despacharSesion: (body: { sesionId: string; usuarioId: string; nombreChofer: string }) =>
+    apiClient.post<{ sesionId: string }>('/picking-masivo?accion=despachar-sesion', body),
 
   cancelarSesion: (sesionId: string) =>
     apiClient.post<{ sesionId: string }>('/picking-masivo?accion=cancelar-sesion', { sesionId }),

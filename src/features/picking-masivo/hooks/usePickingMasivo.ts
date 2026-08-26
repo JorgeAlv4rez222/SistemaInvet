@@ -66,6 +66,37 @@ export function useLiberarPropias(sesionId: string) {
   })
 }
 
+export function useEditarParcial(sesionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: pickingMasivoApi.editarParcial,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['picking-masivo', 'cola', sesionId] })
+      qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] })
+    },
+  })
+}
+
+export function useBuscarLpn() {
+  return useMutation({ mutationFn: pickingMasivoApi.buscarLpn })
+}
+
+export function useValidarLpn(sesionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: pickingMasivoApi.validarLpn,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] }),
+  })
+}
+
+export function useDespacharSesion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: pickingMasivoApi.despacharSesion,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesiones'] }),
+  })
+}
+
 export function useCancelarSesion() {
   const qc = useQueryClient()
   return useMutation({

@@ -56,7 +56,7 @@ export function PickingMasivoPage() {
                   return (
                     <div key={s.id} className="nota-fila-item">
                       <div
-                        className="nota-fila"
+                        className="pm-sesion-fila"
                         role="button"
                         tabIndex={0}
                         onClick={() => navigate(`/picking-masivo/${s.id}`)}
@@ -64,12 +64,12 @@ export function PickingMasivoPage() {
                           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/picking-masivo/${s.id}`) }
                         }}
                       >
-                        <div className="nota-fila-principal">
-                          <span className="nota-fila-numero">OC {s.numero_oc}</span>
-                          <span className="nota-fila-cliente">{s.nombre_cliente ?? '—'}</span>
+                        <div className="pm-sesion-info">
+                          <span className="pm-sesion-nombre">{s.nombre_cliente ?? s.numero_oc}</span>
+                          <span className="pm-sesion-oc">OC {s.numero_oc}</span>
                         </div>
 
-                        <div className="nota-fila-progreso">
+                        <div className="pm-sesion-progreso">
                           <div className="nota-progreso-barra">
                             <div
                               className="nota-progreso-fill"
@@ -82,11 +82,9 @@ export function PickingMasivoPage() {
                           <span className="nota-progreso-texto">{s.items_completados}/{s.total_items} · {pct}%</span>
                         </div>
 
-                        <span className="nota-fila-fecha">{formatearFecha(s.creado_en)}</span>
+                        <span className="pm-sesion-fecha">{formatearFecha(s.creado_en)}</span>
 
-                        <div className="nota-fila-estado">
-                          <BadgeEstado estado={s.estado} />
-                        </div>
+                        <BadgeEstado estado={s.estado} />
                       </div>
                     </div>
                   )

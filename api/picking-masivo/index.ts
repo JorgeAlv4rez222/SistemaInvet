@@ -11,6 +11,8 @@ const itemExcelSchema = z.object({
   descripcion:   z.string().min(1),
   cantidadPedida: z.number().int().positive(),
   productoId:    z.string().uuid().optional(),
+  codigoBarra:   z.string().optional(),
+  lpn:           z.string().optional(),
 })
 
 const validarExcelSchema = z.object({
@@ -46,6 +48,24 @@ const confirmarSubtareaSchema = z.object({
 const liberarPropiasSchema = z.object({
   sesionId:  z.string().uuid(),
   usuarioId: z.string().uuid(),
+})
+
+const validarLpnSchema = z.object({
+  sesionId: z.string().uuid(),
+  lpn:      z.string().min(1),
+})
+
+const despacharSesionSchema = z.object({
+  sesionId:     z.string().uuid(),
+  usuarioId:    z.string().uuid(),
+  nombreChofer: z.string().min(1),
+})
+
+const editarParcialSchema = z.object({
+  subtareaId:         z.string().uuid(),
+  usuarioId:          z.string().uuid(),
+  cantidadDespachada: z.number().int().min(0),
+  motivo:             z.string().optional(),
 })
 
 const cancelarSesionSchema = z.object({
@@ -170,6 +190,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return result.ok
         ? res.status(200).json(result.data)
         : res.status(500).json({ error: result.error })
+    }
+
+    if (accion === 'editar-parcial') {
+      const parsed = editarParcialSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await pickingMasivoService.editarParcial(parsed.data)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(
+            result.error.code === 'NOT_FOUND' ? 404
+            : result.error.code === 'INVALID_STATE' ? 409
+            : 500
+          ).json({ error: result.error })
+    }
+
+    if (accion === 'buscar-lpn') {
+      const parsed = validarLpnSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await pickingMasivoService.buscarLpn(parsed.data.sesionId, parsed.data.lpn)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(result.error.code === 'NOT_FOUND' ? 404 : 500).json({ error: result.error })
+    }
+
+    if (accion === 'validar-lpn') {
+      const parsed = validarLpnSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await pickingMasivoService.validarLpn(parsed.data.sesionId, parsed.data.lpn)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(result.error.code === 'NOT_FOUND' ? 404 : 500).json({ error: result.error })
+    }
+
+    if (accion === 'despachar-sesion') {
+      const parsed = despacharSesionSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await pickingMasivoService.despacharSesion(parsed.data)
+      return result.ok
+        ? res.status(200).json(result.data)
+        : res.status(
+            result.error.code === 'NOT_FOUND' ? 404
+            : result.error.code === 'INVALID_STATE' ? 409
+            : result.error.code === 'VALIDATION_ERROR' ? 400
+            : 500
+          ).json({ error: result.error })
     }
 
     if (accion === 'cancelar-sesion') {

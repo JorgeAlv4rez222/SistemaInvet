@@ -27,30 +27,26 @@ export function OperadorSesionesPage() {
               {sesiones.map((s: SesionResumen) => {
                 const pct = s.total_items ? Math.round((s.items_completados / s.total_items) * 100) : 0
                 return (
-                  <div key={s.id} className="nota-fila-item">
-                    <div className="nota-fila">
-                      <div className="nota-fila-principal">
-                        <span className="nota-fila-numero">OC {s.numero_oc}</span>
-                        <span className="nota-fila-cliente">{s.nombre_cliente ?? '—'}</span>
-                      </div>
-
-                      <div className="nota-fila-progreso">
-                        <div className="nota-progreso-barra">
-                          <div
-                            className="nota-progreso-fill"
-                            style={{
-                              width: `${pct}%`,
-                              background: pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--danger)',
-                            }}
-                          />
-                        </div>
-                        <span className="nota-progreso-texto">{s.items_completados}/{s.total_items} · {pct}%</span>
-                      </div>
-
-                      <button className="btn-primario" onClick={() => navigate(`/picking-masivo/operador/${s.id}`)}>
-                        Unirse
-                      </button>
+                  <div key={s.id} className="pm-op-sesion-item">
+                    <div className="pm-op-sesion-info">
+                      <span className="pm-op-sesion-nombre">{s.nombre_cliente ?? s.numero_oc}</span>
+                      <span className="pm-op-sesion-oc">{s.numero_oc}</span>
                     </div>
+                    <div className="pm-op-sesion-progreso">
+                      <div className="nota-progreso-barra">
+                        <div
+                          className="nota-progreso-fill"
+                          style={{
+                            width: `${pct}%`,
+                            background: pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--danger)',
+                          }}
+                        />
+                      </div>
+                      <span className="nota-progreso-texto">{s.items_completados}/{s.total_items} · {pct}%</span>
+                    </div>
+                    <button className="btn-primario pm-op-sesion-btn" onClick={() => navigate(`/picking-masivo/operador/${s.id}`)}>
+                      Unirse
+                    </button>
                   </div>
                 )
               })}

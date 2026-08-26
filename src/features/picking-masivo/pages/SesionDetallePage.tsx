@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCancelarSesion, useSesionPicking } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
@@ -29,6 +29,8 @@ type ItemDetalle = {
   cantidad_despachada: number
   estado:              string
   motivo_diferencia:   string | null
+  lpn:                 string | null
+  tienda:              string | null
   subtareas_picking_masivo: SubtareaDetalle[]
 }
 
@@ -38,6 +40,7 @@ const ESTADO_SESION_LABELS: Record<string, string> = {
   validando:  'Validando',
   activa:     'Activa',
   completada: 'Completada',
+  despachado: 'Despachado',
   cancelada:  'Cancelada',
 }
 
@@ -74,17 +77,6 @@ function IcoBack({ size = 16 }: { size?: number }) {
     </svg>
   )
 }
-function IcoChevron({ activo }: { activo: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-      width={14} height={14}
-      className={activo ? 'ing-prod-chevron ing-prod-chevron--activo' : 'ing-prod-chevron'}
-    >
-      <polyline points="9 18 15 12 9 6"/>
-    </svg>
-  )
-}
 
 export function SesionDetallePage() {
   const { id }    = useParams<{ id: string }>()
@@ -95,17 +87,17 @@ export function SesionDetallePage() {
   useRealtimeSesion(sesionId)
   const cancelarSesion = useCancelarSesion()
 
-  const [expandidos, setExpandidos]     = useState<Set<string>>(new Set())
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
+  const [expandido, setExpandido]       = useState<Set<string>>(new Set())
 
-  function toggleExpandido(itemId: string) {
-    setExpandidos((cur) => {
-      const next = new Set(cur)
-      if (next.has(itemId)) next.delete(itemId); else next.add(itemId)
+  const toggleExpandido = useCallback((id: string) => {
+    setExpandido((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-  }
+  }, [])
 
   async function handleCancelar() {
     if (!sesionId) return
@@ -127,42 +119,35 @@ export function SesionDetallePage() {
 
   return (
     <div className="notas-page">
-      <div className="ing-detalle-header">
+      <div className="pm-sesion-detalle-header">
         <button className="btn-volver" onClick={() => navigate('/picking-masivo')}>
           <IcoBack /> Volver
         </button>
-        <h1 className="notas-titulo">OC {sesion.numero_oc}</h1>
-        <div className="ing-detalle-estado">
-          <BadgeSesion estado={sesion.estado} />
-        </div>
+        <h1 className="notas-titulo" style={{ flex: 1, fontSize: '1.75rem' }}>Detalle — {sesion.nombre_cliente ?? sesion.numero_oc}</h1>
+        <span className={`badge badge-${sesion.estado}`} style={{ fontSize: '1.4rem', padding: '0.5rem 1.2rem' }}>
+          {ESTADO_SESION_LABELS[sesion.estado] ?? sesion.estado}
+        </span>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="ing-detalle-meta">
-        <div className="ing-meta-item">
-          <span className="ing-meta-label">Cliente</span>
-          <span className="ing-meta-valor">{sesion.nombre_cliente ?? '—'}</span>
-        </div>
-        <div className="ing-meta-item">
-          <span className="ing-meta-label">Progreso</span>
-          <span className="ing-meta-valor">{sesion.items_completados}/{sesion.total_items}</span>
-        </div>
-        <div className="ing-meta-item">
-          <span className="ing-meta-label">Archivo</span>
-          <span className="ing-meta-valor">{sesion.archivo_nombre ?? '—'}</span>
+      <div className="pm-sesion-info-card">
+        <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+        <div className="pm-sesion-info-entrega">
+          <span className="pm-sesion-info-entrega-label">Fecha de entrega</span>
+          <span className="pm-sesion-info-entrega-fecha">{sesion.numero_oc}</span>
         </div>
       </div>
 
-      <div className="nota-progreso-barra">
-        <div
-          className="nota-progreso-fill"
-          style={{
-            width: `${pct}%`,
-            background: pct === 100 ? 'var(--success)' : pct > 0 ? 'var(--warning)' : 'var(--danger)',
-          }}
-        />
-      </div>
+      {sesion.estado === 'completada' && (
+        <button
+          className="btn-primario"
+          style={{ marginBottom: 'var(--spacing-md)' }}
+          onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}
+        >
+          Validar Entrega →
+        </button>
+      )}
 
       {puedeCancelar && (
         <div className="paso-acciones">
@@ -182,43 +167,58 @@ export function SesionDetallePage() {
         </div>
       )}
 
-      <div className="ing-productos-lista">
+      <div className="ing-productos-lista pm-items-lista">
         {sesion.items.map((item) => {
-          const abierto = expandidos.has(item.id)
+          const abierto = expandido.has(item.id)
           return (
-            <div key={item.id} className="ing-prod-item">
-              <button type="button" className="ing-prod-fila" onClick={() => toggleExpandido(item.id)}>
-                <span>{item.codigo} — {item.descripcion}</span>
-                <span className="nota-fila-progreso">
-                  <span className="nota-progreso-texto">{item.cantidad_despachada}/{item.cantidad_pedida}</span>
+            <div key={item.id} className="ing-prod-item pm-item-card">
+              <div
+                className="ing-prod-fila pm-item-header"
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleExpandido(item.id)}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleExpandido(item.id)}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                  <span className="ing-prod-nombre">
+                    {item.descripcion && item.descripcion !== item.codigo ? item.descripcion : item.codigo}
+                  </span>
+                  {item.descripcion && item.descripcion !== item.codigo && (
+                    <span className="ing-prod-sku">{item.codigo}</span>
+                  )}
+                </div>
+                <div className="ing-prod-fila-derecha" style={{ gap: '0.5rem' }}>
                   <BadgeItem estado={item.estado} />
-                  <IcoChevron activo={abierto} />
-                </span>
-              </button>
+                  <span className="pm-item-chevron">{abierto ? '▲' : '▼'}</span>
+                </div>
+              </div>
 
               {abierto && (
-                <div className="ing-prod-detalle">
-                  {item.subtareas_picking_masivo.length === 0 ? (
-                    <p className="picking-nombre">Sin subtareas generadas (sin stock disponible)</p>
+                <div className="pm-item-detalle">
+                  <div className="pm-item-detalle-fila">
+                    <span className="pm-item-detalle-label">Código</span>
+                    <span className="pm-item-detalle-valor">{item.codigo}</span>
+                  </div>
+                  <div className="pm-item-detalle-fila">
+                    <span className="pm-item-detalle-label">Cantidad</span>
+                    <span className="pm-item-detalle-valor">{item.cantidad_pedida}</span>
+                  </div>
+                  {item.lpn ? (
+                    <div className="pm-item-detalle-fila">
+                      <span className="pm-item-detalle-label">LPN</span>
+                      <span className="pm-item-detalle-valor pm-item-detalle-lpn">{item.lpn}</span>
+                    </div>
                   ) : (
-                    item.subtareas_picking_masivo
-                      .sort((a, b) => a.orden_fifo - b.orden_fifo)
-                      .map((sub) => (
-                        <div key={sub.id} className="ing-meta-item">
-                          <span className="ing-meta-label">
-                            #{sub.orden_fifo} · {sub.posicion_codigo}
-                            {sub.es_equivalente && ' · equivalente'}
-                          </span>
-                          <span className="ing-meta-valor">
-                            {sub.cantidad_despachada ?? 0}/{sub.cantidad_asignada}
-                            {' '}
-                            <BadgeSubtarea estado={sub.estado} />
-                          </span>
-                          {sub.motivo_diferencia && (
-                            <span className="picking-nombre">Motivo: {sub.motivo_diferencia}</span>
-                          )}
-                        </div>
-                      ))
+                    <div className="pm-item-detalle-fila">
+                      <span className="pm-item-detalle-label">LPN</span>
+                      <span className="pm-item-detalle-valor pm-item-detalle-sin-lpn">Sin LPN asignado</span>
+                    </div>
+                  )}
+                  {item.tienda && (
+                    <div className="pm-item-detalle-fila">
+                      <span className="pm-item-detalle-label">Tienda</span>
+                      <span className="pm-item-detalle-valor">{item.tienda}</span>
+                    </div>
                   )}
                 </div>
               )}

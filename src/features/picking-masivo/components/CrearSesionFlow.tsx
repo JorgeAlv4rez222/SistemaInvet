@@ -55,11 +55,12 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
   }
 
   async function handleValidar() {
-    if (!numeroOc.trim()) { setError('Ingresa el número de OC'); return }
+    if (!nombreCliente.trim()) { setError('Ingresa el nombre del cliente'); return }
+    if (!numeroOc.trim()) { setError('Ingresa la fecha de entrega'); return }
     setError(null)
     try {
       const res = await validarExcel.mutateAsync({
-        items: filas.map((f) => ({ codigo: f.codigo, descripcion: f.descripcion, cantidadPedida: f.cantidadPedida })),
+        items: filas.map((f) => ({ codigo: f.codigo, descripcion: f.descripcion, cantidadPedida: f.cantidadPedida, codigoBarra: f.codigoBarra, lpn: f.lpn, tienda: f.tienda })),
       })
       setResultado(res)
       setPaso('validado')
@@ -83,6 +84,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           descripcion:    i.descripcion,
           cantidadPedida: i.cantidadPedida,
           productoId:     i.productoId,
+          codigoBarra:    i.codigoBarra,
+          lpn:            i.lpn,
+          tienda:         i.tienda,
         })),
       })
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })
@@ -122,22 +126,22 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       {paso === 'preview' && (
         <div className="paso">
           <div className="ing-filtro-grupo">
-            <span className="ing-filtro-label">Número de OC</span>
-            <input
-              className="ing-filtro-select"
-              value={numeroOc}
-              onChange={(e) => setNumeroOc(e.target.value)}
-              placeholder="N° OC"
-              autoFocus
-            />
-          </div>
-          <div className="ing-filtro-grupo">
-            <span className="ing-filtro-label">Cliente (opcional)</span>
+            <span className="ing-filtro-label">Cliente</span>
             <input
               className="ing-filtro-select"
               value={nombreCliente}
               onChange={(e) => setNombreCliente(e.target.value)}
               placeholder="Nombre cliente"
+              autoFocus
+            />
+          </div>
+          <div className="ing-filtro-grupo">
+            <span className="ing-filtro-label">Fecha de entrega</span>
+            <input
+              className="ing-filtro-select"
+              value={numeroOc}
+              onChange={(e) => setNumeroOc(e.target.value)}
+              placeholder="Ej: 28-08-2026"
             />
           </div>
 
@@ -149,8 +153,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                 <tr>
                   <th className="excel-th excel-th--num">#</th>
                   <th className="excel-th">Código</th>
-                  <th className="excel-th">Descripción</th>
                   <th className="excel-th excel-th--derecha">Cantidad</th>
+                  {filas.some((f) => f.codigoBarra) && <th className="excel-th">EAN / UPC</th>}
+                  {filas.some((f) => f.lpn)         && <th className="excel-th">LPN</th>}
                 </tr>
               </thead>
               <tbody>
@@ -158,8 +163,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                   <tr key={i} className={i % 2 === 0 ? 'excel-tr--par' : 'excel-tr--impar'}>
                     <td className="excel-td excel-td--num">{i + 1}</td>
                     <td className="excel-td">{f.codigo}</td>
-                    <td className="excel-td">{f.descripcion}</td>
                     <td className="excel-td excel-td--derecha">{f.cantidadPedida}</td>
+                    {filas.some((f2) => f2.codigoBarra) && <td className="excel-td">{f.codigoBarra ?? '—'}</td>}
+                    {filas.some((f2) => f2.lpn)         && <td className="excel-td">{f.lpn ?? '—'}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -179,51 +185,21 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
 
       {paso === 'validado' && resultado && (
         <div className="paso">
-          <div className="ing-detalle-meta">
-            <div className="ing-meta-item">
-              <span className="ing-meta-label">Total ítems</span>
-              <span className="ing-meta-valor">{resultado.totalItems}</span>
-            </div>
-            <div className="ing-meta-item">
-              <span className="ing-meta-label">Con catálogo</span>
-              <span className="ing-meta-valor">{resultado.conCatalogo}</span>
-            </div>
-            <div className="ing-meta-item">
-              <span className="ing-meta-label">Sin catálogo</span>
-              <span className="ing-meta-valor">{resultado.sinCatalogo}</span>
-            </div>
-            <div className="ing-meta-item">
-              <span className="ing-meta-label">Sin stock</span>
-              <span className="ing-meta-valor">{resultado.sinStock}</span>
-            </div>
-          </div>
+          <p className="pm-validado-resumen">{resultado.totalItems} ítems · {resultado.conCatalogo} en catálogo · {resultado.sinStock} sin stock</p>
 
-          {resultado.alertas.length > 0 ? (
-            <div className="ing-seccion">
-              <div className="ing-seccion-titulo">
-                <span className="ing-seccion-dot ing-seccion-dot--pendiente" />
-                Alertas ({resultado.alertas.length}) — puedes continuar igualmente
-              </div>
-              <div className="ing-productos-lista">
-                {resultado.alertas.map((a, i) => (
-                  <div key={i} className="ing-prod-item">
-                    <div className="ing-prod-fila">
-                      <span>{a.codigo} — {a.descripcion}</span>
-                      <span className={`badge badge-${a.tipo.replace(/_/g, '-')}`}>{ALERTA_LABELS[a.tipo] ?? a.tipo}</span>
-                    </div>
-                    {(a.stockActual !== undefined || a.solicitado !== undefined) && (
-                      <p className="picking-nombre">Stock: {a.stockActual ?? 0} · Solicitado: {a.solicitado ?? 0}</p>
+          {resultado.alertas.length > 0 && (
+            <div className="pm-alertas-lista">
+              {resultado.alertas.map((a, i) => (
+                <div key={i} className="pm-alerta-fila">
+                  <div className="pm-alerta-izq">
+                    <span className="pm-alerta-codigo">{a.codigo}</span>
+                    {a.stockActual !== undefined && (
+                      <span className="pm-alerta-stock">Stock: {a.stockActual} · Solicitado: {a.solicitado ?? 0}</span>
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="ing-seccion">
-              <div className="ing-seccion-titulo">
-                <span className="ing-seccion-dot ing-seccion-dot--completo" />
-                Sin alertas — todos los ítems tienen catálogo y stock
-              </div>
+                  <span className={`badge badge-${a.tipo.replace(/_/g, '-')}`}>{ALERTA_LABELS[a.tipo] ?? a.tipo}</span>
+                </div>
+              ))}
             </div>
           )}
 

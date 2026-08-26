@@ -1,11 +1,12 @@
 import { initSupabase, supabase } from '../../api/lib/supabase/client'
-import { pickingMasivoService } from '../../api/picking-masivo/picking-masivo.service'
+import { pickingMasivoService, type EditarParcialInput } from '../../api/picking-masivo/picking-masivo.service'
 import { json, errStatus, sp, type Env } from '../_lib/cf'
 import { z } from 'zod'
 
 const itemExcelSchema = z.object({
   codigo: z.string().min(1), descripcion: z.string().min(1),
   cantidadPedida: z.coerce.number().int().positive(), productoId: z.string().uuid().optional(),
+  codigoBarra: z.string().optional(), lpn: z.string().optional(),
 })
 const validarExcelSchema   = z.object({ items: z.array(itemExcelSchema).min(1) })
 const crearSesionSchema    = z.object({
@@ -21,6 +22,12 @@ const confirmarSubtareaSchema = z.object({
   productoRealId: z.string().uuid().optional(),
 })
 const liberarPropiasSchema  = z.object({ sesionId: z.string().uuid(), usuarioId: z.string().uuid() })
+const editarParcialSchema   = z.object({
+  subtareaId: z.string().uuid(), usuarioId: z.string().uuid(),
+  cantidadDespachada: z.coerce.number().int().min(0), motivo: z.string().optional(),
+})
+const validarLpnSchema      = z.object({ sesionId: z.string().uuid(), lpn: z.string().min(1) })
+const despacharSesionSchema = z.object({ sesionId: z.string().uuid(), usuarioId: z.string().uuid(), nombreChofer: z.string().min(1) })
 const cancelarSesionSchema  = z.object({ sesionId: z.string().uuid() })
 
 async function getUsuarioId(request: Request): Promise<string | null> {
@@ -98,6 +105,30 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await pickingMasivoService.liberarPropias(parsed.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
+    }
+    if (accion === 'editar-parcial') {
+      const parsed = editarParcialSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.editarParcial(parsed.data as EditarParcialInput)
+      return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
+    }
+    if (accion === 'buscar-lpn') {
+      const parsed = validarLpnSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.buscarLpn(parsed.data.sesionId, parsed.data.lpn)
+      return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
+    }
+    if (accion === 'validar-lpn') {
+      const parsed = validarLpnSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.validarLpn(parsed.data.sesionId, parsed.data.lpn)
+      return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
+    }
+    if (accion === 'despachar-sesion') {
+      const parsed = despacharSesionSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.despacharSesion(parsed.data)
+      return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
     }
     if (accion === 'cancelar-sesion') {
       const parsed = cancelarSesionSchema.safeParse(body)

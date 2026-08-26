@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useColaSubtareas, useLiberarPropias, useTomarSubtarea } from '../hooks/usePickingMasivo'
+import { useColaSubtareas, useLiberarPropias, useSesionPicking, useTomarSubtarea } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { SubtareaResumen } from '../services/picking-masivo.api'
@@ -12,6 +12,7 @@ export function OperadorColaPage() {
   const operadorId = localStorage.getItem('user_id') ?? ''
 
   const { data, isLoading, isError } = useColaSubtareas(sesionId)
+  const { data: sesion } = useSesionPicking(sesionId)
   useRealtimeSesion(sesionId)
   const tomarSubtarea   = useTomarSubtarea(sesionId ?? '')
   const liberarPropias  = useLiberarPropias(sesionId ?? '')
@@ -51,6 +52,13 @@ export function OperadorColaPage() {
         </button>
       </div>
 
+      {sesion && (
+        <div className="pm-cola-sesion-card">
+          <span className="pm-cola-sesion-nombre">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+          <span className="pm-cola-sesion-fecha">Entrega: {sesion.numero_oc}</span>
+        </div>
+      )}
+
       {error && <div className="error-banner">{error}</div>}
 
       {isLoading && <p className="cargando">Cargando cola…</p>}
@@ -60,35 +68,47 @@ export function OperadorColaPage() {
       )}
 
       {!isLoading && !isError && subtareas.length > 0 && (
-        <div className="pm-cola-grid">
+        <div className="pm-cola-lista">
           {subtareas.map((sub: SubtareaResumen) => {
-            const esMia       = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
+            const esMia          = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
             const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
+            const esParcial      = sub.estado === 'parcial' || sub.estado === 'sin_stock'
+            const lpn            = sub.items_picking_masivo?.lpn
 
             return (
-              <div key={sub.id} className={`pm-card ${bloqueadaXOtro ? 'pm-card--bloqueada' : ''}`}>
-                <div className="pm-card-pos">{sub.posicion_codigo}</div>
-                <div className="pm-card-prod">
-                  <span className="pm-card-codigo">{sub.items_picking_masivo?.codigo}</span>
-                  <span className="pm-card-desc">{sub.items_picking_masivo?.descripcion}</span>
+              <div key={sub.id} className={`pm-cola-fila ${bloqueadaXOtro ? 'pm-cola-fila--bloqueada' : ''} ${esParcial ? 'pm-cola-fila--parcial' : ''}`}>
+                <div className="pm-cola-fila-info">
+                  <span className="pm-cola-fila-codigo">{sub.items_picking_masivo?.codigo}</span>
+                  <div className="pm-cola-fila-meta">
+                    {sub.posicion_codigo !== '—' && (
+                      <span className="pm-cola-fila-pos">{sub.posicion_codigo}</span>
+                    )}
+                    {lpn && <span className="pm-cola-fila-lpn">LPN: {lpn}</span>}
+                    <span className="pm-cola-fila-cant">
+                      {esParcial
+                        ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada} uds`
+                        : `${sub.cantidad_asignada} uds`}
+                    </span>
+                  </div>
                 </div>
-                <div className="pm-card-cant">{sub.cantidad_asignada} uds</div>
 
-                {esMia ? (
-                  <button className="btn-primario pm-card-btn" onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}>
-                    Continuar
-                  </button>
-                ) : bloqueadaXOtro ? (
-                  <span className="badge badge-bloqueado pm-card-btn">Tomada por otro operador</span>
-                ) : (
-                  <button
-                    className="btn-primario pm-card-btn"
-                    disabled={tomandoId === sub.id}
-                    onClick={() => handleTomar(sub)}
-                  >
-                    {tomandoId === sub.id ? 'Tomando…' : 'Tomar'}
-                  </button>
-                )}
+                <div className="pm-cola-fila-accion">
+                  {esParcial ? (
+                    <button className="btn-secundario" onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}>
+                      Editar parcial
+                    </button>
+                  ) : esMia ? (
+                    <button className="btn-primario" onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}>
+                      Continuar
+                    </button>
+                  ) : bloqueadaXOtro ? (
+                    <span className="badge badge-bloqueado">Tomada</span>
+                  ) : (
+                    <button className="btn-primario" disabled={tomandoId === sub.id} onClick={() => handleTomar(sub)}>
+                      {tomandoId === sub.id ? 'Tomando…' : 'Tomar'}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

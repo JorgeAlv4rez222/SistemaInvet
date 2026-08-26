@@ -13,8 +13,18 @@ export type CrearSesionInput = {
     codigo:        string
     descripcion:   string
     cantidadPedida: number
-    productoId?:   string   // puede ser null si no existe en catálogo
+    productoId?:   string
+    codigoBarra?:  string
+    lpn?:          string
+    tienda?:       string
   }[]
+}
+
+export type EditarParcialInput = {
+  subtareaId:         string
+  usuarioId:          string
+  cantidadDespachada: number
+  motivo?:            string
 }
 
 export type ValidarExcelInput = {
@@ -22,6 +32,8 @@ export type ValidarExcelInput = {
     codigo:        string
     descripcion:   string
     cantidadPedida: number
+    codigoBarra?:  string
+    lpn?:          string
   }[]
 }
 
@@ -43,6 +55,8 @@ export type ValidarExcelResult = {
     cantidadPedida: number
     productoId?:   string
     stockTotal?:   number
+    codigoBarra?:  string
+    lpn?:          string
     ok:            boolean
   }[]
 }
@@ -115,7 +129,7 @@ export const pickingMasivoService = {
       if (!prod) {
         sinCatalogo++
         alertas.push({ codigo: item.codigo, descripcion: item.descripcion, tipo: 'sin_catalogo' })
-        itemsResult.push({ ...item, ok: false })
+        itemsResult.push({ ...item, codigoBarra: item.codigoBarra, lpn: item.lpn, ok: false })
         continue
       }
 
@@ -141,9 +155,11 @@ export const pickingMasivoService = {
 
       itemsResult.push({
         ...item,
-        productoId: prod.id,
-        stockTotal: stock,
-        ok: stock >= item.cantidadPedida,
+        productoId:  prod.id,
+        stockTotal:  stock,
+        codigoBarra: item.codigoBarra,
+        lpn:         item.lpn,
+        ok:          stock >= item.cantidadPedida,
       })
     }
 
@@ -185,6 +201,9 @@ export const pickingMasivoService = {
       codigo:             item.codigo,
       descripcion:        item.descripcion,
       cantidad_pedida:    item.cantidadPedida,
+      codigo_barra:       item.codigoBarra ?? null,
+      lpn:                item.lpn ?? null,
+      tienda:             item.tienda ?? null,
     }))
 
     const { error: itemsErr } = await supabase
@@ -262,13 +281,12 @@ export const pickingMasivoService = {
       const lotes   = lotesPorProducto.get(item.producto_id as string) ?? []
       let restante  = item.cantidad_pedida
       let orden     = 1
+      let generadas = 0
 
       for (const lote of lotes) {
         if (restante <= 0) break
-
         const pos = lote.posiciones_rack as { id: string; codigo: string } | null
         if (!pos) continue
-
         const asignado = Math.min(lote.cantidad, restante)
         subtareas.push({
           item_id:           item.id,
@@ -280,6 +298,21 @@ export const pickingMasivoService = {
           cantidad_asignada: asignado,
         })
         restante -= asignado
+        generadas++
+      }
+
+      // Sin lotes en el sistema: generar una subtarea genérica para que el
+      // operador pueda igualmente pickear el ítem manualmente.
+      if (generadas === 0) {
+        subtareas.push({
+          item_id:           item.id,
+          sesion_id:         input.sesionId,
+          lote_id:           null,
+          posicion_id:       null,
+          posicion_codigo:   '—',
+          orden_fifo:        1,
+          cantidad_asignada: item.cantidad_pedida,
+        })
       }
     }
 
@@ -312,7 +345,9 @@ export const pickingMasivoService = {
     if (estado) q = q.eq('estado', estado)
 
     const { data, error } = await q
-    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    if (error) {
+      return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    }
     return { ok: true, data: data ?? [] }
   },
 
@@ -352,13 +387,13 @@ export const pickingMasivoService = {
     const { data, error } = await supabase
       .from('subtareas_picking_masivo')
       .select(`
-        id, posicion_codigo, orden_fifo, cantidad_asignada, estado,
-        bloqueado_por, bloqueado_en,
+        id, posicion_codigo, orden_fifo, cantidad_asignada, cantidad_despachada,
+        estado, bloqueado_por, bloqueado_en, motivo_diferencia,
         item_id,
-        items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada )
+        items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada, codigo_barra, lpn )
       `)
       .eq('sesion_id', sesionId)
-      .in('estado', ['libre', 'bloqueado'])
+      .in('estado', ['libre', 'bloqueado', 'parcial', 'sin_stock'])
       .order('orden_fifo', { ascending: true })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
@@ -450,8 +485,7 @@ export const pickingMasivoService = {
           lote_id:        sub.lote_id,
           cantidad:       cantidadDespachada,
           usuario_id:     input.usuarioId,
-          referencia:     `picking-masivo:${sub.sesion_id}`,
-          notas:          input.motivo ?? null,
+          detalle:        { sesion_id: sub.sesion_id, motivo: input.motivo ?? null },
         })
         .select('id')
         .single()
@@ -486,7 +520,39 @@ export const pickingMasivoService = {
     return { ok: true, data: { movimientoId } }
   },
 
-  // ── 9. Liberar propias subtareas bloqueadas ───────────────────────────────
+  // ── 9. Editar subtarea parcial ────────────────────────────────────────────
+  async editarParcial(input: EditarParcialInput): Promise<ServiceResult<{ subtareaId: string }>> {
+    const { data: sub, error: subErr } = await supabase
+      .from('subtareas_picking_masivo')
+      .select('id, estado, bloqueado_por')
+      .eq('id', input.subtareaId)
+      .single()
+
+    if (subErr || !sub) return { ok: false, error: { code: 'NOT_FOUND', message: 'Subtarea no encontrada' } }
+    if (sub.estado !== 'parcial' && sub.estado !== 'sin_stock') {
+      return { ok: false, error: { code: 'INVALID_STATE', message: 'Solo se pueden editar subtareas en estado parcial o sin stock' } }
+    }
+
+    const estadoFinal = input.cantidadDespachada === 0
+      ? 'sin_stock'
+      : 'parcial'
+
+    const { error } = await supabase
+      .from('subtareas_picking_masivo')
+      .update({
+        cantidad_despachada: input.cantidadDespachada,
+        motivo_diferencia:   input.motivo ?? null,
+        estado:              estadoFinal,
+        completado_por:      input.usuarioId,
+        completado_en:       new Date().toISOString(),
+      })
+      .eq('id', input.subtareaId)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { subtareaId: input.subtareaId } }
+  },
+
+  // ── 11. Liberar propias subtareas bloqueadas ─────────────────────────────
   async liberarPropias(input: LiberarPropiasInput): Promise<ServiceResult<{ liberadas: number }>> {
     const { data, error } = await supabase
       .from('subtareas_picking_masivo')
@@ -504,7 +570,7 @@ export const pickingMasivoService = {
     return { ok: true, data: { liberadas: data?.length ?? 0 } }
   },
 
-  // ── 10. Cancelar sesión ───────────────────────────────────────────────────
+  // ── 12. Cancelar sesión ──────────────────────────────────────────────────
   async cancelarSesion(sesionId: string): Promise<ServiceResult<{ sesionId: string }>> {
     const { data: sesion } = await supabase
       .from('sesiones_picking_masivo')
@@ -531,5 +597,114 @@ export const pickingMasivoService = {
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
     return { ok: true, data: { sesionId } }
+  },
+
+  // ── 13. Validar LPN (admin — etapa de despacho) ──────────────────────────
+  async buscarLpn(sesionId: string, lpn: string): Promise<ServiceResult<{
+    itemId:         string
+    codigo:         string
+    descripcion:    string
+    cantidadPedida: number
+    tienda:         string | null
+  }>> {
+    const { data: item, error } = await supabase
+      .from('items_picking_masivo')
+      .select('id, codigo, descripcion, cantidad_pedida, tienda')
+      .eq('sesion_id', sesionId)
+      .eq('lpn', lpn)
+      .single()
+
+    if (error || !item) return { ok: false, error: { code: 'NOT_FOUND', message: 'LPN no encontrado en esta sesión' } }
+
+    return {
+      ok: true,
+      data: {
+        itemId:         item.id,
+        codigo:         item.codigo,
+        descripcion:    item.descripcion,
+        cantidadPedida: item.cantidad_pedida,
+        tienda:         item.tienda ?? null,
+      },
+    }
+  },
+
+  async validarLpn(sesionId: string, lpn: string): Promise<ServiceResult<{
+    itemId:         string
+    codigo:         string
+    descripcion:    string
+    cantidadPedida: number
+    tienda:         string | null
+    lpnValidado:    boolean
+  }>> {
+    const { data: item, error } = await supabase
+      .from('items_picking_masivo')
+      .select('id, codigo, descripcion, cantidad_pedida, tienda, lpn_validado')
+      .eq('sesion_id', sesionId)
+      .eq('lpn', lpn)
+      .single()
+
+    if (error || !item) return { ok: false, error: { code: 'NOT_FOUND', message: 'LPN no encontrado en esta sesión' } }
+
+    if (!item.lpn_validado) {
+      await supabase
+        .from('items_picking_masivo')
+        .update({ lpn_validado: true, lpn_validado_en: new Date().toISOString() })
+        .eq('id', item.id)
+    }
+
+    return {
+      ok: true,
+      data: {
+        itemId:         item.id,
+        codigo:         item.codigo,
+        descripcion:    item.descripcion,
+        cantidadPedida: item.cantidad_pedida,
+        tienda:         item.tienda ?? null,
+        lpnValidado:    true,
+      },
+    }
+  },
+
+  // ── 14. Despachar sesión (admin) ─────────────────────────────────────────
+  async despacharSesion(input: { sesionId: string; usuarioId: string; nombreChofer: string }): Promise<ServiceResult<{ sesionId: string }>> {
+    const { data: sesion } = await supabase
+      .from('sesiones_picking_masivo')
+      .select('estado')
+      .eq('id', input.sesionId)
+      .single()
+
+    if (!sesion) return { ok: false, error: { code: 'NOT_FOUND', message: 'Sesión no encontrada' } }
+    if (sesion.estado !== 'completada') {
+      return { ok: false, error: { code: 'INVALID_STATE', message: 'La sesión debe estar completada para despachar' } }
+    }
+
+    if (!input.nombreChofer.trim()) {
+      return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'El nombre del chofer es obligatorio' } }
+    }
+
+    // Verificar que todos los ítems con LPN estén validados
+    const { data: items } = await supabase
+      .from('items_picking_masivo')
+      .select('id, lpn, lpn_validado')
+      .eq('sesion_id', input.sesionId)
+      .not('lpn', 'is', null)
+
+    const pendientes = (items ?? []).filter(i => !i.lpn_validado)
+    if (pendientes.length > 0) {
+      return { ok: false, error: { code: 'VALIDATION_ERROR', message: `Faltan ${pendientes.length} LPN(s) por validar` } }
+    }
+
+    const { error } = await supabase
+      .from('sesiones_picking_masivo')
+      .update({
+        estado:        'despachado',
+        nombre_chofer:  input.nombreChofer.trim(),
+        despachado_en:  new Date().toISOString(),
+        despachado_por: input.usuarioId,
+      })
+      .eq('id', input.sesionId)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { sesionId: input.sesionId } }
   },
 }
