@@ -915,7 +915,15 @@ function IngresosHistorialView() {
   )
 }
 
-// ── Vista Picking Masivo despachado ───────────────────────────────────────
+// ── Vista Picking Masivo — todas las sesiones ─────────────────────────────
+
+const ESTADO_PM_LABELS: Record<string, string> = {
+  validando:  'Validando',
+  activa:     'Activa',
+  completada: 'Completada',
+  despachado: 'Despachado',
+  cancelada:  'Cancelada',
+}
 
 function formatFechaPM(iso: string | null | undefined): string {
   if (!iso) return '—'
@@ -933,7 +941,7 @@ function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
         </div>
         <span className="nota-fila-fecha">{fecha}</span>
         <div className="nota-fila-estado">
-          <span className="badge badge-despachado">Despachado</span>
+          <span className={`badge badge-${sesion.estado}`}>{ESTADO_PM_LABELS[sesion.estado] ?? sesion.estado}</span>
         </div>
       </div>
     </div>
@@ -941,19 +949,19 @@ function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
 }
 
 function PickingHistorialView() {
-  const { data, isLoading, isError } = useSesionesPicking('despachado')
+  const { data, isLoading, isError } = useSesionesPicking()
   const sesiones = (data as SesionResumen[] | undefined) ?? []
 
   return (
     <div className="hist-notas-view">
-      <h2 className="hing-titulo">Picking Masivo — Despachado</h2>
+      <h2 className="hing-titulo">Picking Masivo</h2>
       {isLoading && <div className="hist-cargando"><span className="spinner" /><span>Cargando sesiones…</span></div>}
       {isError   && <p className="error">Error al cargar sesiones</p>}
       {!isLoading && !isError && (
         <>
           <p className="notas-conteo">{sesiones.length} sesión{sesiones.length !== 1 ? 'es' : ''}</p>
           {sesiones.length === 0
-            ? <p className="vacio">No hay sesiones despachadas</p>
+            ? <p className="vacio">No hay sesiones registradas</p>
             : (
               <div className="notas-lista-panel">
                 <div className="notas-lista-scroll">

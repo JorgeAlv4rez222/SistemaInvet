@@ -394,7 +394,7 @@ export const pickingMasivoService = {
         items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada, codigo_barra, lpn, producto_id )
       `)
       .eq('sesion_id', sesionId)
-      .in('estado', ['libre', 'bloqueado', 'parcial', 'sin_stock'])
+      .in('estado', ['libre', 'bloqueado', 'parcial', 'sin_stock', 'completado'])
       .order('orden_fifo', { ascending: true })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }

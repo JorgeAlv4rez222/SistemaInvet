@@ -19,9 +19,24 @@ export function OperadorColaPage() {
 
   const [tomandoId, setTomandoId] = useState<string | null>(null)
   const [error, setError]         = useState<string | null>(null)
+  const [filtro, setFiltro]       = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
 
   const subtareas = data ?? []
   const tengoPropias = subtareas.some((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
+
+  const subtareasFiltradas = subtareas.filter((s) => {
+    if (filtro === 'todas')     return s.estado !== 'completado'
+    if (filtro === 'mias')      return s.estado === 'bloqueado' && s.bloqueado_por === operadorId
+    if (filtro === 'tomadas')   return s.estado === 'bloqueado' && s.bloqueado_por !== operadorId
+    if (filtro === 'parcial')   return s.estado === 'parcial' || s.estado === 'sin_stock'
+    if (filtro === 'completas') return s.estado === 'completado'
+    return true
+  })
+
+  const cntMias     = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
+  const cntTomadas  = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por !== operadorId).length
+  const cntParcial  = subtareas.filter((s) => s.estado === 'parcial' || s.estado === 'sin_stock').length
+  const cntCompletas = subtareas.filter((s) => s.estado === 'completado').length
 
   async function handleTomar(sub: SubtareaResumen) {
     if (!sesionId) return
@@ -76,15 +91,23 @@ export function OperadorColaPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
+      <div className="filtros-wrap">
+        <button className={`filtro-btn ${filtro === 'todas'     ? 'activo' : ''}`} onClick={() => setFiltro('todas')}>Todas</button>
+        <button className={`filtro-btn ${filtro === 'mias'      ? 'activo' : ''}`} onClick={() => setFiltro('mias')}>Continuar {cntMias > 0 && <span className="filtro-badge">{cntMias}</span>}</button>
+        <button className={`filtro-btn ${filtro === 'tomadas'   ? 'activo' : ''}`} onClick={() => setFiltro('tomadas')}>Tomadas {cntTomadas > 0 && <span className="filtro-badge">{cntTomadas}</span>}</button>
+        <button className={`filtro-btn ${filtro === 'parcial'   ? 'activo' : ''}`} onClick={() => setFiltro('parcial')}>Parcial {cntParcial > 0 && <span className="filtro-badge">{cntParcial}</span>}</button>
+        <button className={`filtro-btn ${filtro === 'completas' ? 'activo' : ''}`} onClick={() => setFiltro('completas')}>Completas {cntCompletas > 0 && <span className="filtro-badge">{cntCompletas}</span>}</button>
+      </div>
+
       {isLoading && <p className="cargando">Cargando cola…</p>}
       {isError   && <p className="error">Error al cargar la cola</p>}
-      {!isLoading && !isError && subtareas.length === 0 && (
-        <div className="notas-vacio"><p>No hay subtareas pendientes</p></div>
+      {!isLoading && !isError && subtareasFiltradas.length === 0 && (
+        <div className="notas-vacio"><p>{filtro === 'todas' ? 'No hay subtareas pendientes' : 'Sin resultados para este filtro'}</p></div>
       )}
 
-      {!isLoading && !isError && subtareas.length > 0 && (
+      {!isLoading && !isError && subtareasFiltradas.length > 0 && (
         <div className="pm-cola-lista">
-          {subtareas.map((sub: SubtareaResumen) => {
+          {subtareasFiltradas.map((sub: SubtareaResumen) => {
             const esMia          = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
             const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
             const esParcial      = sub.estado === 'parcial' || sub.estado === 'sin_stock'
@@ -101,14 +124,16 @@ export function OperadorColaPage() {
                     {lpn && <span className="pm-cola-fila-lpn">LPN: {lpn}</span>}
                     <span className="pm-cola-fila-cant">
                       {esParcial
-                        ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada} uds`
-                        : `${sub.cantidad_asignada} uds`}
+                        ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada}`
+                        : `${sub.cantidad_asignada}`}
                     </span>
                   </div>
                 </div>
 
                 <div className="pm-cola-fila-accion">
-                  {esParcial ? (
+                  {sub.estado === 'completado' ? (
+                    <span className="badge badge-completado">✓</span>
+                  ) : esParcial ? (
                     <button className="btn-secundario" onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}>
                       Editar parcial
                     </button>

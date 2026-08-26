@@ -116,6 +116,7 @@ export function SesionDetallePage() {
   const sesion = data as SesionDetalle
   const pct    = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
+  const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
 
   return (
     <div className="notas-page">
@@ -203,15 +204,13 @@ export function SesionDetallePage() {
                     <span className="pm-item-detalle-label">Cantidad</span>
                     <span className="pm-item-detalle-valor">{item.cantidad_pedida}</span>
                   </div>
-                  {item.lpn ? (
+                  {sesionTieneLpn && (
                     <div className="pm-item-detalle-fila">
                       <span className="pm-item-detalle-label">LPN</span>
-                      <span className="pm-item-detalle-valor pm-item-detalle-lpn">{item.lpn}</span>
-                    </div>
-                  ) : (
-                    <div className="pm-item-detalle-fila">
-                      <span className="pm-item-detalle-label">LPN</span>
-                      <span className="pm-item-detalle-valor pm-item-detalle-sin-lpn">Sin LPN asignado</span>
+                      {item.lpn
+                        ? <span className="pm-item-detalle-valor pm-item-detalle-lpn">{item.lpn}</span>
+                        : <span className="pm-item-detalle-valor pm-item-detalle-sin-lpn">Sin LPN asignado</span>
+                      }
                     </div>
                   )}
                   {item.tienda && (
