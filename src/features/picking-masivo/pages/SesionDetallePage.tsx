@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCancelarSesion, useSesionPicking } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -90,16 +91,26 @@ export function SesionDetallePage() {
   const { data, isLoading, isError } = useSesionPicking(sesionId)
   useRealtimeSesion(sesionId)
   const cancelarSesion = useCancelarSesion()
+  const qc = useQueryClient()
 
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
-  const [lpnYaUsado, setLpnYaUsado]    = useState(false)
+  const [lpnYaUsado, setLpnYaUsado]           = useState(false)
+  const [productosConfirmados, setProductosConfirmados] = useState(false)
+
   useEffect(() => {
-    try { setLpnYaUsado(localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1') } catch {}
-  }, [sesionId])
+    if (!sesionId) return
+    // Forzar refetch al montar para no depender del cache
+    qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] })
+    // Leer flags localStorage
+    try {
+      setLpnYaUsado(localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1')
+      setProductosConfirmados(localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1')
+    } catch {}
+  }, [sesionId, qc])
 
   const toggleExpandido = useCallback((id: string) => {
     setExpandido((prev) => {
@@ -127,10 +138,9 @@ export function SesionDetallePage() {
   const pct    = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
   const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
-  // Sodimac: todos los productos validados (API o flag localStorage para evitar delay de cache)
-  const productosOkFlag = (() => { try { return localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1' } catch { return false } })()
+  // Sodimac: todos los productos validados — chequea API (lpn_validado) o flag localStorage
   const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && (
-    sesion.items.every((i) => i.lpn_validado === true) || productosOkFlag
+    sesion.items.every((i) => i.lpn_validado === true) || productosConfirmados
   )
 
   function descargarExcel() {
