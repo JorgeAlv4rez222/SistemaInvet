@@ -27,6 +27,9 @@ type ItemPendienteSodimac = {
 
 type ItemValidadoSodimac = ItemPendienteSodimac
 
+type LpnDetalle = { codigo: string; tienda: string; cantidad: number }
+type LpnEntry   = { lpn: string; totalEmpaque: number; items: LpnDetalle[] }
+
 // Fase Sodimac: validar productos → cargar Excel LPN → validar LPNs → despachar
 type FaseSodimac = 'productos' | 'lpns'
 
@@ -63,9 +66,11 @@ export function DespachoSesionPage() {
   // Sodimac fase 2: LPN
   const [faseSodimac, setFaseSodimac]               = useState<FaseSodimac>('productos')
   const [mostrarCargarLpn, setMostrarCargarLpn]     = useState(false)
-  const [lpnsExcel, setLpnsExcel]                   = useState<string[]>([])          // LPNs únicos del Excel
+  const [lpnsExcel, setLpnsExcel]                   = useState<LpnEntry[]>([])
   const [lpnsEscaneados, setLpnsEscaneados]         = useState<Set<string>>(new Set())
   const [lpnScanInput, setLpnScanInput]             = useState('')
+  const [lpnPendiente, setLpnPendiente]             = useState<LpnEntry | null>(null)
+  const [lpnDetalleAbierto, setLpnDetalleAbierto]  = useState(false)
   const [errorLpnScan, setErrorLpnScan]             = useState<string | null>(null)
   const [errorExcel, setErrorExcel]                 = useState<string | null>(null)
 
@@ -195,18 +200,53 @@ export function DespachoSesionPage() {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target!.result as ArrayBuffer)
-        const wb   = XLSX.read(data, { type: 'array' })
+        const wb   = XLSX.read(data, { type: 'array', cellText: true })
         const ws   = wb.Sheets[wb.SheetNames[0]]
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' })
-        // Extraer LPNs únicos — buscar columna "LPN" (case-insensitive)
-        const lpnKey = Object.keys(rows[0] ?? {}).find((k) => k.trim().toUpperCase() === 'LPN')
-        if (!lpnKey) { setErrorExcel('No se encontró la columna LPN en el archivo'); return }
-        const unicos = [...new Set(
-          rows.map((r) => String(r[lpnKey] ?? '').trim()).filter(Boolean)
-        )]
-        if (unicos.length === 0) { setErrorExcel('El archivo no contiene LPNs válidos'); return }
-        setLpnsExcel(unicos)
+        const raw  = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, raw: false }) as (string | null)[][]
+
+        // Formato Sodimac: filas "Total XXXXX" marcan el fin de cada LPN
+        // Col 0: LPN (solo en la primera fila del grupo), "Total XXXXX" al final, null en filas intermedias
+        // Col 1: Código, Col 2: Tienda, Col 3: Cantidad de Empaques
+        const lpnMap = new Map<string, LpnEntry>()
+        let currentLpn: string | null = null
+
+        for (const row of raw.slice(1)) {
+          const col0 = String(row[0] ?? '').trim()
+          const col1 = String(row[1] ?? '').trim()
+          const col2 = String(row[2] ?? '').trim()
+          const col3 = String(row[3] ?? '').trim()
+          if (!col0 && !col1) continue
+
+          if (col0.startsWith('Total ')) {
+            // Fila de total: actualiza cantidadEmpaque del LPN actual
+            const totalLpn = col0.replace('Total ', '').trim()
+            const entry = lpnMap.get(totalLpn)
+            if (entry) entry.totalEmpaque = parseInt(col3, 10) || 0
+            currentLpn = null
+          } else if (col0 && /^\d+$/.test(col0)) {
+            // Fila nueva con número de LPN
+            currentLpn = col0
+            if (!lpnMap.has(currentLpn)) {
+              lpnMap.set(currentLpn, { lpn: currentLpn, totalEmpaque: 0, items: [] })
+            }
+            if (col1) {
+              lpnMap.get(currentLpn)!.items.push({
+                codigo: col1, tienda: col2, cantidad: parseInt(col3, 10) || 0
+              })
+            }
+          } else if (!col0 && col1 && currentLpn) {
+            // Fila de detalle (LPN vacío = continuación del anterior)
+            lpnMap.get(currentLpn)!.items.push({
+              codigo: col1, tienda: col2, cantidad: parseInt(col3, 10) || 0
+            })
+          }
+        }
+
+        const entradas = [...lpnMap.values()]
+        if (entradas.length === 0) { setErrorExcel('El archivo no contiene LPNs válidos'); return }
+        setLpnsExcel(entradas)
         setLpnsEscaneados(new Set())
+        setLpnPendiente(null)
         setMostrarCargarLpn(false)
         setFaseSodimac('lpns')
         setTimeout(() => lpnInputRef.current?.focus(), 100)
@@ -221,7 +261,8 @@ export function DespachoSesionPage() {
     const lpnTrimmed = lpn.trim()
     if (!lpnTrimmed) return
     setErrorLpnScan(null)
-    if (!lpnsExcel.includes(lpnTrimmed)) {
+    const entry = lpnsExcel.find((e) => e.lpn === lpnTrimmed)
+    if (!entry) {
       setErrorLpnScan(`LPN "${lpnTrimmed}" no está en la lista de esta OC`)
       setLpnScanInput('')
       setTimeout(() => lpnInputRef.current?.focus(), 50)
@@ -233,8 +274,15 @@ export function DespachoSesionPage() {
       setTimeout(() => lpnInputRef.current?.focus(), 50)
       return
     }
-    setLpnsEscaneados((prev) => new Set([...prev, lpnTrimmed]))
+    setLpnPendiente(entry)
+    setLpnDetalleAbierto(false)
     setLpnScanInput('')
+  }
+
+  function handleConfirmarLpnSodimac() {
+    if (!lpnPendiente) return
+    setLpnsEscaneados((prev) => new Set([...prev, lpnPendiente.lpn]))
+    setLpnPendiente(null)
     setTimeout(() => lpnInputRef.current?.focus(), 50)
   }
 
@@ -268,8 +316,8 @@ export function DespachoSesionPage() {
   const isPending      = buscarLpn.isPending || buscarItem.isPending
 
   // Sodimac fase 2: LPNs
-  const totalLpns        = lpnsExcel.length
-  const lpnsValidadosN   = lpnsEscaneados.size
+  const totalLpns          = lpnsExcel.length
+  const lpnsValidadosN     = lpnsEscaneados.size
   const todosLpnsValidados = totalLpns > 0 && lpnsValidadosN >= totalLpns
 
   return (
@@ -415,11 +463,14 @@ export function DespachoSesionPage() {
               <span className="pm-despacho-validados-ratio">{lpnsValidadosN}/{totalLpns}</span>
             </div>
             <div className="pm-items-lista">
-              {lpnsExcel.map((lpn) => {
-                const validado = lpnsEscaneados.has(lpn)
+              {lpnsExcel.map((entry) => {
+                const validado = lpnsEscaneados.has(entry.lpn)
                 return (
-                  <div key={lpn} className={`pm-item-card pm-despacho-validado-fila${validado ? '' : ' pm-despacho-lpn-pendiente'}`}>
-                    <span className="pm-despacho-validado-codigo" style={{ fontFamily: 'monospace' }}>{lpn}</span>
+                  <div key={entry.lpn} className={`pm-item-card pm-despacho-validado-fila${validado ? '' : ' pm-despacho-lpn-pendiente'}`}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                      <span className="pm-despacho-validado-codigo" style={{ fontFamily: 'monospace' }}>{entry.lpn}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.totalEmpaque} empaque{entry.totalEmpaque !== 1 ? 's' : ''}</span>
+                    </div>
                     <span className={validado ? 'pm-despacho-validado-check' : 'pm-despacho-lpn-pendiente-icon'}>
                       {validado ? '✓' : '○'}
                     </span>
@@ -435,6 +486,64 @@ export function DespachoSesionPage() {
             </button>
           )}
         </>
+      )}
+
+      {/* Modal confirmación LPN escaneado (Sodimac fase 2) */}
+      {lpnPendiente && (
+        <div
+          className="modal-overlay"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => setLpnPendiente(null)}
+        >
+          <div
+            className="modal-box pm-despacho-modal"
+            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw', width: '360px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="modal-titulo">LPN Escaneado</h3>
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">LPN</span>
+              <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', color: 'var(--accent-green)' }}>{lpnPendiente.lpn}</span>
+            </div>
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">Cantidad de empaques</span>
+              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>{lpnPendiente.totalEmpaque}</span>
+            </div>
+
+            {/* Botón Ver detalle */}
+            <button
+              type="button"
+              style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '0.5rem 1rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              onClick={() => setLpnDetalleAbierto((p) => !p)}
+            >
+              <span>Ver detalle ({lpnPendiente.items.length} código{lpnPendiente.items.length !== 1 ? 's' : ''})</span>
+              <span style={{ fontSize: '0.65rem' }}>{lpnDetalleAbierto ? '▲' : '▼'}</span>
+            </button>
+
+            {lpnDetalleAbierto && (
+              <div style={{ marginTop: 'var(--spacing-xs)', maxHeight: '220px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                {lpnPendiente.items.map((it, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.75rem', borderBottom: idx < lpnPendiente.items.length - 1 ? '1px solid var(--border)' : 'none', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-sm)', color: 'var(--accent-green)' }}>{it.codigo}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{it.tienda}</span>
+                    </div>
+                    <span style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap' }}>{it.cantidad} u.</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pm-confirmar-acciones" style={{ marginTop: 'var(--spacing-md)' }}>
+              <button className="btn-secundario pm-confirmar-btn" onClick={() => setLpnPendiente(null)}>
+                Cancelar
+              </button>
+              <button className="btn-primario pm-confirmar-btn" onClick={handleConfirmarLpnSodimac}>
+                Confirmar LPN
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal cargar Excel LPN (Sodimac) */}
