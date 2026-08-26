@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useSesionPicking, useBuscarLpn, useValidarLpn, useBuscarItem, useValidarItem, useDespacharSesion } from '../hooks/usePickingMasivo'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -34,10 +34,12 @@ type LpnEntry   = { lpn: string; totalEmpaque: number; items: LpnDetalle[] }
 type FaseSodimac = 'productos' | 'lpns'
 
 export function DespachoSesionPage() {
-  const { id }     = useParams<{ id: string }>()
-  const navigate   = useNavigate()
-  const sesionId   = id ?? ''
-  const adminId    = localStorage.getItem('user_id') ?? ''
+  const { id }          = useParams<{ id: string }>()
+  const navigate        = useNavigate()
+  const [searchParams]  = useSearchParams()
+  const sesionId        = id ?? ''
+  const adminId         = localStorage.getItem('user_id') ?? ''
+  const iniciarEnLpns   = searchParams.get('fase') === 'lpns'
 
   const { data: sesion, isLoading } = useSesionPicking(sesionId || null)
 
@@ -64,9 +66,14 @@ export function DespachoSesionPage() {
   const [errorDespacho, setErrorDespacho]           = useState<string | null>(null)
 
   // Sodimac fase 2: LPN
-  const [faseSodimac, setFaseSodimac]               = useState<FaseSodimac>('productos')
+  const [faseSodimac, setFaseSodimac]               = useState<FaseSodimac>(iniciarEnLpns ? 'lpns' : 'productos')
   const [mostrarCargarLpn, setMostrarCargarLpn]     = useState(false)
-  const [lpnsExcel, setLpnsExcel]                   = useState<LpnEntry[]>([])
+  const [lpnsExcel, setLpnsExcel]                   = useState<LpnEntry[]>(() => {
+    try {
+      const stored = localStorage.getItem(`pm_lpn_${sesionId}`)
+      return stored ? (JSON.parse(stored) as LpnEntry[]) : []
+    } catch { return [] }
+  })
   const [lpnsEscaneados, setLpnsEscaneados]         = useState<Set<string>>(new Set())
   const [lpnScanInput, setLpnScanInput]             = useState('')
   const [lpnPendiente, setLpnPendiente]             = useState<LpnEntry | null>(null)
@@ -246,6 +253,7 @@ export function DespachoSesionPage() {
 
         const entradas = [...lpnMap.values()]
         if (entradas.length === 0) { setErrorExcel('El archivo no contiene LPNs válidos'); return }
+        try { localStorage.setItem(`pm_lpn_${sesionId}`, JSON.stringify(entradas)) } catch {}
         setLpnsExcel(entradas)
         setLpnsEscaneados(new Set())
         setLpnPendiente(null)
@@ -293,6 +301,7 @@ export function DespachoSesionPage() {
     setErrorDespacho(null)
     try {
       await despacharSesion.mutateAsync({ sesionId, usuarioId: adminId, nombreChofer: nombreChofer.trim() })
+      try { localStorage.removeItem(`pm_lpn_${sesionId}`) } catch {}
       navigate('/picking-masivo')
     } catch (e) {
       setErrorDespacho(e instanceof ApiResponseError ? e.message : 'Error al despachar')

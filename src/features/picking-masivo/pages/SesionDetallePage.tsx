@@ -31,6 +31,7 @@ type ItemDetalle = {
   estado:              string
   motivo_diferencia:   string | null
   lpn:                 string | null
+  lpn_validado:        boolean | null
   tienda:              string | null
   codigo_barra:        string | null
   subtareas_picking_masivo: SubtareaDetalle[]
@@ -119,6 +120,8 @@ export function SesionDetallePage() {
   const pct    = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
   const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
+  // Sodimac: todos los productos validados cuando todos tienen lpn_validado = true
+  const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && sesion.items.every((i) => i.lpn_validado === true)
 
   function descargarExcel() {
     const ESTADO_LABEL: Record<string, string> = {
@@ -187,6 +190,17 @@ export function SesionDetallePage() {
           {sesion.estado === 'completada' && (
             <button className="btn-primario" onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}>
               Validar Entrega →
+            </button>
+          )}
+          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados */}
+          {!sesionTieneLpn && (
+            <button
+              className="btn-primario"
+              disabled={!todosProductosValidados}
+              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : undefined}
+              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
+            >
+              Validar LPN →
             </button>
           )}
           <button className="btn-secundario" onClick={descargarExcel}>
