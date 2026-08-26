@@ -156,6 +156,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                   <th className="excel-th excel-th--derecha">Cantidad</th>
                   {filas.some((f) => f.codigoBarra) && <th className="excel-th">EAN / UPC</th>}
                   {filas.some((f) => f.lpn)         && <th className="excel-th">LPN</th>}
+                  {filas.some((f) => f.tienda)      && <th className="excel-th">Tienda</th>}
                 </tr>
               </thead>
               <tbody>
@@ -166,6 +167,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                     <td className="excel-td excel-td--derecha">{f.cantidadPedida}</td>
                     {filas.some((f2) => f2.codigoBarra) && <td className="excel-td">{f.codigoBarra ?? '—'}</td>}
                     {filas.some((f2) => f2.lpn)         && <td className="excel-td">{f.lpn ?? '—'}</td>}
+                    {filas.some((f2) => f2.tienda)      && <td className="excel-td">{f.tienda ?? '—'}</td>}
                   </tr>
                 ))}
               </tbody>
