@@ -74,6 +74,8 @@ export function DespachoSesionPage() {
   const [errorLpnScan, setErrorLpnScan]             = useState<string | null>(null)
   const [errorExcel, setErrorExcel]                 = useState<string | null>(null)
 
+  const [filtroPendientes, setFiltroPendientes]     = useState(false)
+
   const inputRef    = useRef<HTMLInputElement>(null)
   const lpnInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -369,11 +371,29 @@ export function DespachoSesionPage() {
       )}
 
       {/* Lista de productos validados (fase 1) */}
-      {validados.length > 0 && (!sesionTieneLpn ? faseSodimac === 'productos' : true) && (
+      {(!sesionTieneLpn ? faseSodimac === 'productos' : true) && (validados.length > 0 || (items && items.length > 0)) && (
         <div className="pm-despacho-validados-card">
           <div className="pm-despacho-validados-header">
-            <p className="pm-despacho-validados-titulo">Productos Validados ({validados.length})</p>
-            <span className="pm-despacho-validados-ratio">{totalValidados}/{totalItems}</span>
+            <p className="pm-despacho-validados-titulo">
+              {filtroPendientes ? 'Pendientes' : `Productos Validados (${validados.length})`}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+              {!sesionTieneLpn && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    type="button"
+                    style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }}
+                    onClick={() => setFiltroPendientes(false)}
+                  >Validados</button>
+                  <button
+                    type="button"
+                    style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }}
+                    onClick={() => setFiltroPendientes(true)}
+                  >Pendientes</button>
+                </div>
+              )}
+              <span className="pm-despacho-validados-ratio">{totalValidados}/{totalItems}</span>
+            </div>
           </div>
           <div className="pm-items-lista">
             {sesionTieneLpn
@@ -391,6 +411,23 @@ export function DespachoSesionPage() {
                     <span className="pm-despacho-validado-check">✓</span>
                   </div>
                 ))
+              : filtroPendientes
+              ? (items ?? [])
+                  .filter((i) => !validadosSodimac.some((v) => v.itemId === i.id))
+                  .map((i) => {
+                    const despachada = (i.subtareas_picking_masivo ?? []).reduce((s, t) => s + (t.cantidad_despachada ?? 0), 0)
+                    return (
+                      <div key={i.id} className="pm-item-card pm-despacho-validado-fila">
+                        <div className="pm-despacho-validado-info">
+                          <span className="pm-despacho-validado-codigo">{i.codigo}</span>
+                          <span className="pm-despacho-validado-desc">{i.descripcion}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                          <span className="pm-despacho-validado-cant" style={{ color: 'var(--text-muted)' }}>{despachada}/{i.cantidad_pedida}</span>
+                        </div>
+                      </div>
+                    )
+                  })
               : validadosSodimac.map((v) => (
                   <div key={v.itemId} className="pm-item-card pm-despacho-validado-fila">
                     <div className="pm-despacho-validado-info">
