@@ -228,7 +228,7 @@ export function ConfirmarSubtareaPage() {
         {barcodeOk && (
           <>
             <div className="pm-confirmar-barcode-ok">
-              ✓ Producto escaneado correctamente
+              Producto escaneado correctamente
             </div>
 
             <label className="pm-confirmar-label">
