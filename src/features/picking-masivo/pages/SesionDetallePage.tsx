@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCancelarSesion, useSesionPicking } from '../hooks/usePickingMasivo'
+import { useCancelarSesion, useSesionPicking, useGuardarLpns } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { SesionResumen } from '../services/picking-masivo.api'
@@ -91,7 +91,9 @@ export function SesionDetallePage() {
   const { data, isLoading, isError } = useSesionPicking(sesionId)
   useRealtimeSesion(sesionId)
   const cancelarSesion = useCancelarSesion()
-  const qc = useQueryClient()
+  const guardarLpns    = useGuardarLpns()
+  const qc             = useQueryClient()
+  const fileInputRef   = useRef<HTMLInputElement>(null)
 
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
@@ -99,15 +101,23 @@ export function SesionDetallePage() {
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
   const [productosConfirmados, setProductosConfirmados] = useState(false)
+  const [lpnCount, setLpnCount]     = useState(0)
+  const [lpnSubiendo, setLpnSubiendo] = useState(false)
+  const [lpnError, setLpnError]     = useState<string | null>(null)
 
   useEffect(() => {
     if (!sesionId) return
-    // Forzar refetch al montar para no depender del cache
     qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] })
     try {
       setProductosConfirmados(localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1')
     } catch {}
   }, [sesionId, qc])
+
+  // Leer conteo de LPNs ya guardados en la BD al recibir la sesión
+  useEffect(() => {
+    const lpnsDb = (data as any)?.lpns_excel as unknown[] | undefined
+    if (lpnsDb) setLpnCount(lpnsDb.length)
+  }, [data])
 
   const toggleExpandido = useCallback((id: string) => {
     setExpandido((prev) => {
@@ -139,6 +149,55 @@ export function SesionDetallePage() {
   const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && (
     sesion.items.every((i) => i.lpn_validado === true) || productosConfirmados
   )
+
+  function handleArchivoLpn(file: File) {
+    setLpnError(null)
+    setLpnSubiendo(true)
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target!.result as ArrayBuffer)
+        const wb   = XLSX.read(data, { type: 'array', cellText: true })
+        const ws   = wb.Sheets[wb.SheetNames[0]]
+        const raw  = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, raw: false }) as (string | null)[][]
+
+        type LpnEntry = { lpn: string; totalEmpaque: number; items: { codigo: string; tienda: string; cantidad: number }[] }
+        const lpnMap = new Map<string, LpnEntry>()
+        let currentLpn: string | null = null
+
+        for (const row of raw.slice(1)) {
+          const col0 = String(row[0] ?? '').trim()
+          const col1 = String(row[1] ?? '').trim()
+          const col2 = String(row[2] ?? '').trim()
+          const col3 = String(row[3] ?? '').trim()
+          if (!col0 && !col1) continue
+          if (col0.startsWith('Total ')) {
+            const totalLpn = col0.replace('Total ', '').trim()
+            const entry = lpnMap.get(totalLpn)
+            if (entry) entry.totalEmpaque = parseInt(col3, 10) || 0
+            currentLpn = null
+          } else if (col0 && /^\d+$/.test(col0)) {
+            currentLpn = col0
+            if (!lpnMap.has(currentLpn)) lpnMap.set(currentLpn, { lpn: currentLpn, totalEmpaque: 0, items: [] })
+            if (col1) lpnMap.get(currentLpn)!.items.push({ codigo: col1, tienda: col2, cantidad: parseInt(col3, 10) || 0 })
+          } else if (!col0 && col1 && currentLpn) {
+            lpnMap.get(currentLpn)!.items.push({ codigo: col1, tienda: col2, cantidad: parseInt(col3, 10) || 0 })
+          }
+        }
+
+        const entradas = [...lpnMap.values()]
+        if (entradas.length === 0) { setLpnError('El archivo no contiene LPNs válidos'); setLpnSubiendo(false); return }
+        await guardarLpns.mutateAsync({ sesionId: sesionId!, lpnsData: entradas })
+        setLpnCount(entradas.length)
+      } catch {
+        setLpnError('Error al procesar el archivo Excel')
+      } finally {
+        setLpnSubiendo(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      }
+    }
+    reader.readAsArrayBuffer(file)
+  }
 
   function descargarExcel() {
     const ESTADO_LABEL: Record<string, string> = {
@@ -222,16 +281,39 @@ export function SesionDetallePage() {
           <button className="btn-secundario" onClick={descargarExcel}>
             ↓ Descargar detalle Excel
           </button>
-          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados */}
+          {/* Excel LPN + Validar LPN — solo Sodimac */}
           {!sesionTieneLpn && (
-            <button
-              className="btn-primario"
-              disabled={!todosProductosValidados}
-              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : undefined}
-              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
-            >
-              Validar LPN →
-            </button>
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoLpn(f) }}
+              />
+              <button
+                type="button"
+                className="btn-secundario"
+                disabled={lpnSubiendo}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontSize: '0.85rem' }}
+              >
+                {lpnSubiendo
+                  ? 'Subiendo…'
+                  : lpnCount > 0
+                    ? `📎 Excel LPN (${lpnCount} LPNs)`
+                    : '📎 Cargar Excel LPN'}
+              </button>
+              {lpnError && <span style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>{lpnError}</span>}
+              <button
+                className="btn-primario"
+                disabled={!todosProductosValidados || lpnCount === 0}
+                title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : lpnCount === 0 ? 'Carga el Excel de LPNs primero' : undefined}
+                onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
+              >
+                Validar LPN →
+              </button>
+            </>
           )}
         </div>
       )}
