@@ -71,25 +71,53 @@ export function ConfirmarSubtareaPage() {
     return () => { vigente = false }
   }, [busquedaEq, equivalenteActivo])
 
-  function barcodeValido(val: string): boolean {
+  const [validandoBarcode, setValidandoBarcode] = useState(false)
+
+  async function validarContraCatalogo(val: string): Promise<boolean> {
     if (!val) return false
-    const codigoCatalogo = item?.codigo_barra ?? ''
-    if (!codigoCatalogo) return true  // sin código de barras en catálogo: cualquier scan confirma
-    return val === codigoCatalogo || val.includes(codigoCatalogo) || codigoCatalogo.includes(val)
+    // Buscar por código de barras exacto en catálogo
+    try {
+      const prod = await productosApi.getByCodigoBarra(val)
+      if (prod) {
+        // Verificar que el producto encontrado corresponde al ítem de la subtarea
+        if (item?.producto_id && prod.id === item.producto_id) return true
+        if (prod.sku?.toLowerCase() === item?.codigo?.toLowerCase()) return true
+        return false
+      }
+    } catch { /* no encontrado por codigoBarra, intentar búsqueda general */ }
+    // Fallback: buscar por término general (SKU u otras variantes)
+    try {
+      const resultados = await productosApi.buscar(val)
+      if (resultados.length > 0) {
+        const match = resultados.find((p) =>
+          (item?.producto_id && p.id === item.producto_id) ||
+          p.sku?.toLowerCase() === item?.codigo?.toLowerCase()
+        )
+        return !!match
+      }
+    } catch { /* ignorar */ }
+    return false
+  }
+
+  async function handleValidarBarcode(val: string) {
+    if (!val.trim()) return
+    // Sin código de barras en catálogo ni productoId: cualquier scan confirma
+    if (!item?.codigo_barra && !item?.producto_id) { setBarcodeOk(true); setError(null); return }
+    setValidandoBarcode(true)
+    const ok = await validarContraCatalogo(val.trim())
+    setValidandoBarcode(false)
+    if (ok) { setBarcodeOk(true); setError(null) }
+    else setError('Código de barras incorrecto. Escanea el producto correcto.')
   }
 
   function handleBarcodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = e.target.value.trim()
-    setBarcode(val)
-    if (barcodeValido(val)) { setBarcodeOk(true); setError(null) }
-    else setBarcodeOk(false)
+    setBarcode(e.target.value)
+    setBarcodeOk(false)
+    setError(null)
   }
 
   function handleBarcodeKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      if (barcodeValido(barcode)) { setBarcodeOk(true); setError(null) }
-      else setError('Código de barras incorrecto. Escanea el producto correcto.')
-    }
+    if (e.key === 'Enter') handleValidarBarcode(barcode)
   }
 
   // Pantalla post-confirmación: mostrar LPN — va ANTES del check de subtarea
@@ -197,30 +225,33 @@ export function ConfirmarSubtareaPage() {
       <div className="pm-confirmar-form">
         {!barcodeOk && (
           <label className="pm-confirmar-label">
-            {codigoBarra ? 'Escanear código de barras' : 'Escanear producto'}
+            {validandoBarcode ? 'Validando…' : codigoBarra ? 'Escanear código de barras' : 'Escanear producto'}
             <div className="pm-confirmar-barcode-row">
               <input
                 ref={barcodeRef}
                 type="text"
-                className={`pm-confirmar-input ${barcode && !barcodeValido(barcode) ? 'pm-confirmar-input--error' : ''}`}
+                className={`pm-confirmar-input ${error && !barcodeOk ? 'pm-confirmar-input--error' : ''}`}
                 placeholder="Escanea o ingresa el código…"
                 value={barcode}
                 onChange={handleBarcodeChange}
                 onKeyDown={handleBarcodeKeyDown}
                 autoComplete="off"
+                disabled={validandoBarcode}
               />
               <BarcodeScanner
                 title="Escanear con cámara"
-                onDetected={(codigo) => {
-                  setBarcode(codigo)
-                  if (barcodeValido(codigo)) { setBarcodeOk(true); setError(null) }
-                  else { setError('Código de barras incorrecto. Escanea el producto correcto.') }
-                }}
+                onDetected={(codigo) => { setBarcode(codigo); handleValidarBarcode(codigo) }}
               />
             </div>
-            {barcode && !barcodeValido(barcode) && (
-              <span className="pm-confirmar-barcode-error">Código incorrecto</span>
-            )}
+            <button
+              type="button"
+              className="btn-primario"
+              style={{ marginTop: 'var(--spacing-xs)' }}
+              disabled={!barcode.trim() || validandoBarcode}
+              onClick={() => handleValidarBarcode(barcode)}
+            >
+              {validandoBarcode ? 'Validando…' : 'Verificar'}
+            </button>
           </label>
         )}
 
@@ -282,7 +313,7 @@ export function ConfirmarSubtareaPage() {
             )}
 
             {equivalenteActivo && !equivalenteSel && busquedaEq.trim() && (
-              <div className="ing-productos-lista">
+              <div className="ing-productos-lista pm-equivalente-lista">
                 {buscandoEq && <p className="cargando">Buscando…</p>}
                 {!buscandoEq && opcionesEq.length === 0 && <p className="picking-nombre">Sin resultados</p>}
                 {!buscandoEq && opcionesEq.map((p) => (

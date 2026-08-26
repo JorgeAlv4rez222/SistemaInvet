@@ -391,7 +391,7 @@ export const pickingMasivoService = {
         id, posicion_codigo, orden_fifo, cantidad_asignada, cantidad_despachada,
         estado, bloqueado_por, bloqueado_en, motivo_diferencia,
         item_id,
-        items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada, codigo_barra, lpn )
+        items_picking_masivo ( codigo, descripcion, cantidad_pedida, cantidad_despachada, codigo_barra, lpn, producto_id )
       `)
       .eq('sesion_id', sesionId)
       .in('estado', ['libre', 'bloqueado', 'parcial', 'sin_stock'])

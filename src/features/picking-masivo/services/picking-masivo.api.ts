@@ -44,6 +44,7 @@ export type SubtareaResumen = {
     cantidad_despachada: number
     codigo_barra:      string | null
     lpn:               string | null
+    producto_id:       string | null
   } | null
 }
 
