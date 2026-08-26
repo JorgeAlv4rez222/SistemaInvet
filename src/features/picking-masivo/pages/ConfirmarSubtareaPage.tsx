@@ -173,14 +173,17 @@ export function ConfirmarSubtareaPage() {
         ← Volver
       </button>
       <div className="pm-confirmar-header">
-        <span className="pm-confirmar-pos">{subtarea.posicion_codigo}</span>
+        {subtarea.posicion_codigo === '—'
+          ? <span className="pm-confirmar-barra-acento" />
+          : <span className="pm-confirmar-pos">{subtarea.posicion_codigo}</span>
+        }
         <span className="pm-confirmar-prod">
           {equivalenteSel
             ? `${equivalenteSel.sku}${equivalenteSel.nombre && equivalenteSel.nombre !== equivalenteSel.sku ? ` — ${equivalenteSel.nombre}` : ''}`
             : `${item?.codigo ?? ''}${item?.descripcion && item.descripcion !== item.codigo ? ` — ${item.descripcion}` : ''}`
           }
         </span>
-        <span className="pm-confirmar-cant">Solicitado: {cantAsignada} uds</span>
+        <span className="pm-confirmar-cant">Solicitado: {cantAsignada}</span>
         {lpn && (
           <span className="pm-confirmar-lpn">LPN: <strong>{lpn}</strong></span>
         )}

@@ -5902,6 +5902,7 @@ input[type="radio"] {
   padding: var(--spacing-lg);
 }
 .pm-confirmar-pos  { font-size: var(--font-size-2xl); font-weight: 700; color: var(--accent); }
+.pm-confirmar-barra-acento { display: block; width: 3.5rem; height: 4px; border-radius: 2px; background: var(--accent); margin-bottom: var(--spacing-xs); }
 .pm-confirmar-prod { font-size: var(--font-size-lg); font-weight: 600; color: var(--text-primary); }
 .pm-confirmar-cant { font-size: var(--font-size-base); color: var(--text-muted); }
 .pm-confirmar-form {
