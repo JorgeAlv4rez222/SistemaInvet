@@ -397,42 +397,41 @@ export function DespachoSesionPage() {
       {/* Lista de productos validados (fase 1) */}
       {(!sesionTieneLpn ? faseSodimac === 'productos' : true) && (validados.length > 0 || (items && items.length > 0)) && (
         <div className="pm-despacho-validados-card">
+          {/* Fila 1: Validados / Pendientes + contador */}
           {!sesionTieneLpn && (
-            <input
-              type="search"
-              placeholder="Buscar por código o nombre…"
-              value={busquedaSodimac}
-              onChange={(e) => setBusquedaSodimac(e.target.value)}
-              style={{ width: '100%', marginBottom: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', boxSizing: 'border-box' }}
-            />
-          )}
-          <div className="pm-despacho-validados-header">
-            <p className="pm-despacho-validados-titulo">
-              {filtroPendientes ? 'Pendientes' : `Productos Validados (${validados.length})`}
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-              {!sesionTieneLpn && (
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button type="button" style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(false)}>Validados</button>
-                  <button type="button" style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(true)}>Pendientes</button>
-                </div>
-              )}
-              {!sesionTieneLpn && !filtroPendientes && (
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
-                    <button key={f} type="button"
-                      onClick={() => setFiltroEstadoDespacho(f)}
-                      style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap',
-                        background: filtroEstadoDespacho === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--accent)') : 'transparent',
-                        color: filtroEstadoDespacho === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
-                      }}
-                    >{f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}</button>
-                  ))}
-                </div>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button" style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(false)}>Validados</button>
+                <button type="button" style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(true)}>Pendientes</button>
+              </div>
               <span className="pm-despacho-validados-ratio">{totalValidados}/{totalItems}</span>
             </div>
-          </div>
+          )}
+          {/* Fila 2: búsqueda + Todos/Parcial/Sin stock (solo validados Sodimac) */}
+          {!sesionTieneLpn && !filtroPendientes && (
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                type="search"
+                placeholder="Buscar por código o nombre…"
+                value={busquedaSodimac}
+                onChange={(e) => setBusquedaSodimac(e.target.value)}
+                style={{ flex: 1, minWidth: '160px', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}
+              />
+              {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
+                <button key={f} type="button"
+                  onClick={() => setFiltroEstadoDespacho(f)}
+                  style={{ padding: '0.5rem 0.9rem', fontSize: '0.75rem', fontWeight: 600, borderRadius: '0.5rem', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap',
+                    background: filtroEstadoDespacho === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--primary)') : 'var(--surface)',
+                    color: filtroEstadoDespacho === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
+                  }}
+                >{f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}</button>
+              ))}
+            </div>
+          )}
+          {/* Título de sección */}
+          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+            {filtroPendientes ? 'Pendientes de validar' : `Productos Validados (${validados.length})`}
+          </p>
           <div className="pm-items-lista">
             {sesionTieneLpn
               ? validadosLpn.map((v) => (
