@@ -126,9 +126,11 @@ export function OperadorColaPage() {
                     )}
                     {lpn && <span className="pm-cola-fila-lpn">LPN: {lpn}</span>}
                     <span className="pm-cola-fila-cant">
-                      {esParcial
-                        ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada}`
-                        : `${sub.cantidad_asignada}`}
+                      <span>
+                        {esParcial
+                          ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada}`
+                          : `${sub.cantidad_asignada}`}
+                      </span>
                     </span>
                   </div>
                 </div>

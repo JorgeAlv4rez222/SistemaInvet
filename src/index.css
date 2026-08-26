@@ -6092,8 +6092,9 @@ input[type="radio"] {
 .pm-cola-fila-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pm-cola-fila-pos { font-size: var(--font-size-xs); color: var(--text-muted); background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px; }
 .pm-cola-fila-lpn { font-size: var(--font-size-xs); font-weight: 600; color: var(--accent); }
-.pm-cola-fila-cant { font-size: var(--font-size-sm); font-weight: 600; color: var(--accent-light); }
-.pm-cola-fila-cant::before { content: 'Cantidad: '; font-weight: 400; color: var(--text-muted); }
+.pm-cola-fila-cant { font-size: var(--font-size-sm); font-weight: 700; color: var(--text-muted); }
+.pm-cola-fila-cant::before { content: 'Cantidad: '; font-weight: 400; }
+.pm-cola-fila-cant span { color: var(--accent-light); font-weight: 700; }
 .pm-cola-fila-accion { flex-shrink: 0; }
 
 /* ── Picking Masivo — fila de ítem en detalle sesión ── */
