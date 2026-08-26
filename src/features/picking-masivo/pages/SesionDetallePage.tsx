@@ -256,6 +256,36 @@ export function SesionDetallePage() {
 
       {error && <div className="error-banner">{error}</div>}
 
+      {/* Barra sobre la tarjeta: Descargar (izq) | Cargar Excel LPN (der, solo Sodimac) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', gap: '0.5rem' }}>
+        <button className="btn-secundario" onClick={descargarExcel} style={{ fontSize: '0.85rem' }}>
+          ↓ Descargar detalle Excel
+        </button>
+        {!sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: 'none' }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoLpn(f) }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {lpnError && <span style={{ fontSize: '0.78rem', color: 'var(--danger)' }}>{lpnError}</span>}
+              <button
+                type="button"
+                className="btn-secundario"
+                disabled={lpnSubiendo}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontSize: '0.85rem' }}
+              >
+                {lpnSubiendo ? 'Subiendo…' : lpnCount > 0 ? `📎 Excel LPN (${lpnCount} LPNs)` : '📎 Cargar Excel LPN'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
       <div className="pm-sesion-info-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
@@ -278,42 +308,15 @@ export function SesionDetallePage() {
               Validar Entrega →
             </button>
           )}
-          <button className="btn-secundario" onClick={descargarExcel}>
-            ↓ Descargar detalle Excel
-          </button>
-          {/* Excel LPN + Validar LPN — solo Sodimac */}
           {!sesionTieneLpn && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                style={{ display: 'none' }}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoLpn(f) }}
-              />
-              <button
-                type="button"
-                className="btn-secundario"
-                disabled={lpnSubiendo}
-                onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: '0.85rem' }}
-              >
-                {lpnSubiendo
-                  ? 'Subiendo…'
-                  : lpnCount > 0
-                    ? `📎 Excel LPN (${lpnCount} LPNs)`
-                    : '📎 Cargar Excel LPN'}
-              </button>
-              {lpnError && <span style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>{lpnError}</span>}
-              <button
-                className="btn-primario"
-                disabled={!todosProductosValidados || lpnCount === 0}
-                title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : lpnCount === 0 ? 'Carga el Excel de LPNs primero' : undefined}
-                onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
-              >
-                Validar LPN →
-              </button>
-            </>
+            <button
+              className="btn-primario"
+              disabled={!todosProductosValidados || lpnCount === 0}
+              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : lpnCount === 0 ? 'Carga el Excel de LPNs primero' : undefined}
+              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
+            >
+              Validar LPN →
+            </button>
           )}
         </div>
       )}
