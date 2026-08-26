@@ -276,9 +276,15 @@ export function DespachoSesionPage() {
     const lpnTrimmed = lpn.trim()
     if (!lpnTrimmed) return
     setErrorLpnScan(null)
+    if (lpnsExcel.length === 0) {
+      setErrorLpnScan('No hay Excel cargado. Carga el archivo Excel de LPNs primero.')
+      setLpnScanInput('')
+      setTimeout(() => lpnInputRef.current?.focus(), 50)
+      return
+    }
     const entry = lpnsExcel.find((e) => lpnTrimmed === e.lpn || lpnTrimmed.endsWith(e.lpn))
     if (!entry) {
-      setErrorLpnScan(`LPN "${lpnTrimmed}" no está en la lista de esta OC`)
+      setErrorLpnScan(`LPN "${lpnTrimmed}" no encontrado en el Excel (${lpnsExcel.length} LPNs cargados)`)
       setLpnScanInput('')
       setTimeout(() => lpnInputRef.current?.focus(), 50)
       return
@@ -528,6 +534,11 @@ export function DespachoSesionPage() {
         <>
           <div className="pm-despacho-scanner-card">
             <div className="pm-despacho-fase-label" style={{ color: 'white' }}>Validación de LPN</div>
+            {lpnsExcel.length === 0 && (
+              <div style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid var(--warning)', borderRadius: '0.5rem', padding: '0.6rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--warning)' }}>
+                ⚠️ No hay Excel cargado. Carga el archivo de LPNs desde la pantalla de detalle (botón "Validar LPN →").
+              </div>
+            )}
             <label className="pm-confirmar-label">
               Escanear LPN
               <div className="pm-confirmar-barcode-row">
