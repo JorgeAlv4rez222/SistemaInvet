@@ -81,6 +81,9 @@ export function DespachoSesionPage() {
   const [errorLpnScan, setErrorLpnScan]             = useState<string | null>(null)
   const [errorExcel, setErrorExcel]                 = useState<string | null>(null)
 
+  const [preparacionConfirmada, setPreparacionConfirmada] = useState(() => {
+    try { return localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1' } catch { return false }
+  })
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
   const [filtroEstadoDespacho, setFiltroEstadoDespacho] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
@@ -401,12 +404,15 @@ export function DespachoSesionPage() {
       {!sesionTieneLpn && faseSodimac === 'productos' && todosProductosValidados && sesion.estado === 'completada' && (
         <button
           className="btn-primario pm-despacho-despachar-btn"
+          disabled={preparacionConfirmada}
+          title={preparacionConfirmada ? 'Preparación ya confirmada' : undefined}
           onClick={() => {
             try { localStorage.setItem(`pm_productos_ok_${sesionId}`, '1') } catch {}
+            setPreparacionConfirmada(true)
             navigate(`/picking-masivo/${sesionId}`)
           }}
         >
-          Confirmar Preparación
+          {preparacionConfirmada ? 'Preparación confirmada ✓' : 'Confirmar Preparación'}
         </button>
       )}
 

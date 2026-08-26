@@ -98,16 +98,13 @@ export function SesionDetallePage() {
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
-  const [lpnYaUsado, setLpnYaUsado]           = useState(false)
   const [productosConfirmados, setProductosConfirmados] = useState(false)
 
   useEffect(() => {
     if (!sesionId) return
     // Forzar refetch al montar para no depender del cache
     qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] })
-    // Leer flags localStorage
     try {
-      setLpnYaUsado(localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1')
       setProductosConfirmados(localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1')
     } catch {}
   }, [sesionId, qc])
@@ -225,17 +222,13 @@ export function SesionDetallePage() {
           <button className="btn-secundario" onClick={descargarExcel}>
             ↓ Descargar detalle Excel
           </button>
-          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados, una sola vez */}
+          {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados */}
           {!sesionTieneLpn && (
             <button
               className="btn-primario"
-              disabled={!todosProductosValidados || lpnYaUsado}
-              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : lpnYaUsado ? 'Validación de LPN ya iniciada' : undefined}
-              onClick={() => {
-                try { localStorage.setItem(`pm_lpn_started_${sesionId}`, '1') } catch {}
-                setLpnYaUsado(true)
-                navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)
-              }}
+              disabled={!todosProductosValidados}
+              title={!todosProductosValidados ? 'Completa la Validación de Entrega primero' : undefined}
+              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
             >
               Validar LPN →
             </button>
