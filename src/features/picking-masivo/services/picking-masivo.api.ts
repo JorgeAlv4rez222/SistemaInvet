@@ -98,4 +98,7 @@ export const pickingMasivoApi = {
 
   cancelarSesion: (sesionId: string) =>
     apiClient.post<{ sesionId: string }>('/picking-masivo?accion=cancelar-sesion', { sesionId }),
+
+  guardarLpns: (body: { sesionId: string; lpnsData: unknown[] }) =>
+    apiClient.post<{ ok: boolean }>('/picking-masivo?accion=guardar-lpns', body),
 }

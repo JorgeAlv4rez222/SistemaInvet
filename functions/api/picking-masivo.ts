@@ -31,6 +31,7 @@ const despacharSesionSchema = z.object({ sesionId: z.string().uuid(), usuarioId:
 const cancelarSesionSchema  = z.object({ sesionId: z.string().uuid() })
 const buscarItemSchema      = z.object({ sesionId: z.string().uuid(), termino: z.string().min(1) })
 const validarItemSchema     = z.object({ sesionId: z.string().uuid(), itemId: z.string().uuid() })
+const guardarLpnsSchema     = z.object({ sesionId: z.string().uuid(), lpnsData: z.array(z.any()) })
 
 async function getUsuarioId(request: Request): Promise<string | null> {
   const auth = request.headers.get('authorization')
@@ -148,6 +149,12 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const parsed = validarItemSchema.safeParse(body)
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await pickingMasivoService.validarItem(parsed.data.sesionId, parsed.data.itemId)
+      return result.ok ? json(result.data) : json({ error: result.error }, 500)
+    }
+    if (accion === 'guardar-lpns') {
+      const parsed = guardarLpnsSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.guardarLpns(parsed.data.sesionId, parsed.data.lpnsData)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }
     return json({ error: 'Acción POST no reconocida' }, 400)

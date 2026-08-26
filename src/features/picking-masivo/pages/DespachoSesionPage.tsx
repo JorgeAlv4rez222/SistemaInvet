@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
-import { useSesionPicking, useBuscarLpn, useValidarLpn, useBuscarItem, useValidarItem, useDespacharSesion } from '../hooks/usePickingMasivo'
+import { useSesionPicking, useBuscarLpn, useValidarLpn, useBuscarItem, useValidarItem, useDespacharSesion, useGuardarLpns } from '../hooks/usePickingMasivo'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 
@@ -52,6 +52,7 @@ export function DespachoSesionPage() {
   const validarItem     = useValidarItem(sesionId)
 
   const despacharSesion = useDespacharSesion()
+  const guardarLpns     = useGuardarLpns()
 
   const [scanInput, setScanInput]                   = useState('')
   const [itemPendienteLpn, setItemPendienteLpn]     = useState<ItemPendienteLpn | null>(null)
@@ -68,12 +69,7 @@ export function DespachoSesionPage() {
   // Sodimac fase 2: LPN
   const [faseSodimac, setFaseSodimac]               = useState<FaseSodimac>(iniciarEnLpns ? 'lpns' : 'productos')
   const [mostrarCargarLpn, setMostrarCargarLpn]     = useState(false)
-  const [lpnsExcel, setLpnsExcel]                   = useState<LpnEntry[]>(() => {
-    try {
-      const stored = localStorage.getItem(`pm_lpn_${sesionId}`)
-      return stored ? (JSON.parse(stored) as LpnEntry[]) : []
-    } catch { return [] }
-  })
+  const [lpnsExcel, setLpnsExcel]                   = useState<LpnEntry[]>([])
   const [lpnsEscaneados, setLpnsEscaneados]         = useState<Set<string>>(new Set())
   const [lpnScanInput, setLpnScanInput]             = useState('')
   const [lpnPendiente, setLpnPendiente]             = useState<LpnEntry | null>(null)
@@ -104,6 +100,12 @@ export function DespachoSesionPage() {
   const sesionTieneLpn = items ? items.some((i) => !!i.lpn) : true
 
   // Inicializar validados desde la BD al cargar la sesión
+  // Cargar LPNs desde la BD al recibir la sesión
+  useEffect(() => {
+    const lpnsDb = (sesion as any)?.lpns_excel as LpnEntry[] | undefined
+    if (lpnsDb && lpnsDb.length > 0) setLpnsExcel(lpnsDb)
+  }, [sesion])
+
   useEffect(() => {
     if (!sesion || inicializado || !items) return
     if (sesionTieneLpn) {
@@ -261,8 +263,9 @@ export function DespachoSesionPage() {
 
         const entradas = [...lpnMap.values()]
         if (entradas.length === 0) { setErrorExcel('El archivo no contiene LPNs válidos'); return }
-        try { localStorage.setItem(`pm_lpn_${sesionId}`, JSON.stringify(entradas)) } catch {}
         setLpnsExcel(entradas)
+        // Guardar en BD para que sea accesible desde cualquier dispositivo
+        guardarLpns.mutate({ sesionId, lpnsData: entradas })
         setLpnsEscaneados(new Set())
         setLpnPendiente(null)
         setMostrarCargarLpn(false)

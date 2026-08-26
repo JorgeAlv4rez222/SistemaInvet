@@ -32,6 +32,10 @@ export function useValidarExcel() {
   return useMutation({ mutationFn: pickingMasivoApi.validarExcel })
 }
 
+export function useGuardarLpns() {
+  return useMutation({ mutationFn: pickingMasivoApi.guardarLpns })
+}
+
 export function useCrearSesion() {
   return useMutation({ mutationFn: pickingMasivoApi.crearSesion })
 }

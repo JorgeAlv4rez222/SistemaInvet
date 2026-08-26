@@ -422,7 +422,14 @@ export const pickingMasivoService = {
       })),
     }))
 
-    return { ok: true, data: { ...sesion, items: itemsConEquivalentes } }
+    // Cargar LPNs guardados en la tabla sesion_lpns
+    const { data: lpnsRow } = await supabase
+      .from('sesion_lpns')
+      .select('lpns_data')
+      .eq('sesion_id', sesionId)
+      .single()
+
+    return { ok: true, data: { ...sesion, items: itemsConEquivalentes, lpns_excel: lpnsRow?.lpns_data ?? [] } }
   },
 
   // ── 6. Cola de subtareas libres para un operador ──────────────────────────
@@ -782,6 +789,14 @@ export const pickingMasivoService = {
   },
 
   // ── 14c. Validar ítem por id (flujo sin LPN — Sodimac) ───────────────────
+  async guardarLpns(sesionId: string, lpnsData: unknown[]): Promise<ServiceResult<{ ok: boolean }>> {
+    const { error } = await supabase
+      .from('sesion_lpns')
+      .upsert({ sesion_id: sesionId, lpns_data: lpnsData, updated_at: new Date().toISOString() }, { onConflict: 'sesion_id' })
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { ok: true } }
+  },
+
   async validarItem(sesionId: string, itemId: string): Promise<ServiceResult<{ ok: boolean }>> {
     const { error } = await supabase
       .from('items_picking_masivo')
