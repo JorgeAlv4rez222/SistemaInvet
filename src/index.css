@@ -6067,6 +6067,14 @@ input[type="radio"] {
 .pm-cola-sesion-nombre { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); }
 .pm-cola-sesion-fecha { font-size: var(--font-size-sm); color: var(--text-secondary); }
 
+/* ── Picking Masivo — barra de progreso cola ── */
+.pm-cola-progreso { margin-bottom: var(--spacing-md); }
+.pm-cola-progreso-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xs); }
+.pm-cola-progreso-label { font-size: var(--font-size-sm); color: var(--text-secondary); }
+.pm-cola-progreso-ratio { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); }
+.pm-cola-progreso-barra { height: 8px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.pm-cola-progreso-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+
 /* ── Picking Masivo — cola de trabajo (lista) ── */
 .pm-cola-lista { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
 .pm-cola-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md); border-bottom: 1px solid var(--border); }

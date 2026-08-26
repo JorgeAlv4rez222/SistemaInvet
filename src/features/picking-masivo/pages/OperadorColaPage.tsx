@@ -59,6 +59,21 @@ export function OperadorColaPage() {
         </div>
       )}
 
+      {sesion && (
+        <div className="pm-cola-progreso">
+          <div className="pm-cola-progreso-header">
+            <span className="pm-cola-progreso-label">Progreso</span>
+            <span className="pm-cola-progreso-ratio">{sesion.items_completados} / {sesion.total_items} productos</span>
+          </div>
+          <div className="pm-cola-progreso-barra">
+            <div
+              className="pm-cola-progreso-fill"
+              style={{ width: sesion.total_items ? `${Math.round((sesion.items_completados / sesion.total_items) * 100)}%` : '0%' }}
+            />
+          </div>
+        </div>
+      )}
+
       {error && <div className="error-banner">{error}</div>}
 
       {isLoading && <p className="cargando">Cargando cola…</p>}
