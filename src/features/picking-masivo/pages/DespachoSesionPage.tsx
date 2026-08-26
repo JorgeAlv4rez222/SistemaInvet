@@ -25,7 +25,7 @@ type ItemPendienteSodimac = {
   tienda:             string | null
 }
 
-type ItemValidadoSodimac = ItemPendienteSodimac
+type ItemValidadoSodimac = ItemPendienteSodimac & { estado: string }
 
 type LpnDetalle = { codigo: string; tienda: string; cantidad: number }
 type LpnEntry   = { lpn: string; totalEmpaque: number; items: LpnDetalle[] }
@@ -82,6 +82,7 @@ export function DespachoSesionPage() {
   const [errorExcel, setErrorExcel]                 = useState<string | null>(null)
 
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
+  const [filtroEstadoDespacho, setFiltroEstadoDespacho] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
   const [busquedaSodimac, setBusquedaSodimac]       = useState('')
 
@@ -121,6 +122,7 @@ export function DespachoSesionPage() {
           const despachada = (i.subtareas_picking_masivo ?? []).reduce(
             (acc, s) => acc + (s.cantidad_despachada ?? 0), 0
           )
+          const estado = despachada === 0 ? 'sin_stock' : despachada < i.cantidad_pedida ? 'parcial' : 'completado'
           return {
             itemId:             i.id,
             codigo:             i.codigo,
@@ -128,6 +130,7 @@ export function DespachoSesionPage() {
             cantidadPedida:     i.cantidad_pedida,
             cantidadDespachada: despachada,
             tienda:             i.tienda ?? null,
+            estado,
           }
         })
       setValidadosSodimac(yaValidados)
@@ -193,7 +196,7 @@ export function DespachoSesionPage() {
       setValidadosSodimac((prev) =>
         prev.some((v) => v.itemId === itemPendienteSodimac.itemId)
           ? prev
-          : [itemPendienteSodimac, ...prev]
+          : [{ ...itemPendienteSodimac, estado: itemPendienteSodimac.cantidadDespachada === 0 ? 'sin_stock' : itemPendienteSodimac.cantidadDespachada < itemPendienteSodimac.cantidadPedida ? 'parcial' : 'completado' }, ...prev]
       )
       setItemPendienteSodimac(null)
       setTimeout(() => inputRef.current?.focus(), 50)
@@ -407,19 +410,24 @@ export function DespachoSesionPage() {
             <p className="pm-despacho-validados-titulo">
               {filtroPendientes ? 'Pendientes' : `Productos Validados (${validados.length})`}
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
               {!sesionTieneLpn && (
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <button
-                    type="button"
-                    style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }}
-                    onClick={() => setFiltroPendientes(false)}
-                  >Validados</button>
-                  <button
-                    type="button"
-                    style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }}
-                    onClick={() => setFiltroPendientes(true)}
-                  >Pendientes</button>
+                  <button type="button" style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(false)}>Validados</button>
+                  <button type="button" style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(true)}>Pendientes</button>
+                </div>
+              )}
+              {!sesionTieneLpn && !filtroPendientes && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
+                    <button key={f} type="button"
+                      onClick={() => setFiltroEstadoDespacho(f)}
+                      style={{ padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap',
+                        background: filtroEstadoDespacho === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--accent)') : 'transparent',
+                        color: filtroEstadoDespacho === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
+                      }}
+                    >{f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}</button>
+                  ))}
                 </div>
               )}
               <span className="pm-despacho-validados-ratio">{totalValidados}/{totalItems}</span>
@@ -458,41 +466,48 @@ export function DespachoSesionPage() {
                       </div>
                     )
                   })
-              : validadosSodimac.filter((v) => {
+              : validadosSodimac
+                  .filter((v) => {
                     const q = busquedaSodimac.trim().toLowerCase()
-                    return !q || v.codigo.toLowerCase().includes(q) || v.descripcion.toLowerCase().includes(q)
-                  }).map((v) => {
-                  const expandido = productoExpandido === v.itemId
-                  return (
-                    <div
-                      key={v.itemId}
-                      className="pm-item-card pm-despacho-validado-fila pm-despacho-validado-fila--click"
-                      style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}
-                      onClick={() => setProductoExpandido(expandido ? null : v.itemId)}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                        <div className="pm-despacho-validado-info" style={{ flex: 1 }}>
-                          <span className="pm-despacho-validado-codigo">{v.codigo}</span>
-                          <span className="pm-despacho-validado-desc">{v.descripcion}</span>
-                          {expandido && (
-                            <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(103, 207, 232, 0.15)', border: '1px solid rgba(103, 207, 232, 0.35)', display: 'flex', gap: 'var(--spacing-lg)' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Solicitado OC</span>
-                                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Enviado</span>
-                                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
-                              </div>
-                            </div>
-                          )}
+                    const matchQ = !q || v.codigo.toLowerCase().includes(q) || v.descripcion.toLowerCase().includes(q)
+                    const matchE = filtroEstadoDespacho === 'todos' || v.estado === filtroEstadoDespacho
+                    return matchQ && matchE
+                  })
+                  .map((v) => {
+                    const expandido = productoExpandido === v.itemId
+                    const ESTADO_LABELS: Record<string, string> = { completado: 'Completado', parcial: 'Parcial', sin_stock: 'Sin stock' }
+                    return (
+                      <div key={v.itemId} className="ing-prod-item pm-item-card">
+                        <div
+                          className="ing-prod-fila pm-item-header"
+                          role="button" tabIndex={0}
+                          onClick={() => setProductoExpandido(expandido ? null : v.itemId)}
+                          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setProductoExpandido(expandido ? null : v.itemId)}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                            <span className="ing-prod-nombre">{v.descripcion || v.codigo}</span>
+                            <span className="ing-prod-sku">{v.codigo}</span>
+                          </div>
+                          <div className="ing-prod-fila-derecha" style={{ gap: '0.5rem' }}>
+                            <span className={`badge badge-${v.estado.replace(/_/g, '-')}`}>{ESTADO_LABELS[v.estado] ?? v.estado}</span>
+                            <span className="pm-item-chevron">{expandido ? '▲' : '▼'}</span>
+                          </div>
                         </div>
-                        <span className="pm-despacho-validado-cant">{v.cantidadDespachada}</span>
-                        <span className="pm-despacho-validado-check">✓</span>
+                        {expandido && (
+                          <div style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(103, 207, 232, 0.15)', border: '1px solid rgba(103, 207, 232, 0.35)', display: 'flex', gap: 'var(--spacing-lg)', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Solicitado OC</span>
+                              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Enviado</span>
+                              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )
-                })
+                    )
+                  })
             }
           </div>
         </div>

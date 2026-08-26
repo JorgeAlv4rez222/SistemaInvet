@@ -182,9 +182,11 @@ export function SesionDetallePage() {
       <div className="pm-sesion-info-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span className="pm-sesion-info-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            OC: <strong style={{ color: 'var(--text-primary)' }}>{sesion.numero_oc_pedido ?? sesion.numero_oc}</strong>
-          </span>
+          {sesion.numero_oc_pedido && (
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              OC: <strong style={{ color: 'var(--text-primary)' }}>{sesion.numero_oc_pedido}</strong>
+            </span>
+          )}
         </div>
         <div className="pm-sesion-info-entrega">
           <span className="pm-sesion-info-entrega-label">Fecha de entrega</span>
@@ -193,12 +195,15 @@ export function SesionDetallePage() {
       </div>
 
       {(sesion.estado === 'completada' || sesion.estado === 'despachado') && (
-        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap', marginBottom: 'var(--spacing-md)' }}>
+        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap', marginBottom: 'var(--spacing-md)', alignItems: 'center' }}>
           {sesion.estado === 'completada' && (
             <button className="btn-primario" onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}>
               Validar Entrega →
             </button>
           )}
+          <button className="btn-secundario" onClick={descargarExcel}>
+            ↓ Descargar detalle Excel
+          </button>
           {/* Validar LPN — solo Sodimac, habilitado cuando todos los productos fueron validados */}
           {!sesionTieneLpn && (
             <button
@@ -210,9 +215,6 @@ export function SesionDetallePage() {
               Validar LPN →
             </button>
           )}
-          <button className="btn-secundario" onClick={descargarExcel}>
-            ↓ Descargar detalle Excel
-          </button>
         </div>
       )}
 
@@ -258,6 +260,7 @@ export function SesionDetallePage() {
         ))}
       </div>
 
+      <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Detalle completo de productos</p>
       <div className="ing-productos-lista pm-items-lista">
         {sesion.items
           .filter((item) => {
