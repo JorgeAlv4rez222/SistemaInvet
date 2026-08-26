@@ -236,12 +236,11 @@ export const pickingMasivoService = {
       return { ok: false, error: { code: 'INVALID_STATE', message: `La sesión está en estado '${sesion.estado}'` } }
     }
 
-    // Obtener todos los ítems con producto_id
+    // Obtener TODOS los ítems (incluyendo los sin producto_id, ej. Sodimac sin catálogo)
     const { data: items, error: itemsErr } = await supabase
       .from('items_picking_masivo')
       .select('id, producto_id, cantidad_pedida')
       .eq('sesion_id', input.sesionId)
-      .not('producto_id', 'is', null)
 
     if (itemsErr) return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
 
@@ -255,11 +254,12 @@ export const pickingMasivoService = {
       cantidad_asignada: number
     }[] = []
 
-    const itemsValidos = (items ?? []).filter((i) => !!i.producto_id)
-    const productoIds  = itemsValidos.map((i) => i.producto_id as string)
+    const todosItems   = items ?? []
+    const itemsConProd = todosItems.filter((i) => !!i.producto_id)
+    const itemsSinProd = todosItems.filter((i) => !i.producto_id)
+    const productoIds  = itemsConProd.map((i) => i.producto_id as string)
 
     // Una sola query para todos los lotes de todos los productos (M2).
-    // Antes: 1 query por item (50 items = 50 queries).
     const { data: todosLotes } = productoIds.length
       ? await supabase
           .from('lotes_inventario')
@@ -280,7 +280,8 @@ export const pickingMasivoService = {
       lotesPorProducto.set(lote.producto_id, arr)
     }
 
-    for (const item of itemsValidos) {
+    // Ítems con producto_id: asignar lotes FIFO o subtarea genérica si sin stock
+    for (const item of itemsConProd) {
       const lotes   = lotesPorProducto.get(item.producto_id as string) ?? []
       let restante  = item.cantidad_pedida
       let orden     = 1
@@ -304,8 +305,6 @@ export const pickingMasivoService = {
         generadas++
       }
 
-      // Sin lotes en el sistema: generar una subtarea genérica para que el
-      // operador pueda igualmente pickear el ítem manualmente.
       if (generadas === 0) {
         subtareas.push({
           item_id:           item.id,
@@ -317,6 +316,19 @@ export const pickingMasivoService = {
           cantidad_asignada: item.cantidad_pedida,
         })
       }
+    }
+
+    // Ítems sin producto_id (no están en catálogo): subtarea genérica siempre
+    for (const item of itemsSinProd) {
+      subtareas.push({
+        item_id:           item.id,
+        sesion_id:         input.sesionId,
+        lote_id:           null,
+        posicion_id:       null,
+        posicion_codigo:   '—',
+        orden_fifo:        1,
+        cantidad_asignada: item.cantidad_pedida,
+      })
     }
 
     if (subtareas.length > 0) {
