@@ -790,9 +790,11 @@ export const pickingMasivoService = {
 
   // ── 14c. Validar ítem por id (flujo sin LPN — Sodimac) ───────────────────
   async guardarLpns(sesionId: string, lpnsData: unknown[]): Promise<ServiceResult<{ ok: boolean }>> {
+    // Eliminar registro anterior si existe y luego insertar
+    await supabase.from('sesion_lpns').delete().eq('sesion_id', sesionId)
     const { error } = await supabase
       .from('sesion_lpns')
-      .upsert({ sesion_id: sesionId, lpns_data: lpnsData, updated_at: new Date().toISOString() }, { onConflict: 'sesion_id' })
+      .insert({ sesion_id: sesionId, lpns_data: lpnsData, updated_at: new Date().toISOString() })
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
     return { ok: true, data: { ok: true } }
   },

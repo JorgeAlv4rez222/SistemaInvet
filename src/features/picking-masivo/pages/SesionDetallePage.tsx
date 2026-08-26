@@ -187,10 +187,15 @@ export function SesionDetallePage() {
 
         const entradas = [...lpnMap.values()]
         if (entradas.length === 0) { setLpnError('El archivo no contiene LPNs válidos'); setLpnSubiendo(false); return }
-        await guardarLpns.mutateAsync({ sesionId: sesionId!, lpnsData: entradas })
+        // Parseo OK — mostrar conteo inmediatamente
         setLpnCount(entradas.length)
+        try {
+          await guardarLpns.mutateAsync({ sesionId: sesionId!, lpnsData: entradas })
+        } catch {
+          setLpnError('Error al guardar en el servidor. Los LPNs están cargados solo en este dispositivo.')
+        }
       } catch {
-        setLpnError('Error al procesar el archivo Excel')
+        setLpnError('Error al leer el archivo Excel. Verifica el formato.')
       } finally {
         setLpnSubiendo(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
