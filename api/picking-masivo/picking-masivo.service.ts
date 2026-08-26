@@ -354,16 +354,39 @@ export const pickingMasivoService = {
   async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase
       .from('sesiones_picking_masivo')
-      .select('id, numero_oc, nombre_cliente, numero_oc_pedido, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por, despachado_en, despachado_por, nombre_chofer, creado_por_usuario:usuarios!sesiones_picking_masivo_creado_por_fkey(nombre), despachado_por_usuario:usuarios!sesiones_picking_masivo_despachado_por_fkey(nombre)')
+      .select('id, numero_oc, nombre_cliente, numero_oc_pedido, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por, despachado_en, despachado_por, nombre_chofer')
       .order('creado_en', { ascending: false })
 
     if (estado) q = q.eq('estado', estado)
 
     const { data, error } = await q
-    if (error) {
-      return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+
+    const sesiones = data ?? []
+
+    // Resolver nombres de usuario en paralelo
+    const userIds = [...new Set(
+      sesiones.flatMap((s: any) => [s.creado_por, s.despachado_por].filter(Boolean))
+    )] as string[]
+
+    let nombresMap: Record<string, string> = {}
+    if (userIds.length > 0) {
+      const { data: usuarios } = await supabase
+        .from('usuarios')
+        .select('id, nombre')
+        .in('id', userIds)
+      if (usuarios) {
+        for (const u of usuarios) nombresMap[u.id] = u.nombre
+      }
     }
-    return { ok: true, data: data ?? [] }
+
+    const result = sesiones.map((s: any) => ({
+      ...s,
+      creado_por_usuario:     s.creado_por    ? { nombre: nombresMap[s.creado_por]    ?? null } : null,
+      despachado_por_usuario: s.despachado_por ? { nombre: nombresMap[s.despachado_por] ?? null } : null,
+    }))
+
+    return { ok: true, data: result }
   },
 
   // ── 5. Obtener sesión con ítems y subtareas ───────────────────────────────
