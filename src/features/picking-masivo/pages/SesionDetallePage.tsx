@@ -32,6 +32,7 @@ type ItemDetalle = {
   motivo_diferencia:   string | null
   lpn:                 string | null
   tienda:              string | null
+  codigo_barra:        string | null
   subtareas_picking_masivo: SubtareaDetalle[]
 }
 
