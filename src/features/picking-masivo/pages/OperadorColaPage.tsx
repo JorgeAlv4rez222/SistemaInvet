@@ -17,9 +17,10 @@ export function OperadorColaPage() {
   const tomarSubtarea   = useTomarSubtarea(sesionId ?? '')
   const liberarPropias  = useLiberarPropias(sesionId ?? '')
 
-  const [tomandoId, setTomandoId] = useState<string | null>(null)
-  const [error, setError]         = useState<string | null>(null)
-  const [filtro, setFiltro]       = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
+  const [tomandoId, setTomandoId]     = useState<string | null>(null)
+  const [error, setError]             = useState<string | null>(null)
+  const [filtro, setFiltro]           = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
+  const [detalle, setDetalle]         = useState<SubtareaResumen | null>(null)
 
   const subtareas = data ?? []
   const tengoPropias = subtareas.some((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
@@ -33,9 +34,9 @@ export function OperadorColaPage() {
     return true
   })
 
-  const cntMias     = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
-  const cntTomadas  = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por !== operadorId).length
-  const cntParcial  = subtareas.filter((s) => s.estado === 'parcial' || s.estado === 'sin_stock').length
+  const cntMias      = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
+  const cntTomadas   = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por !== operadorId).length
+  const cntParcial   = subtareas.filter((s) => s.estado === 'parcial' || s.estado === 'sin_stock').length
   const cntCompletas = subtareas.filter((s) => s.estado === 'completado').length
 
   async function handleTomar(sub: SubtareaResumen) {
@@ -115,30 +116,39 @@ export function OperadorColaPage() {
             const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
             const esParcial      = sub.estado === 'parcial' || sub.estado === 'sin_stock'
             const lpn            = sub.items_picking_masivo?.lpn
+            const hasDesc        = sub.items_picking_masivo?.descripcion &&
+                                   sub.items_picking_masivo.descripcion !== sub.items_picking_masivo.codigo
 
             return (
-              <div key={sub.id} className={`pm-cola-fila ${bloqueadaXOtro ? 'pm-cola-fila--bloqueada' : ''} ${esParcial ? 'pm-cola-fila--parcial' : ''}`}>
+              <div
+                key={sub.id}
+                className={`pm-cola-fila ${bloqueadaXOtro ? 'pm-cola-fila--bloqueada' : ''} ${esParcial ? 'pm-cola-fila--parcial' : ''}`}
+                onClick={() => setDetalle(sub)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="pm-cola-fila-info">
-                  {sub.items_picking_masivo?.descripcion && sub.items_picking_masivo.descripcion !== sub.items_picking_masivo.codigo && (
-                    <span className="pm-cola-fila-nombre">{sub.items_picking_masivo.descripcion}</span>
-                  )}
-                  <span className="pm-cola-fila-codigo">{sub.items_picking_masivo?.codigo}</span>
+                  {/* Nombre + código en la misma línea */}
+                  <div className="pm-cola-fila-titulo">
+                    {hasDesc && (
+                      <span className="pm-cola-fila-nombre">{sub.items_picking_masivo!.descripcion}</span>
+                    )}
+                    <span className="pm-cola-fila-codigo">{sub.items_picking_masivo?.codigo}</span>
+                  </div>
+                  {/* Cantidad abajo */}
                   <div className="pm-cola-fila-meta">
                     {sub.posicion_codigo !== '—' && (
                       <span className="pm-cola-fila-pos">{sub.posicion_codigo}</span>
                     )}
                     {lpn && <span className="pm-cola-fila-lpn">LPN: {lpn}</span>}
                     <span className="pm-cola-fila-cant">
-                      <span>
-                        {esParcial
-                          ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada}`
-                          : `${sub.cantidad_asignada}`}
-                      </span>
+                      {esParcial
+                        ? `${sub.cantidad_despachada ?? 0}/${sub.cantidad_asignada}`
+                        : `${sub.cantidad_asignada}`}
                     </span>
                   </div>
                 </div>
 
-                <div className="pm-cola-fila-accion">
+                <div className="pm-cola-fila-accion" onClick={(e) => e.stopPropagation()}>
                   {sub.estado === 'completado' ? (
                     <span className="badge badge-completado">✓</span>
                   ) : esParcial ? (
@@ -160,6 +170,70 @@ export function OperadorColaPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal detalle producto */}
+      {detalle && (
+        <div
+          className="modal-overlay"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => setDetalle(null)}
+        >
+          <div
+            className="modal-box"
+            style={{ background: 'var(--bg-card, #1e2229)', border: '2px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', width: '90vw', maxWidth: '420px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="modal-titulo" style={{ marginBottom: '1rem' }}>
+              {detalle.items_picking_masivo?.descripcion ?? detalle.items_picking_masivo?.codigo}
+            </h3>
+
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">Código</span>
+              <span className="pm-despacho-modal-valor" style={{ color: '#4ade80', fontWeight: 700 }}>
+                {detalle.items_picking_masivo?.codigo}
+              </span>
+            </div>
+
+            <div className="pm-despacho-modal-fila">
+              <span className="pm-despacho-modal-label">Cantidad</span>
+              <span className="pm-despacho-modal-valor"><strong>{detalle.cantidad_asignada}</strong></span>
+            </div>
+
+            {detalle.items_picking_masivo?.codigo_barra && (
+              <div className="pm-despacho-modal-fila">
+                <span className="pm-despacho-modal-label">UPC / EAN</span>
+                <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                  {detalle.items_picking_masivo.codigo_barra}
+                </span>
+              </div>
+            )}
+
+            {detalle.items_picking_masivo?.lpn && (
+              <div className="pm-despacho-modal-fila">
+                <span className="pm-despacho-modal-label">LPN</span>
+                <span className="pm-despacho-modal-valor" style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                  {detalle.items_picking_masivo.lpn}
+                </span>
+              </div>
+            )}
+
+            {detalle.posicion_codigo && detalle.posicion_codigo !== '—' && (
+              <div className="pm-despacho-modal-fila">
+                <span className="pm-despacho-modal-label">Posición</span>
+                <span className="pm-despacho-modal-valor">{detalle.posicion_codigo}</span>
+              </div>
+            )}
+
+            <button
+              className="btn-secundario"
+              style={{ width: '100%', marginTop: '1.25rem' }}
+              onClick={() => setDetalle(null)}
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
     </div>
