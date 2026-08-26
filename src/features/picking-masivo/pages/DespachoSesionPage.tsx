@@ -343,7 +343,7 @@ export function DespachoSesionPage() {
         <div className="pm-despacho-titulo-wrap" style={{ fontSize: '1.75rem' }}>
           <span className="pm-despacho-titulo-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
           <span className="pm-despacho-titulo-sep">—</span>
-          <span className="pm-despacho-titulo-label">Validación de Carga</span>
+          <span className="pm-despacho-titulo-label">{faseSodimac === 'lpns' ? 'Validación de Carga' : 'Validación de Preparación'}</span>
         </div>
       </div>
 
@@ -527,7 +527,7 @@ export function DespachoSesionPage() {
       {!sesionTieneLpn && faseSodimac === 'lpns' && sesion.estado === 'completada' && (
         <>
           <div className="pm-despacho-scanner-card">
-            <div className="pm-despacho-fase-label">Fase 2 — Validación de LPN</div>
+            <div className="pm-despacho-fase-label" style={{ color: 'white' }}>Validación de LPN</div>
             <label className="pm-confirmar-label">
               Escanear LPN
               <div className="pm-confirmar-barcode-row">
