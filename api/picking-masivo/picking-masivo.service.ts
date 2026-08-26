@@ -688,26 +688,44 @@ export const pickingMasivoService = {
     cantidadDespachada:  number
     tienda:              string | null
   }>> {
-    // Buscar por codigo_barra primero, luego por codigo
-    let query = supabase
+    const SELECT = `id, codigo, descripcion, tienda,
+      subtareas_picking_masivo ( cantidad_despachada, estado ),
+      producto_id`
+
+    // 1. Buscar por codigo_barra del Excel en items_picking_masivo
+    let { data: items } = await supabase
       .from('items_picking_masivo')
-      .select(`id, codigo, descripcion, tienda,
-        subtareas_picking_masivo ( cantidad_despachada, estado )`)
+      .select(SELECT)
       .eq('sesion_id', sesionId)
       .eq('codigo_barra', termino)
       .limit(1)
 
-    let { data: items } = await query
-
+    // 2. Buscar por codigo_barra del catálogo (productos.codigo_barra)
     if (!items || items.length === 0) {
-      const r2 = await supabase
+      const { data: porCatalogo } = await supabase
         .from('items_picking_masivo')
-        .select(`id, codigo, descripcion, tienda,
-          subtareas_picking_masivo ( cantidad_despachada, estado )`)
+        .select(`${SELECT}, productos ( codigo_barra )`)
+        .eq('sesion_id', sesionId)
+        .not('producto_id', 'is', null)
+        .limit(100)
+
+      if (porCatalogo) {
+        const encontrado = (porCatalogo as any[]).find(
+          (i) => (Array.isArray(i.productos) ? i.productos[0] : i.productos)?.codigo_barra === termino
+        )
+        if (encontrado) items = [encontrado]
+      }
+    }
+
+    // 3. Fallback: buscar por código exacto
+    if (!items || items.length === 0) {
+      const r3 = await supabase
+        .from('items_picking_masivo')
+        .select(SELECT)
         .eq('sesion_id', sesionId)
         .ilike('codigo', termino)
         .limit(1)
-      items = r2.data
+      items = r3.data
     }
 
     if (!items || items.length === 0) {

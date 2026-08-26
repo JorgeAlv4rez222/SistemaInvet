@@ -11,8 +11,8 @@ const itemExcelSchema = z.object({
 const validarExcelSchema   = z.object({ items: z.array(itemExcelSchema).min(1) })
 const crearSesionSchema    = z.object({
   usuarioId: z.string().uuid(), numeroOc: z.string().min(1),
-  nombreCliente: z.string().optional(), archivoNombre: z.string().min(1),
-  items: z.array(itemExcelSchema).min(1),
+  nombreCliente: z.string().optional(), numeroOcPedido: z.string().optional(),
+  archivoNombre: z.string().min(1), items: z.array(itemExcelSchema).min(1),
 })
 const activarSesionSchema  = z.object({ sesionId: z.string().uuid(), usuarioId: z.string().uuid() })
 const tomarSubtareaSchema  = z.object({ subtareaId: z.string().uuid(), usuarioId: z.string().uuid() })
@@ -29,6 +29,8 @@ const editarParcialSchema   = z.object({
 const validarLpnSchema      = z.object({ sesionId: z.string().uuid(), lpn: z.string().min(1) })
 const despacharSesionSchema = z.object({ sesionId: z.string().uuid(), usuarioId: z.string().uuid(), nombreChofer: z.string().min(1) })
 const cancelarSesionSchema  = z.object({ sesionId: z.string().uuid() })
+const buscarItemSchema      = z.object({ sesionId: z.string().uuid(), termino: z.string().min(1) })
+const validarItemSchema     = z.object({ sesionId: z.string().uuid(), itemId: z.string().uuid() })
 
 async function getUsuarioId(request: Request): Promise<string | null> {
   const auth = request.headers.get('authorization')
@@ -135,6 +137,18 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await pickingMasivoService.cancelarSesion(parsed.data.sesionId)
       return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
+    }
+    if (accion === 'buscar-item') {
+      const parsed = buscarItemSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.buscarItem(parsed.data.sesionId, parsed.data.termino)
+      return result.ok ? json(result.data) : json({ error: result.error }, errStatus((result.error as any).code))
+    }
+    if (accion === 'validar-item') {
+      const parsed = validarItemSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.validarItem(parsed.data.sesionId, parsed.data.itemId)
+      return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }
     return json({ error: 'Acción POST no reconocida' }, 400)
   }
