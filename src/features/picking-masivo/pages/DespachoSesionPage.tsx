@@ -109,6 +109,7 @@ export function DespachoSesionPage() {
             itemId:             i.id,
             codigo:             i.codigo,
             descripcion:        i.descripcion,
+            cantidadPedida:     i.cantidad_pedida,
             cantidadDespachada: despachada,
             tienda:             i.tienda ?? null,
           }
