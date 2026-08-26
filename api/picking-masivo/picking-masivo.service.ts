@@ -794,7 +794,7 @@ export const pickingMasivoService = {
     await supabase.from('sesion_lpns').delete().eq('sesion_id', sesionId)
     const { error } = await supabase
       .from('sesion_lpns')
-      .insert({ sesion_id: sesionId, lpns_data: lpnsData, updated_at: new Date().toISOString() })
+      .insert({ sesion_id: sesionId, lpns_data: lpnsData })
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
     return { ok: true, data: { ok: true } }
   },

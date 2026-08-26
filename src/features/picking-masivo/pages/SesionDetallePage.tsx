@@ -191,8 +191,9 @@ export function SesionDetallePage() {
         setLpnCount(entradas.length)
         try {
           await guardarLpns.mutateAsync({ sesionId: sesionId!, lpnsData: entradas })
-        } catch {
-          setLpnError('Error al guardar en el servidor. Los LPNs están cargados solo en este dispositivo.')
+        } catch (e) {
+          const msg = e instanceof ApiResponseError ? e.message : (e instanceof Error ? e.message : 'Error desconocido')
+          setLpnError(`Error al guardar en el servidor: ${msg}. Los LPNs están cargados solo en este dispositivo.`)
         }
       } catch {
         setLpnError('Error al leer el archivo Excel. Verifica el formato.')
