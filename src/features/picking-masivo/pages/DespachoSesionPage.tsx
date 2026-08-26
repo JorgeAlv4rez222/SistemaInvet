@@ -80,6 +80,7 @@ export function DespachoSesionPage() {
   const [preparacionConfirmada, setPreparacionConfirmada] = useState(() => {
     try { return localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1' } catch { return false }
   })
+  const [filtroLpns, setFiltroLpns]                 = useState<'pendientes' | 'validados'>('pendientes')
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
   const [filtroEstadoDespacho, setFiltroEstadoDespacho] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
@@ -601,25 +602,42 @@ export function DespachoSesionPage() {
 
           {/* Lista LPNs pendientes / validados */}
           <div className="pm-despacho-validados-card">
-            <div className="pm-despacho-validados-header">
-              <p className="pm-despacho-validados-titulo">LPNs Validados</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroLpns === 'pendientes' ? 'var(--warning)' : 'transparent', color: filtroLpns === 'pendientes' ? '#000' : 'var(--text-secondary)' }}
+                  onClick={() => setFiltroLpns('pendientes')}
+                >
+                  Pendientes ({totalLpns - lpnsValidadosN})
+                </button>
+                <button
+                  type="button"
+                  style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroLpns === 'validados' ? 'var(--accent)' : 'transparent', color: filtroLpns === 'validados' ? 'white' : 'var(--text-secondary)' }}
+                  onClick={() => setFiltroLpns('validados')}
+                >
+                  Validados ({lpnsValidadosN})
+                </button>
+              </div>
               <span className="pm-despacho-validados-ratio">{lpnsValidadosN}/{totalLpns}</span>
             </div>
             <div className="pm-items-lista">
-              {lpnsExcel.map((entry) => {
-                const validado = lpnsEscaneados.has(entry.lpn)
-                return (
-                  <div key={entry.lpn} className={`pm-item-card pm-despacho-validado-fila${validado ? '' : ' pm-despacho-lpn-pendiente'}`}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                      <span className="pm-despacho-validado-codigo" style={{ fontFamily: 'monospace' }}>{entry.lpn}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.totalEmpaque} empaque{entry.totalEmpaque !== 1 ? 's' : ''}</span>
+              {lpnsExcel
+                .filter((entry) => filtroLpns === 'validados' ? lpnsEscaneados.has(entry.lpn) : !lpnsEscaneados.has(entry.lpn))
+                .map((entry) => {
+                  const validado = lpnsEscaneados.has(entry.lpn)
+                  return (
+                    <div key={entry.lpn} className={`pm-item-card pm-despacho-validado-fila${validado ? '' : ' pm-despacho-lpn-pendiente'}`}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                        <span className="pm-despacho-validado-codigo" style={{ fontFamily: 'monospace' }}>{entry.lpn}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.totalEmpaque} empaque{entry.totalEmpaque !== 1 ? 's' : ''}</span>
+                      </div>
+                      <span className={validado ? 'pm-despacho-validado-check' : 'pm-despacho-lpn-pendiente-icon'}>
+                        {validado ? '✓' : '○'}
+                      </span>
                     </div>
-                    <span className={validado ? 'pm-despacho-validado-check' : 'pm-despacho-lpn-pendiente-icon'}>
-                      {validado ? '✓' : '○'}
-                    </span>
-                  </div>
-                )
-              })}
+                  )
+                })}
             </div>
           </div>
 
