@@ -93,8 +93,8 @@ export function OperadorColaPage() {
 
       <div className="filtros-wrap">
         <button className={`filtro-btn ${filtro === 'todas'     ? 'activo' : ''}`} onClick={() => setFiltro('todas')}>Todas</button>
-        <button className={`filtro-btn ${filtro === 'mias'      ? 'activo' : ''}`} onClick={() => setFiltro('mias')}>Continuar {cntMias > 0 && <span className="filtro-badge">{cntMias}</span>}</button>
-        <button className={`filtro-btn ${filtro === 'tomadas'   ? 'activo' : ''}`} onClick={() => setFiltro('tomadas')}>Tomadas {cntTomadas > 0 && <span className="filtro-badge">{cntTomadas}</span>}</button>
+        <button className={`filtro-btn ${filtro === 'mias'      ? 'activo' : ''}`} onClick={() => setFiltro('mias')}>Tomadas {cntMias > 0 && <span className="filtro-badge">{cntMias}</span>}</button>
+        <button className={`filtro-btn ${filtro === 'tomadas'   ? 'activo' : ''}`} onClick={() => setFiltro('tomadas')}>Ocupadas {cntTomadas > 0 && <span className="filtro-badge">{cntTomadas}</span>}</button>
         <button className={`filtro-btn ${filtro === 'parcial'   ? 'activo' : ''}`} onClick={() => setFiltro('parcial')}>Parcial {cntParcial > 0 && <span className="filtro-badge">{cntParcial}</span>}</button>
         <button className={`filtro-btn ${filtro === 'completas' ? 'activo' : ''}`} onClick={() => setFiltro('completas')}>Completas {cntCompletas > 0 && <span className="filtro-badge">{cntCompletas}</span>}</button>
       </div>
