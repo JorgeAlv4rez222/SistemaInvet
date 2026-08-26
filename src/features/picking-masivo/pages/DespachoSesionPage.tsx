@@ -201,7 +201,7 @@ export function DespachoSesionPage() {
       {/* Botón despachar */}
       {todosValidados && sesion.estado === 'completada' && !mostrarChofer && (
         <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarChofer(true)}>
-          Despachar OC
+          Despachar Carga
         </button>
       )}
 
