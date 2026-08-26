@@ -383,8 +383,7 @@ export const pickingMasivoService = {
         subtareas_picking_masivo (
           id, posicion_codigo, orden_fifo, cantidad_asignada, cantidad_despachada,
           estado, bloqueado_por, bloqueado_en, completado_por, completado_en,
-          motivo_diferencia, es_equivalente, producto_real_id,
-          producto_equivalente:productos!producto_real_id (codigo, descripcion)
+          motivo_diferencia, es_equivalente, producto_real_id
         )
       `)
       .eq('sesion_id', sesionId)
@@ -392,7 +391,38 @@ export const pickingMasivoService = {
 
     if (itemsErr) return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
 
-    return { ok: true, data: { ...sesion, items: items ?? [] } }
+    // Resolver productos equivalentes en consulta separada
+    const productosRealIds = [
+      ...new Set(
+        (items ?? [])
+          .flatMap(i => i.subtareas_picking_masivo ?? [])
+          .filter((s: any) => s.es_equivalente && s.producto_real_id)
+          .map((s: any) => s.producto_real_id as string)
+      )
+    ]
+
+    let productosEquivalentesMap: Record<string, { codigo: string; descripcion: string }> = {}
+    if (productosRealIds.length > 0) {
+      const { data: prods } = await supabase
+        .from('productos')
+        .select('id, codigo, descripcion')
+        .in('id', productosRealIds)
+      for (const p of prods ?? []) {
+        productosEquivalentesMap[p.id] = { codigo: p.codigo, descripcion: p.descripcion }
+      }
+    }
+
+    const itemsConEquivalentes = (items ?? []).map((item: any) => ({
+      ...item,
+      subtareas_picking_masivo: (item.subtareas_picking_masivo ?? []).map((s: any) => ({
+        ...s,
+        producto_equivalente: s.es_equivalente && s.producto_real_id
+          ? (productosEquivalentesMap[s.producto_real_id] ?? null)
+          : null,
+      })),
+    }))
+
+    return { ok: true, data: { ...sesion, items: itemsConEquivalentes } }
   },
 
   // ── 6. Cola de subtareas libres para un operador ──────────────────────────
