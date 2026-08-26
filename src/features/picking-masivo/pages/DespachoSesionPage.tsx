@@ -20,6 +20,7 @@ type ItemPendienteSodimac = {
   itemId:             string
   codigo:             string
   descripcion:        string
+  cantidadPedida:     number
   cantidadDespachada: number
   tienda:             string | null
 }
@@ -560,17 +561,26 @@ export function DespachoSesionPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="modal-titulo">Confirmar producto</h3>
+            {itemPendienteSodimac.cantidadDespachada < itemPendienteSodimac.cantidadPedida && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <span style={{ background: 'var(--accent-yellow, #f59e0b)', color: '#000', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', padding: '2px 10px', borderRadius: '999px', textTransform: 'uppercase' }}>
+                  Parcial
+                </span>
+              </div>
+            )}
             <div className="pm-despacho-modal-fila">
               <span className="pm-despacho-modal-label">Código</span>
               <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', color: 'var(--accent-green)' }}>{itemPendienteSodimac.codigo}</span>
             </div>
             <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Descripción</span>
-              <span className="pm-despacho-modal-valor">{itemPendienteSodimac.descripcion}</span>
+              <span className="pm-despacho-modal-label">Cant. solicitada</span>
+              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>
+                {itemPendienteSodimac.cantidadPedida}
+              </span>
             </div>
             <div className="pm-despacho-modal-fila">
               <span className="pm-despacho-modal-label">Cant. despachada</span>
-              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-light)' }}>
+              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>
                 {itemPendienteSodimac.cantidadDespachada}
               </span>
             </div>

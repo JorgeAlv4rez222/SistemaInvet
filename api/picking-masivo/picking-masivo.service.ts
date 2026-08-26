@@ -685,10 +685,11 @@ export const pickingMasivoService = {
     itemId:              string
     codigo:              string
     descripcion:         string
+    cantidadPedida:      number
     cantidadDespachada:  number
     tienda:              string | null
   }>> {
-    const SELECT = `id, codigo, descripcion, tienda,
+    const SELECT = `id, codigo, descripcion, tienda, cantidad_pedida,
       subtareas_picking_masivo ( cantidad_despachada, estado ),
       producto_id`
 
@@ -742,6 +743,7 @@ export const pickingMasivoService = {
         itemId:             item.id,
         codigo:             item.codigo,
         descripcion:        item.descripcion,
+        cantidadPedida:     item.cantidad_pedida,
         cantidadDespachada,
         tienda:             item.tienda ?? null,
       },
