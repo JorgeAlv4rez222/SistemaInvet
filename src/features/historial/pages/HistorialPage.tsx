@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMovimientos, useMovimientosPorIngreso, useMovimientosPorNota, useListaOCs, useProductosPorOC, useMovimientosPorOCYProducto } from '../hooks/useHistorial'
 import { TIPOS_MOVIMIENTO, TIPO_LABELS } from '../services/historial.api'
 import type { MovimientoHistorial, ObtenerMovimientosInput, OCResumen, ProductoEnOC } from '../services/historial.api'
@@ -931,9 +932,17 @@ function formatFechaPM(iso: string | null | undefined): string {
 }
 
 function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
-  const fecha = formatFechaPM(sesion.creado_en)
+  const fecha    = formatFechaPM(sesion.creado_en)
+  const navigate = useNavigate()
   return (
-    <div className="nota-fila-item">
+    <div
+      className="nota-fila-item"
+      role="button"
+      tabIndex={0}
+      style={{ cursor: 'pointer' }}
+      onClick={() => navigate(`/picking-masivo/${sesion.id}`)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/picking-masivo/${sesion.id}`) }}
+    >
       <div className="nota-fila nota-fila--hist">
         <div className="nota-fila-principal">
           <span className="nota-fila-numero">{sesion.numero_oc}</span>
