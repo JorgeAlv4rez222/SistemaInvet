@@ -6080,7 +6080,7 @@ input[type="radio"] {
   .pm-sesion-info     { grid-column: 1; grid-row: 1; min-width: 0; }
   .pm-sesion-progreso { grid-column: 1; grid-row: 2; }
   .pm-sesion-fecha    { grid-column: 2; grid-row: 2; text-align: right; align-self: center; }
-  .pm-sesion-fila > .badge { grid-column: 2; grid-row: 1; align-self: start; white-space: nowrap; }
+  .pm-sesion-fila > .badge { grid-column: 2; grid-row: 1; align-self: start; justify-self: end; white-space: nowrap; width: fit-content; }
 
   /* ConfirmarSubtarea tablet */
   .pm-confirmar-input { font-size: var(--font-size-lg); min-height: 56px; }
@@ -6222,6 +6222,7 @@ input[type="radio"] {
   text-align: left;
 }
 .pm-sesion-fila:hover { background: var(--bg-elevated); }
+.pm-sesion-fila > .badge { justify-self: end; white-space: nowrap; }
 .pm-sesion-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pm-sesion-nombre { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-sesion-oc { font-size: var(--font-size-xs); color: var(--text-secondary); }
