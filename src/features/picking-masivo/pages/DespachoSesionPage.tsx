@@ -82,6 +82,7 @@ export function DespachoSesionPage() {
   const [errorExcel, setErrorExcel]                 = useState<string | null>(null)
 
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
+  const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
 
   const inputRef    = useRef<HTMLInputElement>(null)
   const lpnInputRef = useRef<HTMLInputElement>(null)
@@ -379,6 +380,16 @@ export function DespachoSesionPage() {
         </div>
       )}
 
+      {/* Botón Confirmar Preparación arriba — Sodimac fase 1 */}
+      {!sesionTieneLpn && faseSodimac === 'productos' && todosProductosValidados && sesion.estado === 'completada' && (
+        <button
+          className="btn-primario pm-despacho-despachar-btn"
+          onClick={() => navigate(`/picking-masivo/${sesionId}`)}
+        >
+          Confirmar Preparación
+        </button>
+      )}
+
       {/* Lista de productos validados (fase 1) */}
       {(!sesionTieneLpn ? faseSodimac === 'productos' : true) && (validados.length > 0 || (items && items.length > 0)) && (
         <div className="pm-despacho-validados-card">
@@ -437,16 +448,38 @@ export function DespachoSesionPage() {
                       </div>
                     )
                   })
-              : validadosSodimac.map((v) => (
-                  <div key={v.itemId} className="pm-item-card pm-despacho-validado-fila">
-                    <div className="pm-despacho-validado-info">
-                      <span className="pm-despacho-validado-codigo">{v.codigo}</span>
-                      <span className="pm-despacho-validado-desc">{v.descripcion}</span>
+              : validadosSodimac.map((v) => {
+                  const expandido = productoExpandido === v.itemId
+                  return (
+                    <div
+                      key={v.itemId}
+                      className="pm-item-card pm-despacho-validado-fila pm-despacho-validado-fila--click"
+                      style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}
+                      onClick={() => setProductoExpandido(expandido ? null : v.itemId)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                        <div className="pm-despacho-validado-info" style={{ flex: 1 }}>
+                          <span className="pm-despacho-validado-codigo">{v.codigo}</span>
+                          <span className="pm-despacho-validado-desc">{v.descripcion}</span>
+                        </div>
+                        <span className="pm-despacho-validado-cant">{v.cantidadDespachada}</span>
+                        <span className="pm-despacho-validado-check">✓</span>
+                      </div>
+                      {expandido && (
+                        <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)', display: 'flex', gap: 'var(--spacing-lg)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Solicitado OC</span>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Enviado</span>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="pm-despacho-validado-cant">{v.cantidadDespachada}</span>
-                    <span className="pm-despacho-validado-check">✓</span>
-                  </div>
-                ))
+                  )
+                })
             }
           </div>
         </div>
@@ -456,18 +489,11 @@ export function DespachoSesionPage() {
         <div className="pm-despacho-completado">OC despachada</div>
       )}
 
-      {/* Botón Confirmar Preparación (Sodimac) / Despachar Carga (Imperial) */}
-      {todosProductosValidados && sesion.estado === 'completada' && !mostrarChofer && (
-        sesionTieneLpn
-          ? (
-            <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarChofer(true)}>
-              Despachar Carga
-            </button>
-          ) : faseSodimac === 'productos' ? (
-            <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarCargarLpn(true)}>
-              Confirmar Preparación
-            </button>
-          ) : null
+      {/* Botón Despachar Carga (Imperial únicamente) */}
+      {sesionTieneLpn && todosProductosValidados && sesion.estado === 'completada' && !mostrarChofer && (
+        <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarChofer(true)}>
+          Despachar Carga
+        </button>
       )}
 
       {/* ── FASE 2 (Sodimac): escáner LPN ── */}
