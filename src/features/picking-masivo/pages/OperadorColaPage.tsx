@@ -70,6 +70,9 @@ export function OperadorColaPage() {
       {sesion && (
         <div className="pm-cola-sesion-card">
           <span className="pm-cola-sesion-nombre">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+          {sesion.numero_oc_pedido && (
+            <span className="pm-cola-sesion-oc">OC: <strong>{sesion.numero_oc_pedido}</strong></span>
+          )}
           <span className="pm-cola-sesion-fecha">Entrega: {sesion.numero_oc}</span>
         </div>
       )}

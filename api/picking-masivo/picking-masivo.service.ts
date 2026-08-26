@@ -5,10 +5,11 @@ import type { ServiceResult } from '../../src/shared/types/base'
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
 
 export type CrearSesionInput = {
-  usuarioId:     string
-  numeroOc:      string
-  nombreCliente?: string
-  archivoNombre: string
+  usuarioId:       string
+  numeroOc:        string
+  nombreCliente?:  string
+  numeroOcPedido?: string
+  archivoNombre:   string
   items: {
     codigo:        string
     descripcion:   string
@@ -182,12 +183,13 @@ export const pickingMasivoService = {
     const { data: sesion, error: sesionErr } = await supabase
       .from('sesiones_picking_masivo')
       .insert({
-        numero_oc:      input.numeroOc,
-        nombre_cliente: input.nombreCliente ?? null,
-        archivo_nombre: input.archivoNombre,
-        total_items:    input.items.length,
-        creado_por:     input.usuarioId,
-        estado:         'validando',
+        numero_oc:        input.numeroOc,
+        nombre_cliente:   input.nombreCliente ?? null,
+        numero_oc_pedido: input.numeroOcPedido ?? null,
+        archivo_nombre:   input.archivoNombre,
+        total_items:      input.items.length,
+        creado_por:       input.usuarioId,
+        estado:           'validando',
       })
       .select('id')
       .single()
@@ -340,7 +342,7 @@ export const pickingMasivoService = {
   async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase
       .from('sesiones_picking_masivo')
-      .select('id, numero_oc, nombre_cliente, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por')
+      .select('id, numero_oc, nombre_cliente, numero_oc_pedido, estado, total_items, items_completados, archivo_nombre, creado_en, activada_en, completada_en, creado_por')
       .order('creado_en', { ascending: false })
 
     if (estado) q = q.eq('estado', estado)

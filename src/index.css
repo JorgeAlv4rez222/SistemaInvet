@@ -6068,8 +6068,10 @@ input[type="radio"] {
 .pm-confirmar-barcode-row .btn-camara { flex-shrink: 0; }
 
 /* ── Picking Masivo — tarjeta sesión en cola ── */
-.pm-cola-sesion-card { display: flex; flex-direction: column; gap: 2px; padding: var(--spacing-md); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--spacing-md); }
+.pm-cola-sesion-card { display: flex; flex-direction: column; gap: 4px; padding: var(--spacing-md); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--spacing-md); }
 .pm-cola-sesion-nombre { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); }
+.pm-cola-sesion-oc { font-size: var(--font-size-sm); color: var(--accent-light); }
+.pm-cola-sesion-oc strong { font-weight: 700; }
 .pm-cola-sesion-fecha { font-size: var(--font-size-sm); color: var(--text-secondary); }
 
 /* ── Picking Masivo — barra de progreso cola ── */

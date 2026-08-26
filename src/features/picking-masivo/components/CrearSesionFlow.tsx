@@ -29,7 +29,8 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
   const [archivo, setArchivo]             = useState<File | null>(null)
   const [filas, setFilas]                 = useState<FilaExcelPicking[]>([])
   const [numeroOc, setNumeroOc]           = useState('')
-  const [nombreCliente, setNombreCliente] = useState('')
+  const [nombreCliente, setNombreCliente] = useState<'Sodimac' | 'Imperial' | ''>('')
+  const [numeroOcPedido, setNumeroOcPedido] = useState('')
   const [resultado, setResultado]         = useState<ValidarExcelResult | null>(null)
   const [error, setError]                 = useState<string | null>(null)
   const [creando, setCreando]             = useState(false)
@@ -55,8 +56,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
   }
 
   async function handleValidar() {
-    if (!nombreCliente.trim()) { setError('Ingresa el nombre del cliente'); return }
+    if (!nombreCliente) { setError('Selecciona el cliente'); return }
     if (!numeroOc.trim()) { setError('Ingresa la fecha de entrega'); return }
+    if (nombreCliente === 'Sodimac' && !numeroOcPedido.trim()) { setError('Ingresa el número de OC (obligatorio para Sodimac)'); return }
     setError(null)
     try {
       const res = await validarExcel.mutateAsync({
@@ -75,10 +77,11 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
     setError(null)
     try {
       const { sesionId } = await crearSesion.mutateAsync({
-        usuarioId:     adminId,
-        numeroOc:      numeroOc.trim(),
-        nombreCliente: nombreCliente.trim() || undefined,
-        archivoNombre: archivo?.name ?? 'excel.xlsx',
+        usuarioId:       adminId,
+        numeroOc:        numeroOc.trim(),
+        nombreCliente:   nombreCliente || undefined,
+        numeroOcPedido:  numeroOcPedido.trim() || undefined,
+        archivoNombre:   archivo?.name ?? 'excel.xlsx',
         items: resultado.items.map((i) => ({
           codigo:         i.codigo,
           descripcion:    i.descripcion,
@@ -127,14 +130,45 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
         <div className="paso">
           <div className="ing-filtro-grupo">
             <span className="ing-filtro-label">Cliente</span>
-            <input
-              className="ing-filtro-select"
-              value={nombreCliente}
-              onChange={(e) => setNombreCliente(e.target.value)}
-              placeholder="Nombre cliente"
-              autoFocus
-            />
+            <div className="filtros-wrap" style={{ marginBottom: 0 }}>
+              {(['Sodimac', 'Imperial'] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`filtro-btn ${nombreCliente === c ? 'activo' : ''}`}
+                  onClick={() => { setNombreCliente(c); setNumeroOcPedido('') }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {nombreCliente === 'Sodimac' && (
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Número de OC <span style={{ color: 'var(--danger)' }}>*</span></span>
+              <input
+                className="ing-filtro-select"
+                value={numeroOcPedido}
+                onChange={(e) => setNumeroOcPedido(e.target.value)}
+                placeholder="Ej: 4500012345"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {nombreCliente === 'Imperial' && (
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Número de OC <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>(opcional)</span></span>
+              <input
+                className="ing-filtro-select"
+                value={numeroOcPedido}
+                onChange={(e) => setNumeroOcPedido(e.target.value)}
+                placeholder="Ej: 718"
+              />
+            </div>
+          )}
+
           <div className="ing-filtro-grupo">
             <span className="ing-filtro-label">Fecha de entrega</span>
             <input
