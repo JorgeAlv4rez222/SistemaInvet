@@ -6083,9 +6083,8 @@ input[type="radio"] {
 .pm-cola-progreso-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
 
 /* ── Picking Masivo — cola de trabajo (lista) ── */
-.pm-cola-lista { display: flex; flex-direction: column; border: 2px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-.pm-cola-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md); border-bottom: 2px solid var(--border); }
-.pm-cola-fila:last-child { border-bottom: none; }
+.pm-cola-lista { display: flex; flex-direction: column; gap: 10px; }
+.pm-cola-fila { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md); border: 2px solid #3a3f4a; border-radius: 14px; background: var(--bg-elevated); }
 .pm-cola-fila--bloqueada { opacity: 0.5; }
 .pm-cola-fila--parcial { background: color-mix(in srgb, var(--warning) 8%, transparent); }
 .pm-cola-fila-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
