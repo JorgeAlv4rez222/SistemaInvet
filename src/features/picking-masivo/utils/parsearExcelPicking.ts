@@ -77,7 +77,9 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
   for (const fila of filasDatos) {
     const codigo      = String(fila[idxCodigo] ?? '').trim()
     const descripcion = idxDescripcion !== -1 ? String(fila[idxDescripcion] ?? '').trim() : codigo
-    const cantidad    = Number(fila[idxCantidad])
+    // Limpiar separadores de miles antes de convertir (ej: "1.000" o "1,000" → 1000)
+    const cantidadStr = String(fila[idxCantidad] ?? '').replace(/[.,](?=\d{3}(?:[.,]|$))/g, '').replace(',', '.')
+    const cantidad    = parseFloat(cantidadStr)
     if (!codigo || !Number.isFinite(cantidad) || cantidad <= 0) continue
     const codigoBarra = idxCodigoBarra !== -1 ? String(fila[idxCodigoBarra] ?? '').trim() || undefined : undefined
     const lpn         = idxLpn !== -1         ? String(fila[idxLpn] ?? '').trim() || undefined : undefined
