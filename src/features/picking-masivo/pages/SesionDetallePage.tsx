@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useCancelarSesion, useSesionPicking } from '../hooks/usePickingMasivo'
@@ -20,6 +20,7 @@ type SubtareaDetalle = {
   motivo_diferencia:  string | null
   es_equivalente:     boolean
   producto_real_id:   string | null
+  producto_equivalente: { codigo: string; descripcion: string } | null
 }
 
 type ItemDetalle = {
@@ -95,9 +96,10 @@ export function SesionDetallePage() {
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
-  const [lpnYaUsado, setLpnYaUsado]    = useState(() => {
-    try { return localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1' } catch { return false }
-  })
+  const [lpnYaUsado, setLpnYaUsado]    = useState(false)
+  useEffect(() => {
+    try { setLpnYaUsado(localStorage.getItem(`pm_lpn_started_${sesionId}`) === '1') } catch {}
+  }, [sesionId])
 
   const toggleExpandido = useCallback((id: string) => {
     setExpandido((prev) => {
@@ -125,8 +127,11 @@ export function SesionDetallePage() {
   const pct    = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
   const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
-  // Sodimac: todos los productos validados cuando todos tienen lpn_validado = true
-  const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && sesion.items.every((i) => i.lpn_validado === true)
+  // Sodimac: todos los productos validados (API o flag localStorage para evitar delay de cache)
+  const productosOkFlag = (() => { try { return localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1' } catch { return false } })()
+  const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && (
+    sesion.items.every((i) => i.lpn_validado === true) || productosOkFlag
+  )
 
   function descargarExcel() {
     const ESTADO_LABEL: Record<string, string> = {
@@ -141,6 +146,9 @@ export function SesionDetallePage() {
 
     for (const item of sesion.items) {
       for (const sub of item.subtareas_picking_masivo) {
+        const eq = sub.es_equivalente && sub.producto_equivalente
+          ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}`
+          : ''
         filas.push({
           'UPC / EAN':           item.codigo_barra ?? '—',
           'Descripción':         item.descripcion ?? item.codigo,
@@ -150,16 +158,16 @@ export function SesionDetallePage() {
           'Diferencia':          (sub.cantidad_despachada ?? 0) - sub.cantidad_asignada,
           'Estado':              ESTADO_LABEL[sub.estado] ?? sub.estado,
           'Motivo diferencia':   sub.motivo_diferencia ?? '',
+          'Producto equivalente usado': eq,
         })
       }
     }
 
     const ws = XLSX.utils.json_to_sheet(filas)
-    // Anchos de columna
     ws['!cols'] = [
       { wch: 18 }, { wch: 40 }, { wch: 16 },
       { wch: 16 }, { wch: 16 }, { wch: 12 },
-      { wch: 14 }, { wch: 30 },
+      { wch: 14 }, { wch: 30 }, { wch: 45 },
     ]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
@@ -296,6 +304,9 @@ export function SesionDetallePage() {
                   )}
                 </div>
                 <div className="ing-prod-fila-derecha" style={{ gap: '0.5rem' }}>
+                  {item.subtareas_picking_masivo.some(s => s.es_equivalente) && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#d97706', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '0.3rem', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>Equiv.</span>
+                  )}
                   <BadgeItem estado={item.estado} />
                   <span className="pm-item-chevron">{abierto ? '▲' : '▼'}</span>
                 </div>
@@ -315,6 +326,17 @@ export function SesionDetallePage() {
                     <span className="pm-item-detalle-label">Enviado</span>
                     <span className="pm-item-detalle-valor" style={{ color: item.cantidad_despachada < item.cantidad_pedida ? 'var(--warning)' : 'var(--success)' }}>{item.cantidad_despachada}</span>
                   </div>
+                  {item.subtareas_picking_masivo.some(s => s.es_equivalente) && (
+                    <div style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', display: 'block', marginBottom: '0.2rem' }}>⚠ Producto reemplazado por equivalente</span>
+                      {item.subtareas_picking_masivo.filter(s => s.es_equivalente && s.producto_equivalente).map(s => (
+                        <div key={s.id} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)', fontWeight: 600 }}>{s.producto_equivalente!.codigo}</span>
+                          {' — '}{s.producto_equivalente!.descripcion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {sesionTieneLpn && (
                     <div className="pm-item-detalle-fila">
                       <span className="pm-item-detalle-label">LPN</span>

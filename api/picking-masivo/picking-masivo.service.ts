@@ -383,7 +383,8 @@ export const pickingMasivoService = {
         subtareas_picking_masivo (
           id, posicion_codigo, orden_fifo, cantidad_asignada, cantidad_despachada,
           estado, bloqueado_por, bloqueado_en, completado_por, completado_en,
-          motivo_diferencia, es_equivalente, producto_real_id
+          motivo_diferencia, es_equivalente, producto_real_id,
+          producto_equivalente:productos!producto_real_id (codigo, descripcion)
         )
       `)
       .eq('sesion_id', sesionId)

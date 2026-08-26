@@ -401,7 +401,10 @@ export function DespachoSesionPage() {
       {!sesionTieneLpn && faseSodimac === 'productos' && todosProductosValidados && sesion.estado === 'completada' && (
         <button
           className="btn-primario pm-despacho-despachar-btn"
-          onClick={() => navigate(`/picking-masivo/${sesionId}`)}
+          onClick={() => {
+            try { localStorage.setItem(`pm_productos_ok_${sesionId}`, '1') } catch {}
+            navigate(`/picking-masivo/${sesionId}`)
+          }}
         >
           Confirmar Preparación
         </button>
