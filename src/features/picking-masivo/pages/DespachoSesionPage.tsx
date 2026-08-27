@@ -86,9 +86,10 @@ export function DespachoSesionPage() {
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
   const [busquedaSodimac, setBusquedaSodimac]       = useState('')
 
-  const inputRef    = useRef<HTMLInputElement>(null)
-  const lpnInputRef = useRef<HTMLInputElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const inputRef        = useRef<HTMLInputElement>(null)
+  const lpnInputRef     = useRef<HTMLInputElement>(null)
+  const fileInputRef    = useRef<HTMLInputElement>(null)
+  const scanCooldownRef = useRef(false)   // evita doble disparo \r\n del lector
 
   // Detectar si la sesión usa LPN (Imperial) o no (Sodimac)
   const items = (sesion as any)?.items as Array<{
@@ -148,7 +149,10 @@ export function DespachoSesionPage() {
 
   async function handleBuscarLpn(lpn: string) {
     const lpnTrimmed = lpn.trim()
-    if (!lpnTrimmed) return
+    if (!lpnTrimmed || lpnTrimmed.length < 3) return
+    if (scanCooldownRef.current) return
+    scanCooldownRef.current = true
+    setTimeout(() => { scanCooldownRef.current = false }, 500)
     setErrorScan(null)
     try {
       const res = await buscarLpn.mutateAsync({ sesionId, lpn: lpnTrimmed })
@@ -182,7 +186,10 @@ export function DespachoSesionPage() {
 
   async function handleBuscarItem(termino: string) {
     const term = termino.trim()
-    if (!term) return
+    if (!term || term.length < 3) return
+    if (scanCooldownRef.current) return
+    scanCooldownRef.current = true
+    setTimeout(() => { scanCooldownRef.current = false }, 500)
     setErrorScan(null)
     try {
       const res = await buscarItem.mutateAsync({ sesionId, termino: term })
