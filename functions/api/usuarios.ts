@@ -44,19 +44,29 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
 
     if (accion === 'crear') {
       const p = crearSchema.safeParse(body)
-      if (!p.success) return json({ error: { code: 'VALIDATION_ERROR', message: p.error.message } }, 400)
+      if (!p.success) {
+        const issue = p.error.issues[0]
+        const msg = issue?.path[0] === 'password'
+          ? 'La contraseña debe tener al menos 6 caracteres'
+          : issue?.path[0] === 'email'
+          ? 'El correo electrónico no es válido'
+          : issue?.path[0] === 'nombre'
+          ? 'El nombre debe tener al menos 2 caracteres'
+          : 'Datos inválidos'
+        return json({ error: { code: 'VALIDATION_ERROR', message: msg } }, 400)
+      }
       const result = await usuariosService.crear(p.data)
       return result.ok ? json(result.data, 201) : json({ error: result.error }, 500)
     }
     if (accion === 'rol') {
       const p = rolSchema.safeParse(body)
-      if (!p.success) return json({ error: { code: 'VALIDATION_ERROR', message: p.error.message } }, 400)
+      if (!p.success) return json({ error: { code: 'VALIDATION_ERROR', message: 'Rol inválido' } }, 400)
       const result = await usuariosService.actualizarRol(p.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }
     if (accion === 'password') {
       const p = passwordSchema.safeParse(body)
-      if (!p.success) return json({ error: { code: 'VALIDATION_ERROR', message: p.error.message } }, 400)
+      if (!p.success) return json({ error: { code: 'VALIDATION_ERROR', message: 'La contraseña debe tener al menos 6 caracteres' } }, 400)
       const result = await usuariosService.resetearPassword(p.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }

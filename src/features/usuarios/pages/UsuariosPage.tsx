@@ -193,7 +193,7 @@ export function UsuariosPage() {
             </div>
             <div className="pm-confirmar-acciones" style={{ marginTop: '1.25rem', flexWrap: 'wrap' }}>
               <button className="btn-secundario pm-confirmar-btn" onClick={resetCrear}>Cancelar</button>
-              <button className="btn-primario pm-confirmar-btn" disabled={crear.isPending || !nombre.trim() || !email.trim() || !password.trim()} onClick={handleCrear}>
+              <button className="btn-primario pm-confirmar-btn" disabled={crear.isPending || !nombre.trim() || !email.trim() || password.length < 6} onClick={handleCrear}>
                 {crear.isPending ? 'Creando…' : 'Crear usuario'}
               </button>
             </div>
