@@ -762,30 +762,33 @@ export const pickingMasivoService = {
       .eq('codigo_barra', termino)
       .limit(1)
 
-    // 2. Buscar por codigo_barra del catálogo (productos.codigo_barra)
+    // 2. Buscar por codigo_barra del catálogo: primero resolver producto_id, luego buscar directo
     if (!items || items.length === 0) {
-      const { data: porCatalogo } = await supabase
-        .from('items_picking_masivo')
-        .select(`${SELECT}, productos ( codigo_barra )`)
-        .eq('sesion_id', sesionId)
-        .not('producto_id', 'is', null)
-        .limit(100)
+      const { data: prod } = await supabase
+        .from('productos')
+        .select('id')
+        .eq('codigo_barra', termino)
+        .limit(1)
+        .single()
 
-      if (porCatalogo) {
-        const encontrado = (porCatalogo as any[]).find(
-          (i) => (Array.isArray(i.productos) ? i.productos[0] : i.productos)?.codigo_barra === termino
-        )
-        if (encontrado) items = [encontrado]
+      if (prod?.id) {
+        const r2 = await supabase
+          .from('items_picking_masivo')
+          .select(SELECT)
+          .eq('sesion_id', sesionId)
+          .eq('producto_id', prod.id)
+          .limit(1)
+        items = r2.data
       }
     }
 
-    // 3. Fallback: buscar por código exacto
+    // 3. Fallback: buscar por código exacto del item
     if (!items || items.length === 0) {
       const r3 = await supabase
         .from('items_picking_masivo')
         .select(SELECT)
         .eq('sesion_id', sesionId)
-        .ilike('codigo', termino)
+        .eq('codigo', termino)
         .limit(1)
       items = r3.data
     }
