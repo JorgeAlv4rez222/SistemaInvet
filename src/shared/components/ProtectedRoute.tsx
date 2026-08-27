@@ -64,9 +64,13 @@ export function ProtectedRoute({ children, rutaActual }: Props) {
   }
 
   // Operador intenta ruta de admin o admin+supervisor → /productos
+  // Excepción: /picking-masivo/operador es la ruta propia del operador
   if (rol === 'operador') {
-    const bloqueada = RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))
+    const esRutaOperadorPM = rutaActual.startsWith('/picking-masivo/operador')
+    const bloqueada = !esRutaOperadorPM && (
+      RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))
       || RUTAS_ADMIN_SUPERVISOR.some((r) => rutaActual.startsWith(r))
+    )
     if (bloqueada) return <Navigate to="/productos" replace />
   }
 
