@@ -5953,6 +5953,7 @@ input[type="radio"] {
 .pm-confirmar-lpn { font-size: var(--font-size-base); font-weight: 600; color: var(--accent); letter-spacing: 0.03em; }
 .pm-confirmar-barcode-ok { padding: var(--spacing-sm) var(--spacing-md); background: color-mix(in srgb, var(--success) 15%, transparent); border: 1px solid var(--success); border-radius: var(--radius-sm); color: var(--success); font-weight: 600; font-size: var(--font-size-sm); }
 .pm-confirmar-barcode-error { font-size: var(--font-size-xs); color: var(--danger); margin-top: 4px; }
+.modal-titulo { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 1.1rem; }
 .pm-confirmar-input--error { border-color: var(--danger) !important; }
 .pm-card--parcial { border-left: 3px solid var(--warning); }
 .pm-card-lpn { font-size: var(--font-size-xs); color: var(--accent); font-weight: 600; margin-top: 2px; }

@@ -112,7 +112,8 @@ export function UsuariosPage() {
   }
   const BOX_STYLE: React.CSSProperties = {
     background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)',
-    borderRadius: '12px', padding: '1.5rem', width: '360px', maxWidth: '90vw',
+    borderRadius: '16px', padding: '2rem',
+    width: 'min(480px, 92vw)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
   }
 
@@ -127,29 +128,36 @@ export function UsuariosPage() {
       {isError   && <p className="error">Error al cargar usuarios</p>}
 
       {!isLoading && !isError && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
           {usuarios.map((u) => (
-            <div key={u.id} className="pm-item-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem 1rem' }}>
+            <div key={u.id} style={{
+              display: 'flex', alignItems: 'center', gap: '1rem',
+              padding: '1.1rem 1.4rem',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+            }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{u.nombre}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{u.email}</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{u.nombre}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 3 }}>{u.email}</div>
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: `${ROL_COLORS[u.rol as Rol]}22`, color: ROL_COLORS[u.rol as Rol] ?? 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '5px 14px', borderRadius: '999px', background: `${ROL_COLORS[u.rol as Rol]}22`, color: ROL_COLORS[u.rol as Rol] ?? 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                 {ROL_LABELS[u.rol as Rol] ?? u.rol}
               </span>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                 <button
                   className="btn-secundario"
-                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.8rem', padding: '6px 14px', borderRadius: '10px' }}
                   onClick={() => { setModalRol(u); setNuevoRol(u.rol as Rol) }}
                 >Rol</button>
                 <button
                   className="btn-secundario"
-                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.8rem', padding: '6px 14px', borderRadius: '10px' }}
                   onClick={() => { setModalPassword(u); setNewPassword(''); setErrorPwd(null) }}
                 >Contraseña</button>
                 <button
-                  style={{ fontSize: '0.75rem', padding: '4px 10px', background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ fontSize: '0.8rem', padding: '6px 14px', background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', cursor: 'pointer', fontWeight: 600 }}
                   onClick={() => setModalEliminar(u)}
                 >Eliminar</button>
               </div>
@@ -183,7 +191,7 @@ export function UsuariosPage() {
               </label>
               {errorForm && <p className="pm-confirmar-barcode-error">{errorForm}</p>}
             </div>
-            <div className="pm-confirmar-acciones" style={{ marginTop: '1rem' }}>
+            <div className="pm-confirmar-acciones" style={{ marginTop: '1.25rem', flexWrap: 'wrap' }}>
               <button className="btn-secundario pm-confirmar-btn" onClick={resetCrear}>Cancelar</button>
               <button className="btn-primario pm-confirmar-btn" disabled={crear.isPending || !nombre.trim() || !email.trim() || !password.trim()} onClick={handleCrear}>
                 {crear.isPending ? 'Creando…' : 'Crear usuario'}
