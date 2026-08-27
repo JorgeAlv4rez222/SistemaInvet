@@ -931,6 +931,14 @@ function formatFechaPM(iso: string | null | undefined): string {
   return iso.slice(0, 10).split('-').reverse().join('-')
 }
 
+const ESTADO_PM_COLORS: Record<string, { color: string; bg: string }> = {
+  activa:     { color: '#86efac', bg: 'rgba(34,197,94,0.15)' },
+  validando:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+  completada: { color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
+  despachado: { color: '#c4b5fd', bg: 'rgba(139,92,246,0.15)' },
+  cancelada:  { color: '#f87171', bg: 'rgba(239,68,68,0.15)' },
+}
+
 function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
   const navigate = useNavigate()
   const creadoPor     = (sesion as any).creado_por_usuario?.nombre ?? null
@@ -938,35 +946,61 @@ function SesionPickingCard({ sesion }: { sesion: SesionResumen }) {
   const fechaCreacion = formatFechaPM(sesion.creado_en)
   const fechaDespacho = formatFechaPM((sesion as any).despachado_en)
   const chofer        = (sesion as any).nombre_chofer ?? null
+  const cfg           = ESTADO_PM_COLORS[sesion.estado] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }
+  const progreso      = sesion.total_items > 0 ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
+
   return (
     <div
-      className="nota-fila-item"
       role="button"
       tabIndex={0}
-      style={{ cursor: 'pointer' }}
       onClick={() => navigate(`/picking-masivo/${sesion.id}`)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/picking-masivo/${sesion.id}`) }}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: '0.6rem',
+        padding: '1rem 1.1rem',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: '14px',
+        cursor: 'pointer',
+        transition: 'background 0.15s',
+      }}
     >
-      {/* Cabecera: OC + cliente + estado */}
-      <div className="nota-fila nota-fila--hist">
-        <div className="nota-fila-principal">
-          <span className="nota-fila-numero">{sesion.numero_oc}</span>
-          <span className="nota-fila-cliente">{sesion.nombre_cliente ?? '—'}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span className="nota-fila-fecha">{fechaCreacion}</span>
-          <span className={`badge badge-${sesion.estado}`}>{ESTADO_PM_LABELS[sesion.estado] ?? sesion.estado}</span>
-        </div>
+      {/* Fila 1: OC + estado */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+          {sesion.numero_oc}
+        </span>
+        <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text-secondary)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {sesion.nombre_cliente ?? '—'}
+        </span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '3px 12px', borderRadius: '999px', whiteSpace: 'nowrap', color: cfg.color, background: cfg.bg }}>
+          {ESTADO_PM_LABELS[sesion.estado] ?? sesion.estado}
+        </span>
       </div>
-      {/* Línea de auditoría */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1.25rem', padding: '0.35rem 0.75rem 0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        {creadoPor && (
-          <span>📋 Creado por <strong style={{ color: 'var(--text-secondary)' }}>{creadoPor}</strong> el {fechaCreacion}</span>
-        )}
+
+      {/* Barra de progreso */}
+      <div style={{ height: '4px', borderRadius: '999px', background: 'var(--border)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${progreso}%`, background: cfg.color, borderRadius: '999px', transition: 'width 0.3s' }} />
+      </div>
+
+      {/* Fila 2: auditoría */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <span style={{ whiteSpace: 'nowrap' }}>
+          <span style={{ marginRight: 4 }}>📅</span>{fechaCreacion}
+          {creadoPor && <> · <strong style={{ color: 'var(--text-secondary)' }}>{creadoPor}</strong></>}
+        </span>
         {despachPor && (
-          <span>🚚 Despachado por <strong style={{ color: 'var(--text-secondary)' }}>{despachPor}</strong> el {fechaDespacho}{chofer ? ` · chofer: ${chofer}` : ''}</span>
+          <span style={{ whiteSpace: 'nowrap' }}>
+            <span style={{ marginRight: 4 }}>🚚</span>
+            <strong style={{ color: 'var(--text-secondary)' }}>{despachPor}</strong>
+            {chofer && <> · {chofer}</>}
+            {fechaDespacho !== '—' && <> · {fechaDespacho}</>}
+          </span>
         )}
-        <span>📦 {sesion.items_completados}/{sesion.total_items} ítems</span>
+        <span style={{ whiteSpace: 'nowrap' }}>
+          <span style={{ marginRight: 4 }}>📦</span>
+          <strong style={{ color: 'var(--text-secondary)' }}>{sesion.items_completados}/{sesion.total_items}</strong> ítems
+        </span>
       </div>
     </div>
   )

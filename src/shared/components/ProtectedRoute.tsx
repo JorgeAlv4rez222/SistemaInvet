@@ -5,7 +5,7 @@ import type { UserRole } from '../types/base'
 // Rutas que solo puede ver admin
 const RUTAS_SOLO_ADMIN = ['/ingresos', '/inventario-inicial', '/etiquetas', '/usuarios']
 // Rutas que puede ver admin + supervisor (no operador)
-const RUTAS_ADMIN_SUPERVISOR = ['/salidas', '/picking-masivo']
+const RUTAS_ADMIN_SUPERVISOR = ['/salidas', '/picking-masivo', '/historial']
 
 interface Props {
   children:   React.ReactNode

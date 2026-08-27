@@ -46,18 +46,25 @@ const ICONOS: Record<string, React.ReactElement> = {
       <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>
   ),
+  picking: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  ),
 }
 
-type NavItem = { ruta: string; key: string; label: string; desc: string; soloAdmin?: boolean }
+type NavItem = { ruta: string; rutaOperador?: string; key: string; label: string; desc: string; roles?: UserRole[] }
 
 const NAV_ITEMS: NavItem[] = [
-  { ruta: '/productos',   key: 'productos',   label: 'Busqueda',           desc: 'Buscar stock por SKU' },
-  { ruta: '/ubicaciones', key: 'ubicaciones', label: 'Mapa Bodega',        desc: 'Ver estructura de bodega' },
-  { ruta: '/ingresos',    key: 'ingresos',    label: 'Importacion',        desc: 'Recibir órdenes de compra',  soloAdmin: true },
-  { ruta: '/notas',       key: 'notas',       label: 'NV preparacion',     desc: 'Picking y despacho' },
-  { ruta: '/salidas',     key: 'salidas',     label: 'NV despacho',        desc: 'Revisión antes de despacho', soloAdmin: true },
-  { ruta: '/traslados',   key: 'traslados',   label: 'Traslado',  desc: 'Re-ubicar e intercambiar' },
-  { ruta: '/historial',   key: 'historial',   label: 'Historial',         desc: 'Auditoría de movimientos' },
+  { ruta: '/productos',               key: 'productos',   label: 'Busqueda',       desc: 'Buscar stock por SKU' },
+  { ruta: '/ubicaciones',             key: 'ubicaciones', label: 'Mapa Bodega',    desc: 'Ver estructura de bodega' },
+  { ruta: '/ingresos',                key: 'ingresos',    label: 'Importacion',    desc: 'Recibir órdenes de compra',      roles: ['admin'] },
+  { ruta: '/notas',                   key: 'notas',       label: 'NV preparacion', desc: 'Picking y despacho' },
+  { ruta: '/salidas',                 key: 'salidas',     label: 'NV despacho',    desc: 'Revisión antes de despacho',     roles: ['admin', 'supervisor'] },
+  { ruta: '/traslados',               key: 'traslados',   label: 'Traslado',       desc: 'Re-ubicar e intercambiar' },
+  { ruta: '/historial',               key: 'historial',   label: 'Historial',      desc: 'Auditoría de movimientos',       roles: ['admin', 'supervisor'] },
+  { ruta: '/picking-masivo', rutaOperador: '/picking-masivo/operador', key: 'picking', label: 'Picking Masivo', desc: 'Sesiones de picking Sodimac' },
 ]
 
 // ── KPI card ──────────────────────────────────────────────────────────────
@@ -146,7 +153,10 @@ export function HomePage() {
   const navigate = useNavigate()
   const rol    = localStorage.getItem('user_rol') as UserRole | null
   const nombre = localStorage.getItem('user_nombre') ?? ''
-  const items  = NAV_ITEMS.filter((item) => !item.soloAdmin || rol === 'admin')
+
+  const items = NAV_ITEMS.filter((item) =>
+    !item.roles || (rol !== null && item.roles.includes(rol))
+  )
 
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
 
@@ -188,7 +198,7 @@ export function HomePage() {
           <button
             key={item.ruta}
             className="home-card"
-            onClick={() => navigate(item.ruta)}
+            onClick={() => navigate(rol === 'operador' && item.rutaOperador ? item.rutaOperador : item.ruta)}
           >
             <span className="home-icono">{ICONOS[item.key]}</span>
             <span className="home-label">{item.label}</span>
