@@ -30,6 +30,7 @@ export function ConfirmarSubtareaPage() {
 
   const [barcode, setBarcode]                   = useState('')
   const [barcodeOk, setBarcodeOk]               = useState(false)
+  const [sinStockMode, setSinStockMode]         = useState(false)
   const [cantidad, setCantidad]                 = useState('')
   const [motivo, setMotivo]                     = useState('')
   const [equivalenteActivo, setEquivalenteActivo] = useState(false)
@@ -188,7 +189,6 @@ export function ConfirmarSubtareaPage() {
   }
 
   function handleSinStock() {
-    if (!barcodeOk) { setError('Escanea el producto primero'); return }
     if (!motivo.trim()) { setError('Indica el motivo de la falta de stock'); return }
     confirmar(0, motivo.trim())
   }
@@ -223,36 +223,67 @@ export function ConfirmarSubtareaPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="pm-confirmar-form">
-        {!barcodeOk && (
-          <label className="pm-confirmar-label">
-            {validandoBarcode ? 'Validando…' : codigoBarra ? 'Escanear código de barras' : 'Escanear producto'}
-            <div className="pm-confirmar-barcode-row">
-              <input
-                ref={barcodeRef}
-                type="text"
-                className={`pm-confirmar-input ${error && !barcodeOk ? 'pm-confirmar-input--error' : ''}`}
-                placeholder="Escanea o ingresa el código…"
-                value={barcode}
-                onChange={handleBarcodeChange}
-                onKeyDown={handleBarcodeKeyDown}
-                autoComplete="off"
-                disabled={validandoBarcode}
-              />
-              <BarcodeScanner
-                title="Escanear con cámara"
-                onDetected={(codigo) => { setBarcode(codigo); handleValidarBarcode(codigo) }}
-              />
-            </div>
+        {!barcodeOk && !sinStockMode && (
+          <>
+            {/* Botón Sin stock — encima del escaneo */}
             <button
               type="button"
-              className="btn-primario"
-              style={{ marginTop: 'var(--spacing-xs)' }}
-              disabled={!barcode.trim() || validandoBarcode}
-              onClick={() => handleValidarBarcode(barcode)}
+              className="btn-secundario"
+              style={{ width: '100%', marginBottom: 'var(--spacing-sm)', color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.4)' }}
+              onClick={() => { setSinStockMode(true); setError(null) }}
             >
-              {validandoBarcode ? 'Validando…' : 'Verificar'}
+              Sin stock
             </button>
-          </label>
+
+            <label className="pm-confirmar-label">
+              {validandoBarcode ? 'Validando…' : codigoBarra ? 'Escanear código de barras' : 'Escanear producto'}
+              <div className="pm-confirmar-barcode-row">
+                <input
+                  ref={barcodeRef}
+                  type="text"
+                  className={`pm-confirmar-input ${error && !barcodeOk ? 'pm-confirmar-input--error' : ''}`}
+                  placeholder="Escanea o ingresa el código…"
+                  value={barcode}
+                  onChange={handleBarcodeChange}
+                  onKeyDown={handleBarcodeKeyDown}
+                  autoComplete="off"
+                  disabled={validandoBarcode}
+                />
+                <BarcodeScanner
+                  title="Escanear con cámara"
+                  onDetected={(codigo) => { setBarcode(codigo); handleValidarBarcode(codigo) }}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-primario"
+                style={{ marginTop: 'var(--spacing-xs)' }}
+                disabled={!barcode.trim() || validandoBarcode}
+                onClick={() => handleValidarBarcode(barcode)}
+              >
+                {validandoBarcode ? 'Validando…' : 'Verificar'}
+              </button>
+            </label>
+          </>
+        )}
+
+        {/* Modo sin stock: solo pide motivo */}
+        {sinStockMode && (
+          <>
+            <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', fontSize: '0.85rem', color: 'var(--danger)', fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}>
+              Sin stock — se registrará como 0 unidades despachadas
+            </div>
+            <label className="pm-confirmar-label">
+              Motivo (obligatorio)
+              <textarea
+                className="pm-confirmar-textarea"
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Motivo de falta de stock…"
+                autoFocus
+              />
+            </label>
+          </>
         )}
 
         {/* Cantidad — visible solo si barcode está ok */}
@@ -327,7 +358,23 @@ export function ConfirmarSubtareaPage() {
         )}
       </div>
 
-      {barcodeOk && (
+      {sinStockMode && (
+        <div className="pm-confirmar-acciones">
+          <button className="btn-secundario pm-confirmar-btn" disabled={isPending} onClick={() => { setSinStockMode(false); setMotivo(''); setError(null) }}>
+            Cancelar
+          </button>
+          <button
+            className="pm-confirmar-btn"
+            style={{ flex: 1, padding: '0.6rem 1rem', background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem' }}
+            disabled={isPending || !motivo.trim()}
+            onClick={handleSinStock}
+          >
+            {isPending ? 'Registrando…' : 'Confirmar sin stock'}
+          </button>
+        </div>
+      )}
+
+      {barcodeOk && !sinStockMode && (
         <div className="pm-confirmar-acciones">
           <button className="btn-secundario pm-confirmar-btn" disabled={isPending} onClick={handleSinStock}>
             Sin stock
