@@ -19,12 +19,11 @@ function useTema(): [Tema, () => void] {
 }
 
 type NavItem = {
-  ruta:          string
-  label:         string
-  labelCorto:    string
-  soloAdmin?:    boolean
-  soloOperador?: boolean
-  icono:         React.ReactNode
+  ruta:        string
+  label:       string
+  labelCorto:  string
+  roles?:      UserRole[]   // undefined = visible para todos
+  icono:       React.ReactNode
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -37,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/></svg>,
   },
   {
-    ruta: '/ingresos', label: 'Importacion', labelCorto: 'Importacion', soloAdmin: true,
+    ruta: '/ingresos', label: 'Importacion', labelCorto: 'Importacion', roles: ['admin'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="9.5" y1="11" x2="12" y2="13.5"/><line x1="14.5" y1="11" x2="12" y2="13.5"/></svg>,
   },
   {
@@ -45,7 +44,7 @@ const NAV_ITEMS: NavItem[] = [
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>,
   },
   {
-    ruta: '/salidas', label: 'NV despacho', labelCorto: 'NV desp', soloAdmin: true,
+    ruta: '/salidas', label: 'NV despacho', labelCorto: 'NV desp', roles: ['admin', 'supervisor'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
   },
   {
@@ -57,20 +56,24 @@ const NAV_ITEMS: NavItem[] = [
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
   },
   {
-    ruta: '/inventario-inicial', label: 'Inv. Inicial', labelCorto: 'Inicial', soloAdmin: true,
+    ruta: '/inventario-inicial', label: 'Inv. Inicial', labelCorto: 'Inicial', roles: ['admin'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>,
   },
   {
-    ruta: '/etiquetas', label: 'Etiquetas', labelCorto: 'Etiquetas', soloAdmin: true,
+    ruta: '/etiquetas', label: 'Etiquetas', labelCorto: 'Etiquetas', roles: ['admin'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
   },
   {
-    ruta: '/picking-masivo', label: 'Picking Masivo', labelCorto: 'Picking', soloAdmin: true,
+    ruta: '/picking-masivo', label: 'Picking Masivo', labelCorto: 'Picking', roles: ['admin', 'supervisor'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>,
   },
   {
-    ruta: '/picking-masivo/operador', label: 'Picking Masivo', labelCorto: 'Picking', soloOperador: true,
+    ruta: '/picking-masivo/operador', label: 'Picking Masivo', labelCorto: 'Picking', roles: ['operador'],
     icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>,
+  },
+  {
+    ruta: '/usuarios', label: 'Usuarios', labelCorto: 'Usuarios', roles: ['admin'],
+    icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
   },
 ]
 
@@ -127,7 +130,7 @@ export function Layout({ children }: Props) {
   const rol           = sesion.rol as UserRole | null
   const nombre        = localStorage.getItem('user_nombre') ?? ''
   const itemsVisibles = NAV_ITEMS.filter((item) =>
-    (!item.soloAdmin || rol === 'admin') && (!item.soloOperador || rol === 'operador')
+    !item.roles || (rol !== null && item.roles.includes(rol))
   )
 
   async function handleLogout() {

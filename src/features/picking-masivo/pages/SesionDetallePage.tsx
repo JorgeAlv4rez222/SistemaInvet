@@ -143,7 +143,8 @@ export function SesionDetallePage() {
 
   const sesion = data as SesionDetalle
   const pct    = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
-  const puedeCancelar = sesion.estado === 'validando' || sesion.estado === 'activa'
+  const rolUsuario    = localStorage.getItem('user_rol') ?? ''
+  const puedeCancelar = (sesion.estado === 'validando' || sesion.estado === 'activa') && rolUsuario === 'admin'
   const sesionTieneLpn = sesion.items.some((i) => !!i.lpn)
   // Sodimac: todos los productos validados — chequea API (lpn_validado) o flag localStorage
   const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && (

@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import type { UserRole } from '../types/base'
 
-const RUTAS_SOLO_ADMIN = ['/ingresos', '/salidas']
+// Rutas que solo puede ver admin
+const RUTAS_SOLO_ADMIN = ['/ingresos', '/inventario-inicial', '/etiquetas', '/usuarios']
+// Rutas que puede ver admin + supervisor (no operador)
+const RUTAS_ADMIN_SUPERVISOR = ['/salidas', '/picking-masivo']
 
 interface Props {
   children:   React.ReactNode
@@ -24,7 +27,6 @@ export function ProtectedRoute({ children, rutaActual }: Props) {
   const rol   = localStorage.getItem('user_rol') as UserRole | null
 
   const [estado, setEstado] = useState<'verificando' | 'ok' | 'invalido'>(
-    // Si ya validamos este token en esta pestaña, no repetir
     token && token === tokenValidado ? 'ok' : (token ? 'verificando' : 'invalido')
   )
 
@@ -61,9 +63,17 @@ export function ProtectedRoute({ children, rutaActual }: Props) {
     return <Navigate to="/login" replace />
   }
 
-  // Operador intenta ruta de admin → /productos
-  if (rol === 'operador' && RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))) {
-    return <Navigate to="/productos" replace />
+  // Operador intenta ruta de admin o admin+supervisor → /productos
+  if (rol === 'operador') {
+    const bloqueada = RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))
+      || RUTAS_ADMIN_SUPERVISOR.some((r) => rutaActual.startsWith(r))
+    if (bloqueada) return <Navigate to="/productos" replace />
+  }
+
+  // Supervisor intenta ruta solo-admin → /picking-masivo
+  if (rol === 'supervisor') {
+    const bloqueada = RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))
+    if (bloqueada) return <Navigate to="/picking-masivo" replace />
   }
 
   return <>{children}</>
