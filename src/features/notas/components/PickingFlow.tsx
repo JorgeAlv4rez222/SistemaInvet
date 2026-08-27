@@ -119,6 +119,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
 
   const productoInputRef = useRef<HTMLInputElement>(null)
   const rackInputRef     = useRef<HTMLInputElement>(null)
+  const scanCooldownRef  = useRef(false)
 
   const registrarPicking = useRegistrarPicking()
 
@@ -183,7 +184,10 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
   }
 
   function handleEscanearRack(codigo: string) {
-    if (!codigo.trim() || paso.tipo !== 'escanear_rack') return
+    if (!codigo.trim() || codigo.trim().length < 2 || paso.tipo !== 'escanear_rack') return
+    if (scanCooldownRef.current) return
+    scanCooldownRef.current = true
+    setTimeout(() => { scanCooldownRef.current = false }, 500)
     const parada = plan[paso.paradaIdx]
     if (codigo.trim() !== parada?.posicionCodigo) {
       setError(`Rack incorrecto. Se esperaba ${parada?.posicionCodigo ?? ''}`)
@@ -196,7 +200,10 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
   }
 
   function handleEscanearProducto(codigo: string) {
-    if (!codigo.trim() || paso.tipo !== 'escanear_producto') return
+    if (!codigo.trim() || codigo.trim().length < 2 || paso.tipo !== 'escanear_producto') return
+    if (scanCooldownRef.current) return
+    scanCooldownRef.current = true
+    setTimeout(() => { scanCooldownRef.current = false }, 500)
     const codigoEsperado = equivalenteId
       ? (item.equivalentes.find((e) => e.productoId === equivalenteId)?.codigoBarra ?? null)
       : item.codigoBarra
