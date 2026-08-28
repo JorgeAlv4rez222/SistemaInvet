@@ -99,7 +99,7 @@ export function SesionDetallePage() {
   const [error, setError]               = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
-  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'parcial' | 'sin_stock' | 'completado'>('todos')
   const [productosConfirmados, setProductosConfirmados] = useState(false)
   const [lpnCount, setLpnCount]     = useState(0)
   const [lpnSubiendo, setLpnSubiendo] = useState(false)
@@ -355,17 +355,22 @@ export function SesionDetallePage() {
           onChange={(e) => setBusqueda(e.target.value)}
           style={{ flex: 1, minWidth: '180px', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}
         />
-        {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
+        {(['todos', 'completado', 'parcial', 'sin_stock'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFiltroEstado(f)}
             style={{
               padding: '0.5rem 0.9rem', borderRadius: '0.5rem', border: '1px solid var(--border)', fontSize: 'var(--font-size-xs)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-              background: filtroEstado === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--primary)') : 'var(--surface)',
+              background: filtroEstado === f
+                ? f === 'parcial' ? 'var(--warning)'
+                : f === 'sin_stock' ? 'var(--danger)'
+                : f === 'completado' ? 'var(--success)'
+                : 'var(--primary)'
+                : 'var(--surface)',
               color: filtroEstado === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
             }}
           >
-            {f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}
+            {f === 'todos' ? 'Todos' : f === 'completado' ? 'Completas' : f === 'parcial' ? 'Parcial' : 'Sin stock'}
           </button>
         ))}
       </div>
