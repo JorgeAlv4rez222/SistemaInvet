@@ -179,7 +179,7 @@ export const salidasService = {
       data: {
         valido:           true,
         cantidadEsperada: cantidadReferencia,
-        mensaje:          'Producto revisado',
+        mensaje:          'Producto validado correctamente',
         todosRevisados,
       },
     }
