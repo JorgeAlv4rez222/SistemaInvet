@@ -145,6 +145,46 @@ export function DespachoSesionPage() {
     setInicializado(true)
   }, [sesion, inicializado, items, sesionTieneLpn])
 
+  // Auto-validar como sin_stock los items Sodimac con cantidad despachada = 0
+  useEffect(() => {
+    if (!inicializado || sesionTieneLpn || !items) return
+
+    const sinStockNoValidados = items.filter((i) => {
+      if (i.lpn_validado) return false
+      const despachada = (i.subtareas_picking_masivo ?? []).reduce((s, t) => s + (t.cantidad_despachada ?? 0), 0)
+      return despachada === 0
+    })
+
+    if (sinStockNoValidados.length === 0) return
+
+    Promise.all(
+      sinStockNoValidados.map(async (i) => {
+        try {
+          await validarItem.mutateAsync({ sesionId, itemId: i.id })
+          return {
+            itemId:             i.id,
+            codigo:             i.codigo,
+            descripcion:        i.descripcion,
+            cantidadPedida:     i.cantidad_pedida,
+            cantidadDespachada: 0,
+            tienda:             i.tienda ?? null,
+            estado:             'sin_stock',
+          } as ItemValidadoSodimac
+        } catch {
+          return null
+        }
+      })
+    ).then((resultados) => {
+      const validos = resultados.filter(Boolean) as ItemValidadoSodimac[]
+      if (validos.length > 0) {
+        setValidadosSodimac((prev) => {
+          const ids = new Set(prev.map((v) => v.itemId))
+          return [...prev, ...validos.filter((v) => !ids.has(v.itemId))]
+        })
+      }
+    })
+  }, [inicializado]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Handlers LPN (Imperial) ──────────────────────────────────────────────────
 
   async function handleBuscarLpn(lpn: string) {
