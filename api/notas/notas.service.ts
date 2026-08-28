@@ -524,10 +524,7 @@ export const notasService = {
     }
 
     // Validar producto escaneado (acepta codigo_barra principal o alternativo)
-    // Si el codigo_barra es un placeholder SKU-*, no restringir el escaneo
-    const esPlaceholder = (cb: string | null | undefined) => !cb || cb.startsWith('SKU-')
-    const barcodeOk = esPlaceholder(productoPickRef.codigo_barra)
-      || input.codigoProducto === productoPickRef.codigo_barra
+    const barcodeOk = input.codigoProducto === productoPickRef.codigo_barra
       || (!!productoPickRef.codigo_barra_alternativo && input.codigoProducto === productoPickRef.codigo_barra_alternativo)
     if (!barcodeOk) {
       return {

@@ -234,8 +234,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       : null
     const codigoEsperado    = equivalenteId ? (prodRef?.codigoBarra ?? null) : item.codigoBarra
     const codigoAlternativo = equivalenteId ? (prodRef?.codigoBaRalternativo ?? null) : (item.codigoBaRalternativo ?? null)
-    const esPlaceholder = (cb: string | null | undefined) => !cb || cb.startsWith('SKU-')
-    const scanValido = esPlaceholder(codigoEsperado)
+    const scanValido = !codigoEsperado
       || codigo.trim() === codigoEsperado
       || (!!codigoAlternativo && codigo.trim() === codigoAlternativo)
     if (!scanValido) {
