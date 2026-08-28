@@ -303,15 +303,7 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
                     <code className="ing-prod-sku">{fila.codigoProducto}</code>
                   </div>
                   <div className="ing-prod-fila-derecha">
-                    <input
-                      type="number" min={1}
-                      value={fila.cantidadEditable}
-                      onChange={(e) => actualizarCantidad(idx, e.target.value)}
-                      onKeyDown={onlyNumbersKeyDown}
-                      onPaste={onlyNumbersPaste}
-                      className="input-cantidad"
-                      disabled={fila.estado !== 'encontrado'}
-                    />
+                    <span className="ing-prod-cantidad">{fila.cantidad}</span>
                     {fila.estado === 'buscando' && (
                       <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth={2} width={18} height={18}><circle cx="12" cy="12" r="10" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
                     )}
@@ -321,7 +313,6 @@ export function ImportarNotaFlow({ adminId, onVolver, onCreada }: Props) {
                     {fila.estado === 'no_encontrado' && (
                       <span className="badge badge-sin-catalogo">No encontrado</span>
                     )}
-                    <button className="btn-eliminar-fila" onClick={() => eliminarFila(idx)} title="Quitar">✕</button>
                   </div>
                 </div>
               </div>

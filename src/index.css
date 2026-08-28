@@ -3949,16 +3949,22 @@ label {
 .ing-meta-item--full { grid-column: 1 / -1; }
 .ing-meta-textarea {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 2px solid rgba(56,189,248,0.55);
+  border-radius: 10px;
   color: var(--text-primary);
   font-size: var(--font-size-sm);
   resize: vertical;
   font-family: inherit;
+  box-shadow: 0 0 0 1px rgba(56,189,248,0.15);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ing-meta-textarea:focus { outline: none; border-color: var(--accent); }
+.ing-meta-textarea:focus {
+  outline: none;
+  border-color: rgba(56,189,248,0.9);
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.18);
+}
 
 /* Barra progreso global */
 /* Secciones pendiente / completo */
@@ -3999,6 +4005,7 @@ label {
   border-bottom: 1px solid var(--border);
 }
 .ing-prod-item:last-child { border-bottom: none; }
+.ing-prod-cantidad { font-weight: 700; font-size: var(--font-size-sm); color: var(--text-primary); min-width: 40px; text-align: right; }
 .ing-prod-fila {
   width: 100%;
   padding: var(--spacing-md);
