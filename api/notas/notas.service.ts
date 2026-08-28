@@ -16,12 +16,13 @@ export type Ubicacion = {
 }
 
 export type ProductoConStock = {
-  productoId:      string
-  sku:             string
-  nombre:          string
-  codigoBarra:     string
-  stockDisponible: number
-  ubicaciones:     Ubicacion[]
+  productoId:           string
+  sku:                  string
+  nombre:               string
+  codigoBarra:          string
+  codigoBaRalternativo?: string | null
+  stockDisponible:      number
+  ubicaciones:          Ubicacion[]
 }
 
 export type NotaProductoResumen = {
@@ -196,7 +197,7 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
 
   const { data: productos } = await supabase
     .from('productos')
-    .select('id, sku, nombre, codigo_barra, stock_total')
+    .select('id, sku, nombre, codigo_barra, codigo_barra_alternativo, stock_total')
     .in('sku', skusEquivalentes)
     .eq('activo', true)
     .gt('stock_total', 0)
@@ -205,12 +206,13 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
 
   const ubicacionesPorProducto = await Promise.all(productos.map((p) => obtenerUbicacionesFifo(p.id)))
   return productos.map((p, i) => ({
-    productoId:      p.id,
-    sku:             p.sku,
-    nombre:          p.nombre,
-    codigoBarra:     p.codigo_barra,
-    stockDisponible: p.stock_total,
-    ubicaciones:     ubicacionesPorProducto[i],
+    productoId:           p.id,
+    sku:                  p.sku,
+    nombre:               p.nombre,
+    codigoBarra:          p.codigo_barra,
+    codigoBaRalternativo: p.codigo_barra_alternativo,
+    stockDisponible:      p.stock_total,
+    ubicaciones:          ubicacionesPorProducto[i],
   }))
 }
 
