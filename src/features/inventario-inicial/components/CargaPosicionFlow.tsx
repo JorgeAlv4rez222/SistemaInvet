@@ -118,7 +118,8 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
       {/* Indicador de pasos */}
       <div className="inv-pasos">
         {['Posición', 'Producto'].map((label, i) => {
-          const pasoIdx = { posicion: 0, producto: 1, exito: 2 }[paso.tipo]
+          const pasoIdxMap: Record<string, number> = { posicion: 0, producto: 1, exito: 2, modificar: 0, modificar_confirmar: 0 }
+          const pasoIdx = pasoIdxMap[paso.tipo] ?? 0
           return (
             <div key={label} className={`inv-paso-dot ${i === pasoIdx ? 'activo' : i < pasoIdx ? 'completo' : ''}`}>
               <span>{i + 1}</span>
