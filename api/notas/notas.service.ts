@@ -25,12 +25,13 @@ export type ProductoConStock = {
 }
 
 export type NotaProductoResumen = {
-  notaProductoId:        string
-  productoId:            string
-  sku:                   string
-  nombre:                string
-  codigoBarra:           string
-  cantidadSolicitada:    number
+  notaProductoId:            string
+  productoId:                string
+  sku:                       string
+  nombre:                    string
+  codigoBarra:               string
+  codigoBaRalternativo?:     string | null
+  cantidadSolicitada:        number
   cantidadDespachada:    number
   estado:                string
   ubicaciones:           Ubicacion[]
@@ -214,8 +215,8 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
 }
 
 async function enriquecerNotaProducto(
-  np: NotaProducto & { productos: { sku: string; nombre: string; codigo_barra: string } | null;
-                       productos_equivalente?: { sku: string; codigo_barra: string } | null }
+  np: NotaProducto & { productos: { sku: string; nombre: string; codigo_barra: string; codigo_barra_alternativo?: string | null } | null;
+                       productos_equivalente?: { sku: string; codigo_barra: string; codigo_barra_alternativo?: string | null } | null }
 ): Promise<NotaProductoResumen> {
   const sku = np.productos?.sku ?? ''
   const [ubicaciones, equivalentes] = await Promise.all([
@@ -224,9 +225,9 @@ async function enriquecerNotaProducto(
   ])
 
   // Si se pickeó un equivalente, usar su código de barra para la revisión
-  const codigoBarra = np.producto_equivalente_id
-    ? (np.productos_equivalente?.codigo_barra ?? '')
-    : (np.productos?.codigo_barra ?? '')
+  const prod = np.producto_equivalente_id ? np.productos_equivalente : np.productos
+  const codigoBarra          = prod?.codigo_barra ?? ''
+  const codigoBaRalternativo = prod?.codigo_barra_alternativo ?? null
 
   return {
     notaProductoId:        np.id,
@@ -234,6 +235,7 @@ async function enriquecerNotaProducto(
     sku,
     nombre:                np.productos?.nombre ?? '',
     codigoBarra,
+    codigoBaRalternativo,
     cantidadSolicitada:    np.cantidad_solicitada,
     cantidadDespachada:    np.cantidad_despachada,
     estado:                np.estado,
@@ -333,8 +335,8 @@ export const notasService = {
         *,
         nota_productos(
           *,
-          productos!nota_productos_producto_id_fkey(sku, nombre, codigo_barra),
-          productos_equivalente:productos!nota_productos_producto_equivalente_id_fkey(sku, codigo_barra)
+          productos!nota_productos_producto_id_fkey(sku, nombre, codigo_barra, codigo_barra_alternativo),
+          productos_equivalente:productos!nota_productos_producto_equivalente_id_fkey(sku, codigo_barra, codigo_barra_alternativo)
         )
       `)
       .eq('id', notaId)
@@ -470,7 +472,7 @@ export const notasService = {
       .select(`
         *,
         notas_venta(id, estado, numero_nota, nombre_cliente, rut_cliente),
-        productos!nota_productos_producto_id_fkey(id, sku, nombre, codigo_barra)
+        productos!nota_productos_producto_id_fkey(id, sku, nombre, codigo_barra, codigo_barra_alternativo)
       `)
       .eq('id', input.notaProductoId)
       .single()
@@ -480,7 +482,7 @@ export const notasService = {
     }
 
     type NotaRef    = { id: string; estado: string; numero_nota: string; nombre_cliente: string; rut_cliente: string }
-    type ProductoRef = { id: string; sku: string; nombre: string; codigo_barra: string }
+    type ProductoRef = { id: string; sku: string; nombre: string; codigo_barra: string; codigo_barra_alternativo?: string | null }
 
     const notaRef    = np.notas_venta as NotaRef
     const productoRef = np.productos as ProductoRef
@@ -512,15 +514,17 @@ export const notasService = {
     if (usarEquivalente) {
       const { data: prodEq } = await supabase
         .from('productos')
-        .select('id, sku, nombre, codigo_barra')
+        .select('id, sku, nombre, codigo_barra, codigo_barra_alternativo')
         .eq('id', input.productoEquivalenteId!)
         .single()
       if (!prodEq) return { ok: false, error: { code: 'NOT_FOUND', message: 'Producto equivalente no encontrado' } }
       productoPickRef = prodEq
     }
 
-    // Validar producto escaneado
-    if (productoPickRef.codigo_barra !== input.codigoProducto) {
+    // Validar producto escaneado (acepta codigo_barra principal o alternativo)
+    const barcodeOk = input.codigoProducto === productoPickRef.codigo_barra
+      || (!!productoPickRef.codigo_barra_alternativo && input.codigoProducto === productoPickRef.codigo_barra_alternativo)
+    if (!barcodeOk) {
       return {
         ok: false,
         error: { code: 'INVALID_PRODUCTO', message: `El producto escaneado no coincide. Esperado: ${productoPickRef.sku}`, field: 'codigoProducto' },

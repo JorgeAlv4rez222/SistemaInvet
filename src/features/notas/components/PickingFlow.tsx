@@ -204,10 +204,15 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     if (scanCooldownRef.current) return
     scanCooldownRef.current = true
     setTimeout(() => { scanCooldownRef.current = false }, 500)
-    const codigoEsperado = equivalenteId
-      ? (item.equivalentes.find((e) => e.productoId === equivalenteId)?.codigoBarra ?? null)
-      : item.codigoBarra
-    if (codigoEsperado && codigo.trim() !== codigoEsperado) {
+    const prodRef = equivalenteId
+      ? item.equivalentes.find((e) => e.productoId === equivalenteId)
+      : null
+    const codigoEsperado    = equivalenteId ? (prodRef?.codigoBarra ?? null) : item.codigoBarra
+    const codigoAlternativo = equivalenteId ? (prodRef?.codigoBaRalternativo ?? null) : (item.codigoBaRalternativo ?? null)
+    const scanValido = !codigoEsperado
+      || codigo.trim() === codigoEsperado
+      || (!!codigoAlternativo && codigo.trim() === codigoAlternativo)
+    if (!scanValido) {
       setError(`Producto incorrecto. Escanea el producto ${equivalenteId ? 'equivalente' : item.sku}`)
       if (productoInputRef.current) productoInputRef.current.value = ''
       productoInputRef.current?.focus()
