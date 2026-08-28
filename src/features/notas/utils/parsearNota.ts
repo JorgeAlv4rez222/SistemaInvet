@@ -42,14 +42,21 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
   let texto = ''
   try {
-    const pdf    = await pdfjsLib.getDocument({ data: uint8 }).promise
-    const partes: string[] = []
+    const pdf = await pdfjsLib.getDocument({ data: uint8 }).promise
+    const todosItems: { str: string; x: number; y: number; page: number }[] = []
     for (let i = 1; i <= pdf.numPages; i++) {
       const page    = await pdf.getPage(i)
       const content = await page.getTextContent()
-      partes.push(content.items.map((item) => ('str' in item ? item.str : '')).join(' '))
+      for (const item of content.items) {
+        if (!('str' in item) || !item.str.trim()) continue
+        // transform[4] = x, transform[5] = y
+        todosItems.push({ str: item.str.trim(), x: item.transform[4], y: item.transform[5], page: i })
+      }
     }
-    texto = partes.join(' ')
+    // Ordenar por página → y descendente (arriba primero) → x ascendente (izquierda primero)
+    // Esto reconstruye el orden visual de lectura aunque el PDF sea columnar
+    todosItems.sort((a, b) => a.page - b.page || b.y - a.y || a.x - b.x)
+    texto = todosItems.map((it) => it.str).join(' ')
   } catch {
     errores.push('No se pudo leer el PDF. Verifica que el archivo no esté dañado.')
     return { numeroNota: null, nombreCliente: null, rutCliente: null, numeroOc: null, productos: [], errores }
