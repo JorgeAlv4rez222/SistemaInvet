@@ -1095,7 +1095,7 @@ label {
   content: ''; position: absolute; top: 12px; left: calc(50% + 14px); right: calc(-50% + 14px);
   height: 2px; background: var(--border);
 }
-.inv-paso-dot.completo:not(:last-child)::after { background: var(--success); }
+.inv-paso-dot.completo:not(:last-child)::after { background: var(--border); }
 .inv-paso-dot > span {
   width: 28px; height: 28px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect }           from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial } from '../hooks/useInventarioInicial'
 import { BarcodeScanner }                         from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError }                       from '../../../shared/utils/apiClient'
@@ -21,6 +21,14 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
   const [cantidad,     setCantidad]     = useState('')
   const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10))
   const [totalRegistrados, setTotalRegistrados] = useState(0)
+  const [toast, setToast] = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const mostrarToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(msg)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500)
+  }, [])
 
   const posRef  = useRef<HTMLInputElement>(null)
   const prodRef = useRef<HTMLInputElement>(null)
@@ -47,6 +55,7 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
         setCodPosicion('')
         return
       }
+      mostrarToast('✓ Rack escaneado correctamente')
       setPaso({ tipo: 'producto', posicion: pos })
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al resolver la posición')
@@ -60,6 +69,7 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
     setError(null)
     try {
       const prod = await resolverProd.mutateAsync(codigo)
+      mostrarToast('✓ Producto escaneado correctamente')
       setPaso({ tipo: 'cantidad', posicion: paso.posicion, producto: prod })
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al resolver el producto')
@@ -94,9 +104,6 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
     setPaso({ tipo: 'posicion' })
   }
 
-  const pasoIdx = { posicion: 0, producto: 1, cantidad: 2, exito: 3 }[paso.tipo]
-  const labels  = ['Posición', 'Producto', 'Cantidad']
-
   return (
     <div className="inv-flow">
 
@@ -110,13 +117,30 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
 
       {/* Indicador de pasos */}
       <div className="inv-pasos">
-        {labels.map((label, i) => (
-          <div key={label} className={`inv-paso-dot ${i === pasoIdx ? 'activo' : i < pasoIdx ? 'completo' : ''}`}>
-            <span>{i + 1}</span>
-            <small>{label}</small>
-          </div>
-        ))}
+        {['Posición', 'Producto', 'Cantidad'].map((label, i) => {
+          const pasoIdx = { posicion: 0, producto: 1, cantidad: 2, exito: 3 }[paso.tipo]
+          return (
+            <div key={label} className={`inv-paso-dot ${i === pasoIdx ? 'activo' : i < pasoIdx ? 'completo' : ''}`}>
+              <span>{i + 1}</span>
+              <small>{label}</small>
+            </div>
+          )
+        })}
       </div>
+
+      {/* Toast flotante */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e',
+          color: '#4ade80', borderRadius: '0.75rem', padding: '0.75rem 1.5rem',
+          fontWeight: 700, fontSize: '1rem', zIndex: 9999,
+          boxShadow: '0 4px 24px rgba(34,197,94,0.25)',
+          whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
 
       {error && (
         <div className={`inv-error ${error.startsWith('⚠️') ? 'inv-error--advertencia' : ''}`}>

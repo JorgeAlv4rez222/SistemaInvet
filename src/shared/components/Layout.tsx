@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     ruta: '/notas', label: 'NV preparacion', labelCorto: 'NV prep',
-    icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>,
+    icono: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 8H3l1 13h16L21 8z"/><path d="M1 8h22"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/><polyline points="9 13 11 15 15 11"/></svg>,
   },
   {
     ruta: '/salidas', label: 'NV despacho', labelCorto: 'NV desp', roles: ['admin', 'supervisor'],
