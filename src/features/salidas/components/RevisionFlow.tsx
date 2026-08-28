@@ -492,9 +492,11 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <input
               ref={scanRef}
               type="text"
+              inputMode="numeric"
               placeholder="Código de barras…"
               autoComplete="off"
               onKeyDown={(e) => e.key === 'Enter' && handleEscanearProducto(e.currentTarget.value)}
+              onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '') }}
             />
             <BarcodeScanner
               onDetected={(codigo) => {
