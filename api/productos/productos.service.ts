@@ -141,7 +141,7 @@ export const productosService = {
       .from('productos')
       .select('*')
       .eq('activo', true)
-      .or(`nombre.ilike.%${texto}%,sku.ilike.%${texto}%,codigo_barra.ilike.%${texto}%`)
+      .or(`nombre.ilike.%${texto}%,sku.ilike.%${texto}%,codigo_barra.ilike.%${texto}%,codigo_barra_alternativo.ilike.%${texto}%`)
       .order('nombre')
       .limit(50)
 
