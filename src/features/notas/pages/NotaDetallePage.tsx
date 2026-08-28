@@ -113,7 +113,7 @@ const NOTA_ESTADO_LABEL: Record<string, string> = {
 
 export function NotaDetallePage() {
   const operadorId              = localStorage.getItem('user_id') ?? ''
-  const esAdmin                 = localStorage.getItem('user_rol') === 'admin'
+  const esAdmin                 = ['admin', 'supervisor'].includes(localStorage.getItem('user_rol') ?? '')
   const navigate                = useNavigate()
   const { id: notaId = '' }     = useParams<{ id: string }>()
   const { offline }             = useConectividad()

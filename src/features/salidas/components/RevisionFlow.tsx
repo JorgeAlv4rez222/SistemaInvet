@@ -159,7 +159,7 @@ interface Props {
 export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, numeroOc, comentarioDespacho, adminId, items, estadoNota, nombreChofer, offline, onCerrar }: Props) {
   const yaDespachada = estadoNota === 'despachada'
   const rolUsuario = localStorage.getItem('user_rol') ?? ''
-  const esAdmin    = rolUsuario === 'admin'
+  const esAdmin    = rolUsuario === 'admin' || rolUsuario === 'supervisor'
 
   const [paso, setPaso]             = useState<Paso>({ tipo: 'lista' })
   const [cantidad, setCantidad]     = useState('')
