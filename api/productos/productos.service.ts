@@ -77,21 +77,18 @@ export const productosService = {
   },
 
   async buscarPorCodigoBarra(codigoBarra: string): Promise<ServiceResult<ProductoConEquivalentes>> {
-    const { data: producto, error } = await supabase
-      .from('productos')
-      .select('*')
-      .eq('codigo_barra', codigoBarra)
-      .eq('activo', true)
-      .single()
-
-    if (error || !producto) {
-      return { ok: false, error: { code: 'NOT_FOUND', message: 'Producto no encontrado', field: 'codigoBarra' } }
-    }
-
     const { data: todos } = await supabase
       .from('productos')
       .select('*')
       .eq('activo', true)
+
+    const producto = (todos ?? []).find(
+      (p) => p.codigo_barra === codigoBarra || p.codigo_barra_alternativo === codigoBarra
+    )
+
+    if (!producto) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Producto no encontrado', field: 'codigoBarra' } }
+    }
 
     const equivalentes = obtenerEquivalentes(producto.sku, todos ?? [])
     return { ok: true, data: { ...producto, equivalentes } }
