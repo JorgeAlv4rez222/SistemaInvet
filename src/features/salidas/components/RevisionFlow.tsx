@@ -20,6 +20,7 @@ export type ItemRevision = {
 type Paso =
   | { tipo: 'lista' }
   | { tipo: 'escanear_producto'; item: ItemRevision }
+  | { tipo: 'codigo_validado'; item: ItemRevision; codigoEscaneado: string }
   | { tipo: 'ingresar_cantidad'; item: ItemRevision; codigoEscaneado: string }
   | { tipo: 'resultado'; mensaje: string; todosRevisados: boolean }
 
@@ -213,7 +214,7 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
     }
     setError(null)
     setCantidad('')
-    setPaso({ tipo: 'ingresar_cantidad', item: paso.item, codigoEscaneado: codigo.trim() })
+    setPaso({ tipo: 'codigo_validado', item: paso.item, codigoEscaneado: codigo.trim() })
   }
 
   async function handleConfirmarCantidad() {
@@ -513,6 +514,27 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
 
             <button className="btn-primario" onClick={() => handleEscanearProducto(scanRef.current?.value ?? '')}>
               Confirmar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CÓDIGO VALIDADO */}
+      {paso.tipo === 'codigo_validado' && (
+        <div className="paso">
+          <div className="todos-revisados-aviso" style={{ marginBottom: '1rem' }}>
+            ✓ Código de barra validado correctamente
+          </div>
+          <p>Producto: <strong>{paso.item.skuEquivalente ?? paso.item.sku}</strong> — {paso.item.nombre}</p>
+          <div className="paso-acciones">
+            <button className="btn-secundario" onClick={() => { setPaso({ tipo: 'escanear_producto', item: paso.item }); setError(null) }}>
+              ← Volver
+            </button>
+            <button
+              className="btn-primario"
+              onClick={() => setPaso({ tipo: 'ingresar_cantidad', item: paso.item, codigoEscaneado: paso.codigoEscaneado })}
+            >
+              Continuar →
             </button>
           </div>
         </div>
