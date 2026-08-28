@@ -4,7 +4,7 @@ import type { Database } from '../lib/supabase/types'
 
 type Producto = Database['public']['Tables']['productos']['Row']
 
-const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL'] as const
+const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL', 'BO', 'GT', 'BK'] as const
 
 export type ProductoConEquivalentes = Producto & {
   equivalentes: Producto[]
