@@ -23,6 +23,7 @@ interface Parada {
 
 type Paso =
   | { tipo: 'inicio' }
+  | { tipo: 'seleccionar_equivalente' }
   | { tipo: 'escanear_rack';     paradaIdx: number; equivalenteId?: string }
   | { tipo: 'escanear_producto'; paradaIdx: number; equivalenteId?: string }
   | { tipo: 'ingresar_cantidad'; paradaIdx: number; codigoProducto: string; equivalenteId?: string }
@@ -181,6 +182,30 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       : { tipo: 'escanear_producto' as const, paradaIdx: 0, equivalenteId: equivalenteId ?? undefined }
     setPaso(primerPaso)
     setError(null)
+  }
+
+  function handleIniciarConEquivalente(eqId: string) {
+    const eq = item.equivalentes.find((e) => e.productoId === eqId)
+    if (!eq) return
+    const ubis = eq.ubicaciones
+    const planCalculado = calcularPlan(ubis, cantidadPendiente)
+    setEquivalenteId(eqId)
+    setPlan(planCalculado)
+    setPickedSoFar(0)
+    setCantidad(planCalculado[0]?.cantidadATomar?.toString() ?? '')
+    const primerPaso = planCalculado[0]?.posicionCodigo
+      ? { tipo: 'escanear_rack' as const, paradaIdx: 0, equivalenteId: eqId }
+      : { tipo: 'escanear_producto' as const, paradaIdx: 0, equivalenteId: eqId }
+    setPaso(primerPaso)
+    setError(null)
+  }
+
+  function handleClickEquivalente() {
+    if (item.equivalentes.length === 1) {
+      handleIniciarConEquivalente(item.equivalentes[0].productoId)
+    } else {
+      setPaso({ tipo: 'seleccionar_equivalente' })
+    }
   }
 
   function handleEscanearRack(codigo: string) {
@@ -387,30 +412,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             </div>
           ) : (
             <div className="sin-stock-aviso">
-              <p>Sin stock disponible para {equivalenteId ? 'el equivalente seleccionado' : 'este producto'}</p>
-            </div>
-          )}
-
-          {item.equivalentes.length > 0 && (
-            <div className="equivalentes">
-              <h4>Equivalentes disponibles</h4>
-              {equivalenteId && (
-                <button
-                  className="equivalente-card"
-                  onClick={() => handleSeleccionarEquivalente(null)}
-                >
-                  <div className="eq-sku">{item.sku} (original)</div>
-                  <div className="eq-stock">Stock: {item.ubicaciones.reduce((s, u) => s + u.cantidad, 0)}</div>
-                </button>
-              )}
-              {item.equivalentes.map((eq) => (
-                <EquivalenteCard
-                  key={eq.productoId}
-                  eq={eq}
-                  seleccionado={equivalenteId === eq.productoId}
-                  onSeleccionar={() => handleSeleccionarEquivalente(eq.productoId)}
-                />
-              ))}
+              <p>Sin stock disponible para este producto</p>
             </div>
           )}
 
@@ -418,10 +420,37 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <button className="btn-primario" onClick={handleIniciarPicking}>
               Iniciar picking
             </button>
+            {item.equivalentes.length > 0 && (
+              <button className="btn-equivalente" onClick={handleClickEquivalente}>
+                {item.equivalentes.length === 1
+                  ? `Equivalente: ${item.equivalentes[0].sku}`
+                  : 'Equivalente'}
+              </button>
+            )}
             <button className="btn-secundario" onClick={() => setPaso({ tipo: 'sin_stock' })}>
               Sin stock
             </button>
           </div>
+        </div>
+      )}
+
+      {/* SELECCIONAR EQUIVALENTE (múltiples disponibles) */}
+      {paso.tipo === 'seleccionar_equivalente' && (
+        <div className="paso">
+          <h4>Selecciona el equivalente</h4>
+          <div className="equivalentes">
+            {item.equivalentes.map((eq) => (
+              <EquivalenteCard
+                key={eq.productoId}
+                eq={eq}
+                seleccionado={false}
+                onSeleccionar={() => handleIniciarConEquivalente(eq.productoId)}
+              />
+            ))}
+          </div>
+          <button className="btn-secundario" onClick={() => setPaso({ tipo: 'inicio' })}>
+            Volver
+          </button>
         </div>
       )}
 

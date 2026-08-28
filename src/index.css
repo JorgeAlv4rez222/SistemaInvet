@@ -1488,6 +1488,22 @@ label {
 .eq-stock  { font-size: var(--font-size-xs); color: var(--success); font-weight: 600; }
 
 .inicio-acciones { display: flex; gap: var(--spacing-md); flex-wrap: wrap; }
+.btn-equivalente {
+  min-height: var(--touch-target);
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(56,189,248,0.12);
+  color: var(--info);
+  border: 1px solid rgba(56,189,248,0.35);
+  transition: background 0.15s;
+}
+.btn-equivalente:hover { background: rgba(56,189,248,0.22); }
 
 .resultado { text-align: center; }
 .resultado-ok {
@@ -4952,7 +4968,8 @@ input[type="radio"] {
   .paso-acciones .btn-secundario { width: 100%; justify-content: center; }
   .inicio-acciones { flex-direction: column; }
   .inicio-acciones .btn-primario,
-  .inicio-acciones .btn-secundario { width: 100%; justify-content: center; }
+  .inicio-acciones .btn-secundario,
+  .inicio-acciones .btn-equivalente { width: 100%; justify-content: center; }
   /* Importar OC / NV */
   .importar-header { flex-wrap: wrap; gap: var(--spacing-sm); }
   .upload-acciones { justify-content: stretch; }
