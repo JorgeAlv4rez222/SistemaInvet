@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial } from '../hooks/useInventarioInicial'
+import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial, useEliminarLoteInicial, useBuscarLotePorPosicion } from '../hooks/useInventarioInicial'
 import { BarcodeScanner }                         from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError }                       from '../../../shared/utils/apiClient'
-import type { InfoPosicion, InfoProducto }        from '../services/inventarioInicial.api'
+import type { InfoPosicion }                      from '../services/inventarioInicial.api'
+
+type LoteEncontrado = { loteId: string; skuProducto: string; nombreProducto: string; posicionCodigo: string; posicionId: string }
 
 type Paso =
   | { tipo: 'posicion' }
   | { tipo: 'producto';  posicion: InfoPosicion }
-  | { tipo: 'exito';     posicion: string; sku: string; cantidad: number }
+  | { tipo: 'exito';     posicion: string; sku: string; cantidad: number; loteId: string; posicionInfo: InfoPosicion }
+  | { tipo: 'modificar' }
+  | { tipo: 'modificar_confirmar'; lote: LoteEncontrado }
 
 type Props = { usuarioId: string }
 
@@ -32,6 +36,8 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
   const resolverPos  = useResolverPosicion()
   const resolverProd = useResolverProducto()
   const registrar    = useRegistrarLoteInicial()
+  const eliminar     = useEliminarLoteInicial()
+  const buscarLote   = useBuscarLotePorPosicion()
 
   useEffect(() => {
     if (paso.tipo === 'posicion') posRef.current?.focus()
@@ -73,30 +79,9 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
         fechaIngreso: new Date().toISOString().slice(0, 10),
       })
       setTotalRegistrados((n) => n + 1)
-      setPaso({ tipo: 'exito', posicion: resultado.posicion, sku: resultado.skuProducto, cantidad: 0 })
+      setPaso({ tipo: 'exito', posicion: resultado.posicion, sku: resultado.skuProducto, cantidad: 0, loteId: resultado.loteId, posicionInfo: paso.posicion })
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al resolver el producto')
-    }
-  }
-
-  async function handleRegistrar() {
-    if (paso.tipo !== 'cantidad') return
-    const cant = parseInt(cantidad, 10)
-    if (!cant || cant <= 0) { setError('Ingresa una cantidad válida'); return }
-    if (!fechaIngreso)      { setError('La fecha es obligatoria'); return }
-    setError(null)
-    try {
-      const resultado = await registrar.mutateAsync({
-        usuarioId,
-        posicionId:   paso.posicion.id,
-        productoId:   paso.producto.id,
-        cantidad:     cant,
-        fechaIngreso,
-      })
-      setTotalRegistrados((n) => n + 1)
-      setPaso({ tipo: 'exito', posicion: resultado.posicion, sku: resultado.skuProducto, cantidad: cant })
-    } catch (e) {
-      setError(e instanceof ApiResponseError ? e.message : 'Error al registrar')
     }
   }
 
@@ -114,6 +99,19 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
         <div className="inv-contador">
           <span className="inv-contador-num">{totalRegistrados}</span>
           <span>posición{totalRegistrados !== 1 ? 'es' : ''} registrada{totalRegistrados !== 1 ? 's' : ''}</span>
+        </div>
+      )}
+
+      {/* Botón permanente de modificar */}
+      {paso.tipo !== 'modificar' && paso.tipo !== 'modificar_confirmar' && (
+        <div style={{ textAlign: 'right', marginBottom: '0.5rem' }}>
+          <button
+            className="btn-secundario"
+            style={{ fontSize: '0.82rem', padding: '0.4rem 1rem' }}
+            onClick={() => { setError(null); setCodPosicion(''); setPaso({ tipo: 'modificar' }) }}
+          >
+            ✎ Modificar Posición
+          </button>
         </div>
       )}
 
@@ -229,11 +227,99 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
         <div className="inv-card inv-exito">
           <div className="inv-exito-icono">✓</div>
           <h3>¡Registrado!</h3>
-          <p><strong>{paso.cantidad}</strong> unidades de <code>{paso.sku}</code></p>
-          <p>en posición <strong>{paso.posicion}</strong></p>
+          <p style={{ color: '#fff' }}><strong>{paso.sku}</strong> almacenado en <strong>{paso.posicion}</strong></p>
           <button className="btn-primario inv-siguiente-btn" onClick={siguientePosicion}>
             → Siguiente posición
           </button>
+        </div>
+      )}
+      {/* ── MODIFICAR: buscar posición ── */}
+      {paso.tipo === 'modificar' && (
+        <div className="inv-card">
+          <div className="inv-icono-paso">✎</div>
+          <h3>Modificar posición</h3>
+          <p className="inv-instruccion">Ingresa el código de la posición que deseas modificar</p>
+          <div className="input-con-camara">
+            <input
+              ref={posRef}
+              type="text"
+              placeholder="Código de posición…"
+              value={codPosicion}
+              onChange={(e) => { setCodPosicion(e.target.value); setError(null) }}
+              onKeyDown={async (e) => {
+                if (e.key !== 'Enter' || !codPosicion.trim()) return
+                setError(null)
+                try {
+                  const lote = await buscarLote.mutateAsync(codPosicion.trim())
+                  setPaso({ tipo: 'modificar_confirmar', lote })
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Error al buscar la posición')
+                }
+              }}
+              autoComplete="off"
+            />
+            <BarcodeScanner
+              onDetected={(c) => { setCodPosicion(c); setError(null) }}
+              title="Escanear posición"
+            />
+          </div>
+          <div className="inv-acciones">
+            <button className="btn-secundario" onClick={() => { setError(null); setCodPosicion(''); setPaso({ tipo: 'posicion' }) }}>
+              ← Volver
+            </button>
+            <button
+              className="btn-primario"
+              disabled={buscarLote.isPending || !codPosicion.trim()}
+              onClick={async () => {
+                setError(null)
+                try {
+                  const lote = await buscarLote.mutateAsync(codPosicion.trim())
+                  setPaso({ tipo: 'modificar_confirmar', lote })
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Error al buscar la posición')
+                }
+              }}
+            >
+              {buscarLote.isPending ? 'Buscando…' : 'Buscar →'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODIFICAR: confirmar quitar ── */}
+      {paso.tipo === 'modificar_confirmar' && (
+        <div className="inv-card">
+          <div className="inv-icono-paso">⚠️</div>
+          <h3>Posición encontrada</h3>
+          <div className="inv-posicion-badge" style={{ marginBottom: '1rem' }}>
+            <span className="inv-badge-etiqueta">Posición</span>
+            <span className="inv-badge-codigo">{paso.lote.posicionCodigo}</span>
+            <span className="inv-badge-detalle">{paso.lote.skuProducto} — {paso.lote.nombreProducto}</span>
+          </div>
+          <p className="inv-instruccion">¿Deseas quitar este producto de la posición?</p>
+          <div className="inv-acciones">
+            <button className="btn-secundario" onClick={() => { setError(null); setPaso({ tipo: 'modificar' }) }}>
+              ← Volver
+            </button>
+            <button
+              className="btn-primario"
+              style={{ background: '#dc2626' }}
+              disabled={eliminar.isPending}
+              onClick={async () => {
+                try {
+                  await eliminar.mutateAsync(paso.lote.loteId)
+                  mostrarToast('✓ Producto quitado de la posición')
+                  setCodPosicion('')
+                  setError(null)
+                  setPaso({ tipo: 'posicion' })
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Error al modificar')
+                }
+              }}
+            >
+              {eliminar.isPending ? 'Procesando…' : 'Quitar producto'}
+            </button>
+          </div>
         </div>
       )}
     </div>

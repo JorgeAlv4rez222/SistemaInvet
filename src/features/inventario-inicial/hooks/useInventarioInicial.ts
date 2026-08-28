@@ -19,3 +19,17 @@ export function useRegistrarLoteInicial() {
     },
   })
 }
+
+export function useBuscarLotePorPosicion() {
+  return useMutation({ mutationFn: inventarioInicialApi.buscarLotePorPosicion })
+}
+
+export function useEliminarLoteInicial() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: inventarioInicialApi.eliminarLote,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ubicaciones'], exact: false })
+    },
+  })
+}

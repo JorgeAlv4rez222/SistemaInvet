@@ -75,6 +75,76 @@ export const inventarioInicialService = {
     return { ok: true, data: { id: data.id, sku: data.sku, nombre: data.nombre } }
   },
 
+  // Busca el lote activo de una posición ocupada
+  async buscarLotePorPosicion(codigoPosicion: string): Promise<ServiceResult<{ loteId: string; skuProducto: string; nombreProducto: string; posicionCodigo: string; posicionId: string }>> {
+    const { data: posicion, error: errorPos } = await supabase
+      .from('posiciones_rack')
+      .select('id, codigo, ocupada')
+      .eq('codigo', codigoPosicion.trim().toUpperCase())
+      .single()
+
+    if (errorPos || !posicion) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: `Posición "${codigoPosicion}" no encontrada.` } }
+    }
+
+    if (!posicion.ocupada) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: `La posición ${posicion.codigo} no tiene productos asignados.` } }
+    }
+
+    const { data: lote, error: errorLote } = await supabase
+      .from('lotes_inventario')
+      .select('id, productos(sku, nombre)')
+      .eq('posicion_id', posicion.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (errorLote || !lote) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'No se encontró el lote en esta posición.' } }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prod = (lote as any).productos
+    return {
+      ok: true,
+      data: {
+        loteId:         lote.id,
+        skuProducto:    prod?.sku    ?? '—',
+        nombreProducto: prod?.nombre ?? '—',
+        posicionCodigo: posicion.codigo,
+        posicionId:     posicion.id,
+      },
+    }
+  },
+
+  // Elimina un lote y libera la posición
+  async eliminarLote(loteId: string): Promise<ServiceResult<{ ok: true }>> {
+    const { data: lote, error: errorLote } = await supabase
+      .from('lotes_inventario')
+      .select('id, posicion_id')
+      .eq('id', loteId)
+      .single()
+
+    if (errorLote || !lote) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Lote no encontrado.' } }
+    }
+
+    const { error: errorDel } = await supabase
+      .from('lotes_inventario')
+      .delete()
+      .eq('id', loteId)
+
+    if (errorDel) {
+      return { ok: false, error: { code: 'DB_ERROR', message: errorDel.message } }
+    }
+
+    if (lote.posicion_id) {
+      await supabase.from('posiciones_rack').update({ ocupada: false }).eq('id', lote.posicion_id)
+    }
+
+    return { ok: true, data: { ok: true } }
+  },
+
   // Registra el lote en la posición
   async registrarLote(input: {
     usuarioId:    string

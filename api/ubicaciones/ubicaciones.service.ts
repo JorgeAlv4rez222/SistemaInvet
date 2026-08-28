@@ -285,7 +285,7 @@ export const ubicacionesService = {
           posiciones: (rack.posiciones_rack ?? [])
             .sort((a, b) => a.nivel - b.nivel || a.posicion.localeCompare(b.posicion))
             .map((pos) => {
-              const loteRaw = (pos.lotes_inventario ?? []).find((l) => l.cantidad > 0) ?? null
+              const loteRaw = (pos.lotes_inventario ?? []).find((l) => l.cantidad >= 0) ?? null
               const prod    = loteRaw
                 ? (Array.isArray(loteRaw.productos) ? loteRaw.productos[0] : loteRaw.productos)
                 : null

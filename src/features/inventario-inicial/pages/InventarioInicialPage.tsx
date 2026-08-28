@@ -17,16 +17,10 @@ export function InventarioInicialPage() {
     <div className="inv-page">
       <div className="inv-page-header">
         <div className="inv-page-titulo">
-          <h1>Inventario Inicial</h1>
+          <h1>Ubicación Inicial</h1>
           <span className="inv-page-subtitulo">
-            Carga única de stock existente — posición por posición
+            Asignación de ubicación física para productos almacenados. (Pendiente de integración con SF para actualización de stock).
           </span>
-        </div>
-        <div className="inv-aviso">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          Este módulo solo debe usarse una vez al desplegar el sistema
         </div>
       </div>
 

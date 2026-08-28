@@ -1060,7 +1060,7 @@ label {
   max-width: 560px; margin: 0 auto; padding: var(--spacing-lg);
 }
 .inv-page-header { display: flex; flex-direction: column; gap: var(--spacing-xs); }
-.inv-page-titulo h1 { margin: 0; font-size: 1.4rem; }
+.inv-page-titulo h1 { margin: 0 0 var(--spacing-sm); font-size: 1.4rem; }
 .inv-page-subtitulo { font-size: 0.85rem; color: var(--text-secondary); }
 .inv-aviso {
   display: flex; align-items: center; gap: var(--spacing-xs);

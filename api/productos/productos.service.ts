@@ -157,7 +157,7 @@ export const productosService = {
       .select('producto_id, posicion_id, pasillo_id, en_pasillo, fecha_ingreso, cantidad, posiciones_rack(codigo), pasillos(nombre)')
       .in('producto_id', ids)
       .eq('activo', true)
-      .gt('cantidad', 0)
+      .gte('cantidad', 0)
       .order('fecha_ingreso', { ascending: true })
 
     // Agrupar lotes por producto_id, quedarnos con el primero (menor fecha_ingreso)

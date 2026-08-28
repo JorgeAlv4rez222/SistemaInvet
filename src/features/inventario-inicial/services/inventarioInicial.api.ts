@@ -17,4 +17,12 @@ export const inventarioInicialApi = {
     cantidad:     number
     fechaIngreso: string
   }) => apiClient.post<RegistroLoteResult>('/inventario-inicial?accion=registrar', body),
+
+  eliminarLote: (loteId: string) =>
+    apiClient.post<{ ok: true }>('/inventario-inicial?accion=eliminar-lote', { loteId }),
+
+  buscarLotePorPosicion: (codigoPosicion: string) =>
+    apiClient.post<{ loteId: string; skuProducto: string; nombreProducto: string; posicionCodigo: string; posicionId: string }>(
+      '/inventario-inicial?accion=buscar-lote-posicion', { codigoPosicion }
+    ),
 }
