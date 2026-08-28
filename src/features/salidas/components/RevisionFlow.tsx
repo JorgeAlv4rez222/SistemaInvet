@@ -563,18 +563,6 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
             <span className="icono">✓</span>
             <p>{paso.mensaje}</p>
           </div>
-          {paso.todosRevisados && esAdmin && (
-            <div className="todos-revisados-aviso">
-              ✓ Todos los productos revisados — puedes marcar la nota para despacho
-              <button
-                className="btn-primario btn-despacho"
-                disabled={offline}
-                onClick={() => { setPaso({ tipo: 'lista' }); setMostrarModalChofer(true) }}
-              >
-                Lista para despacho
-              </button>
-            </div>
-          )}
           <button className="btn-primario" onClick={() => { setPaso({ tipo: 'lista' }); setError(null) }}>
             Volver a la lista
           </button>
