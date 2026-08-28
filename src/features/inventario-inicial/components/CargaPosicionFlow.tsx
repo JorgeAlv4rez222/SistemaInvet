@@ -2,13 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial } from '../hooks/useInventarioInicial'
 import { BarcodeScanner }                         from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError }                       from '../../../shared/utils/apiClient'
-import { onlyNumbersKeyDown, onlyNumbersPaste }   from '../../../shared/utils/numericInput'
 import type { InfoPosicion, InfoProducto }        from '../services/inventarioInicial.api'
 
 type Paso =
   | { tipo: 'posicion' }
   | { tipo: 'producto';  posicion: InfoPosicion }
-  | { tipo: 'cantidad';  posicion: InfoPosicion; producto: InfoProducto }
   | { tipo: 'exito';     posicion: string; sku: string; cantidad: number }
 
 type Props = { usuarioId: string }
@@ -18,8 +16,6 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
   const [error,        setError]        = useState<string | null>(null)
   const [codPosicion,  setCodPosicion]  = useState('')
   const [codProducto,  setCodProducto]  = useState('')
-  const [cantidad,     setCantidad]     = useState('')
-  const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10))
   const [totalRegistrados, setTotalRegistrados] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -32,7 +28,6 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
 
   const posRef  = useRef<HTMLInputElement>(null)
   const prodRef = useRef<HTMLInputElement>(null)
-  const cantRef = useRef<HTMLInputElement>(null)
 
   const resolverPos  = useResolverPosicion()
   const resolverProd = useResolverProducto()
@@ -41,7 +36,6 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
   useEffect(() => {
     if (paso.tipo === 'posicion') posRef.current?.focus()
     if (paso.tipo === 'producto') prodRef.current?.focus()
-    if (paso.tipo === 'cantidad') cantRef.current?.focus()
   }, [paso])
 
   async function handleConfirmarPosicion() {
@@ -70,7 +64,16 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
     try {
       const prod = await resolverProd.mutateAsync(codigo)
       mostrarToast('✓ Producto escaneado correctamente')
-      setPaso({ tipo: 'cantidad', posicion: paso.posicion, producto: prod })
+      // Registrar directamente con cantidad 0 — la cantidad se ajustará al integrar la BD real
+      const resultado = await registrar.mutateAsync({
+        usuarioId,
+        posicionId:   paso.posicion.id,
+        productoId:   prod.id,
+        cantidad:     0,
+        fechaIngreso: new Date().toISOString().slice(0, 10),
+      })
+      setTotalRegistrados((n) => n + 1)
+      setPaso({ tipo: 'exito', posicion: resultado.posicion, sku: resultado.skuProducto, cantidad: 0 })
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al resolver el producto')
     }
@@ -98,8 +101,7 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
   }
 
   function siguientePosicion() {
-    setCodPosicion(''); setCodProducto(''); setCantidad('')
-    setFechaIngreso(new Date().toISOString().slice(0, 10))
+    setCodPosicion(''); setCodProducto('')
     setError(null)
     setPaso({ tipo: 'posicion' })
   }
@@ -117,8 +119,8 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
 
       {/* Indicador de pasos */}
       <div className="inv-pasos">
-        {['Posición', 'Producto', 'Cantidad'].map((label, i) => {
-          const pasoIdx = { posicion: 0, producto: 1, cantidad: 2, exito: 3 }[paso.tipo]
+        {['Posición', 'Producto'].map((label, i) => {
+          const pasoIdx = { posicion: 0, producto: 1, exito: 2 }[paso.tipo]
           return (
             <div key={label} className={`inv-paso-dot ${i === pasoIdx ? 'activo' : i < pasoIdx ? 'completo' : ''}`}>
               <span>{i + 1}</span>
@@ -221,57 +223,6 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
         </div>
       )}
 
-      {/* ── PASO 3: Cantidad ── */}
-      {paso.tipo === 'cantidad' && (
-        <div className="inv-card">
-          <div className="inv-posicion-badge">
-            <span className="inv-badge-etiqueta">Posición</span>
-            <span className="inv-badge-codigo">{paso.posicion.codigo}</span>
-          </div>
-          <div className="inv-producto-info">
-            <span className="inv-prod-sku">{paso.producto.sku}</span>
-            <span className="inv-prod-nombre">{paso.producto.nombre}</span>
-          </div>
-          <div className="inv-icono-paso">🔢</div>
-          <h3>Verifica la cantidad</h3>
-          <p className="inv-instruccion">Cuenta los productos en esta posición e ingresa el total</p>
-          <div className="inv-campos">
-            <label>
-              Cantidad <span className="requerido">*</span>
-              <input
-                ref={cantRef}
-                type="number" min={1}
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleRegistrar() }}
-                onPaste={onlyNumbersPaste}
-                placeholder="0"
-              />
-            </label>
-            <label>
-              Fecha de fabricación <span className="requerido">*</span>
-              <input
-                type="date"
-                value={fechaIngreso}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setFechaIngreso(e.target.value)}
-              />
-            </label>
-          </div>
-          <div className="inv-acciones">
-            <button className="btn-secundario" onClick={() => { setError(null); setPaso({ tipo: 'producto', posicion: paso.posicion }) }}>
-              ← Volver
-            </button>
-            <button
-              className="btn-primario"
-              onClick={handleRegistrar}
-              disabled={registrar.isPending || !cantidad || !fechaIngreso}
-            >
-              {registrar.isPending ? 'Registrando…' : '✓ Registrar'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── ÉXITO ── */}
       {paso.tipo === 'exito' && (
