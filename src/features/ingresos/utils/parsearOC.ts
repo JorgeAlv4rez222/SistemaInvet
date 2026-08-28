@@ -24,7 +24,7 @@ const REGEXES_OC = [
   /Purchase\s+Order[.:\s]*([A-Z0-9\-]+)/i,
   /OC[.:\s#]*(\d+)/i,
 ]
-const REGEX_PRODUCTO = /(\d+)\s+((?:HX|EK|BOL|BO)-[A-Z0-9\-]+)\s+(.+?)\s+(\d+\.\d+)\s+([\d,]+\.\d+)/g
+const REGEX_PRODUCTO = /(\d+)\s+((?:(?:HX|EK|BOL|BO)-[A-Z0-9\-]+)|(?:LED\s+[A-Z0-9][A-Z0-9\-]+))\s+(.+?)\s+(\d+\.\d+)\s+([\d,]+\.\d+)/g
 
 // Marca que separa el encabezado del cuerpo de productos
 const INICIO_TABLA = /Cantidad\s+Codi[gó]o\s+Descripci[oó]n/i
