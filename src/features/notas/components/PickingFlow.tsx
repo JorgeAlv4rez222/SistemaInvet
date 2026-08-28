@@ -532,9 +532,16 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <input
               ref={productoInputRef}
               type="text"
+              inputMode="numeric"
               placeholder="Código producto…"
               autoComplete="off"
-              onKeyDown={(e) => e.key === 'Enter' && handleEscanearProducto(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleEscanearProducto(e.currentTarget.value)
+              }}
+              onInput={(e) => {
+                const input = e.currentTarget
+                input.value = input.value.replace(/\D/g, '')
+              }}
             />
             <BarcodeScanner
               onDetected={(codigo) => {
