@@ -131,12 +131,13 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
       {/* Toast flotante */}
       {toast && (
         <div style={{
-          position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e',
-          color: '#4ade80', borderRadius: '0.75rem', padding: '0.75rem 1.5rem',
-          fontWeight: 700, fontSize: '1rem', zIndex: 9999,
-          boxShadow: '0 4px 24px rgba(34,197,94,0.25)',
-          whiteSpace: 'nowrap',
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          background: 'rgba(15,30,20,0.97)', border: '1.5px solid #22c55e',
+          color: '#4ade80', borderRadius: '1rem', padding: '1.1rem 2rem',
+          fontWeight: 700, fontSize: '1.1rem', zIndex: 9999,
+          boxShadow: '0 8px 40px rgba(34,197,94,0.3)',
+          whiteSpace: 'nowrap', textAlign: 'center',
+          pointerEvents: 'none',
         }}>
           {toast}
         </div>
