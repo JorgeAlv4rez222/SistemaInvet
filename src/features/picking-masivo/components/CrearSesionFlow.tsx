@@ -113,6 +113,20 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
 
       {paso === 'upload' && (
         <div className="paso">
+          <div className="pm-upload-aviso">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} style={{ flexShrink: 0, marginTop: 2 }}>
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>
+              Asegúrate de que el documento incluya las siguientes columnas:{' '}
+              {['UPC', 'SKU', 'CÓDIGO', 'DESCRIPCIÓN', 'VIN', 'CANTIDAD'].map((col, i, arr) => (
+                <span key={col}>
+                  <code className="pm-col-badge">{col}</code>
+                  {i < arr.length - 1 ? ', ' : '.'}
+                </span>
+              ))}
+            </span>
+          </div>
           <input
             ref={inputRef}
             type="file"

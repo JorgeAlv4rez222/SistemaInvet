@@ -103,31 +103,25 @@ export function SalidasPage() {
   const { data, isLoading, isError } = useNotasParaRevision()
 
   const [busqueda, setBusqueda] = useState('')
-  const [filtroAnio, setFiltroAnio] = useState<string | undefined>(undefined)
-  const [filtroMes,  setFiltroMes]  = useState<string | undefined>(undefined)
-  const [filtroDia,  setFiltroDia]  = useState<string | undefined>(undefined)
+  const [filtroAnio,    setFiltroAnio]    = useState<string | undefined>(undefined)
+  const [filtroMes,     setFiltroMes]     = useState<string | undefined>(undefined)
+  const [filtroDia,     setFiltroDia]     = useState<string | undefined>(undefined)
+  const [filtroCliente, setFiltroCliente] = useState<string>('')
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const [seleccionadaId, setSeleccionadaId]   = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<'completa' | 'despachada'>('completa')
 
-  const HORAS_VISIBILIDAD_DESPACHADA = 25
-
-  const notas = useMemo(() => {
-    const todas = data ?? []
-    const ahora = Date.now()
-    return todas.filter((n) => {
-      if (n.estado === 'despachada') {
-        const ms = ahora - new Date(n.actualizadoEn).getTime()
-        return ms < HORAS_VISIBILIDAD_DESPACHADA * 60 * 60 * 1000
-      }
-      return true
-    })
-  }, [data])
+  const notas = useMemo(() => data ?? [], [data])
 
   const aniosDisponibles = useMemo(() => {
     const años = new Set(notas.map((n) => n.creadoEn?.slice(0, 4)).filter(Boolean))
     return Array.from(años).sort().reverse()
   }, [notas])
+
+  const clientesDisponibles = useMemo(() => {
+    const set = new Set(notas.filter((n) => n.estado === filtroEstado).map((n) => n.nombreCliente).filter(Boolean))
+    return Array.from(set).sort()
+  }, [notas, filtroEstado])
 
   const notasFiltradas = useMemo(() => {
     let lista = notas.filter((n) => n.estado === filtroEstado)
@@ -135,18 +129,20 @@ export function SalidasPage() {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter((n) => n.numeroNota.toLowerCase().includes(q) || n.nombreCliente.toLowerCase().includes(q))
     }
-    if (filtroAnio) lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
-    if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
-    if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
+    if (filtroCliente) lista = lista.filter((n) => n.nombreCliente === filtroCliente)
+    if (filtroAnio)    lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
+    if (filtroMes)     lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
+    if (filtroDia)     lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
     return lista
-  }, [notas, busqueda, filtroAnio, filtroMes, filtroDia, filtroEstado])
+  }, [notas, busqueda, filtroAnio, filtroMes, filtroDia, filtroCliente, filtroEstado])
 
-  const filtrosActivos = [filtroAnio, filtroMes, filtroDia].filter(Boolean).length
+  const filtrosActivos = [filtroAnio, filtroMes, filtroDia, filtroCliente].filter(Boolean).length
 
   function limpiarFiltros() {
     setFiltroAnio(undefined)
     setFiltroMes(undefined)
     setFiltroDia(undefined)
+    setFiltroCliente('')
   }
 
   function onSeleccionar(id: string) {
@@ -217,42 +213,66 @@ export function SalidasPage() {
 
       {filtrosAbiertos && (
         <div className="ing-filtros-panel">
-          <div className="ing-filtro-grupo">
-            <span className="ing-filtro-label">Fecha</span>
-            <div className="ing-filtro-opciones">
+          {/* Fila fecha: Día / Mes / Año */}
+          <div className="ing-filtros-fila">
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Día</span>
               <select
                 className="ing-filtro-select"
                 value={filtroDia ?? ''}
                 onChange={(e) => setFiltroDia(e.target.value || undefined)}
               >
-                <option value="">Día</option>
+                <option value="">Todos</option>
                 {DIAS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
+            </div>
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Mes</span>
               <select
                 className="ing-filtro-select"
                 value={filtroMes ?? ''}
                 onChange={(e) => setFiltroMes(e.target.value || undefined)}
               >
-                <option value="">Mes</option>
+                <option value="">Todos</option>
                 {MESES.map((m, i) => (
                   <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>
                 ))}
               </select>
+            </div>
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Año</span>
               <select
                 className="ing-filtro-select"
                 value={filtroAnio ?? ''}
                 onChange={(e) => setFiltroAnio(e.target.value || undefined)}
               >
-                <option value="">Año</option>
+                <option value="">Todos</option>
                 {aniosDisponibles.map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
           </div>
 
+          {/* Fila cliente */}
+          <div className="ing-filtros-fila ing-filtros-fila--cliente">
+            <div className="ing-filtro-grupo">
+              <span className="ing-filtro-label">Cliente</span>
+              <select
+                className="ing-filtro-select"
+                value={filtroCliente}
+                onChange={(e) => setFiltroCliente(e.target.value)}
+              >
+                <option value="">Todos los clientes</option>
+                {clientesDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
           {filtrosActivos > 0 && (
-            <button type="button" className="ing-filtro-limpiar" onClick={limpiarFiltros}>
-              Limpiar filtros
-            </button>
+            <div className="ing-filtros-footer">
+              <button type="button" className="ing-filtro-limpiar" onClick={limpiarFiltros}>
+                Limpiar filtros ({filtrosActivos})
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -262,14 +282,14 @@ export function SalidasPage() {
         <button
           type="button"
           className={`sal-estado-btn ${filtroEstado === 'completa' ? 'sal-estado-btn--activo' : ''}`}
-          onClick={() => { setFiltroEstado('completa'); setSeleccionadaId(null) }}
+          onClick={() => { setFiltroEstado('completa'); setSeleccionadaId(null); setFiltroCliente('') }}
         >
           Completa
         </button>
         <button
           type="button"
           className={`sal-estado-btn ${filtroEstado === 'despachada' ? 'sal-estado-btn--activo sal-estado-btn--despachada' : ''}`}
-          onClick={() => { setFiltroEstado('despachada'); setSeleccionadaId(null) }}
+          onClick={() => { setFiltroEstado('despachada'); setSeleccionadaId(null); setFiltroCliente('') }}
         >
           Despachada
         </button>
@@ -289,7 +309,7 @@ export function SalidasPage() {
           <p>{filtrosActivos > 0 || busqueda
             ? 'Sin resultados para el filtro aplicado'
             : filtroEstado === 'despachada'
-              ? 'No hay notas despachadas en las últimas 25 horas'
+              ? 'No hay notas despachadas'
               : "No hay notas en estado 'completa' para revisar"
           }</p>
         </div>
