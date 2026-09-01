@@ -80,11 +80,9 @@ export function ConfirmarSubtareaPage() {
     if (!item?.codigo_barra) { setBarcodeOk(true); setError(null); return }
     // Normalizar ceros iniciales: el Excel puede perder el cero del EAN13 al tratarlo como número
     const normalizar = (s: string) => s.replace(/^0+/, '')
-    const escaneado = normalizar(val.trim())
-    const esperado  = normalizar(item.codigo_barra)
-    const ok = escaneado === esperado
+    const ok = normalizar(val.trim()) === normalizar(item.codigo_barra)
     if (ok) { setBarcodeOk(true); setError(null) }
-    else setError(`Incorrecto. Escaneado: "${escaneado}" / Esperado: "${esperado}"`)
+    else setError('Código de barras incorrecto. Escanea el producto correcto.')
   }
 
   function handleBarcodeChange(e: React.ChangeEvent<HTMLInputElement>) {
