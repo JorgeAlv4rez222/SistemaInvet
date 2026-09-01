@@ -112,7 +112,8 @@ export function ConfirmarSubtareaPage() {
   }
 
   function handleBarcodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setBarcode(e.target.value)
+    const val = e.target.value.replace(/\D/g, '')
+    setBarcode(val)
     setBarcodeOk(false)
     setError(null)
   }
@@ -241,6 +242,7 @@ export function ConfirmarSubtareaPage() {
                 <input
                   ref={barcodeRef}
                   type="text"
+                  inputMode="numeric"
                   className={`pm-confirmar-input ${error && !barcodeOk ? 'pm-confirmar-input--error' : ''}`}
                   placeholder="Escanea o ingresa el código…"
                   value={barcode}
