@@ -782,6 +782,26 @@ export const pickingMasivoService = {
       }
     }
 
+    // 2b. Buscar por codigo_barra_alternativo del catálogo
+    if (!items || items.length === 0) {
+      const { data: prodAlt } = await supabase
+        .from('productos')
+        .select('id')
+        .eq('codigo_barra_alternativo', termino)
+        .limit(1)
+        .single()
+
+      if (prodAlt?.id) {
+        const r2b = await supabase
+          .from('items_picking_masivo')
+          .select(SELECT)
+          .eq('sesion_id', sesionId)
+          .eq('producto_id', prodAlt.id)
+          .limit(1)
+        items = r2b.data
+      }
+    }
+
     // 3. Fallback: buscar por código exacto del item
     if (!items || items.length === 0) {
       const r3 = await supabase
