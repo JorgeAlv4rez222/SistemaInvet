@@ -78,7 +78,9 @@ export function ConfirmarSubtareaPage() {
     if (!val.trim()) return
     // Sin codigo_barra en el ítem: cualquier scan confirma
     if (!item?.codigo_barra) { setBarcodeOk(true); setError(null); return }
-    const ok = val.trim() === item.codigo_barra
+    // Normalizar ceros iniciales: el Excel puede perder el cero del EAN13 al tratarlo como número
+    const normalizar = (s: string) => s.replace(/^0+/, '')
+    const ok = normalizar(val.trim()) === normalizar(item.codigo_barra)
     if (ok) { setBarcodeOk(true); setError(null) }
     else setError('Código de barras incorrecto. Escanea el producto correcto.')
   }
