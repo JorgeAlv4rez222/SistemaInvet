@@ -38,20 +38,24 @@ function Etiqueta({ posicion, tamano }: { posicion: PosicionLibre; tamano: Taman
   )
 }
 
-// Cada etiqueta ocupa su propia página de 15 × 10 cm
+// 2 etiquetas de 15×10 cm por página carta (portrait)
 async function generarPDF(filtradas: PosicionLibre[], _tamano: TamanoEtiqueta, nombreArchivo: string) {
   const { jsPDF } = await import('jspdf')
 
-  const LW = 150  // 15 cm en mm
-  const LH = 100  // 10 cm en mm
+  const PW = 215.9  // carta ancho mm
+  const PH = 279.4  // carta alto mm
+  const LW = 150    // etiqueta ancho mm
+  const LH = 100    // etiqueta alto mm
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [LH, LW] })
+  // Margen vertical para centrar 2 etiquetas: (PH - 2*LH) / 3
+  const marginV = (PH - 2 * LH) / 3
+  const marginH = (PW - LW) / 2  // centrado horizontal
 
-  for (let i = 0; i < filtradas.length; i++) {
-    const pos = filtradas[i]
-    if (i > 0) doc.addPage([LH, LW])
+  const ySlots = [marginV, marginV + LH + marginV]
 
-    // Generar SVG del código de barras
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
+
+  async function dibujarEtiqueta(pos: PosicionLibre, ox: number, oy: number) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     try {
       JsBarcode(svg, pos.codigo, {
@@ -85,45 +89,48 @@ async function generarPDF(filtradas: PosicionLibre[], _tamano: TamanoEtiqueta, n
 
         // Fondo blanco + borde fino
         doc.setFillColor(255, 255, 255)
-        doc.rect(0, 0, LW, LH, 'F')
+        doc.rect(ox, oy, LW, LH, 'F')
         doc.setDrawColor(200, 200, 200)
         doc.setLineWidth(0.3)
-        doc.rect(2, 2, LW - 4, LH - 4)
+        doc.rect(ox + 2, oy + 2, LW - 4, LH - 4)
 
-        // Cabecera: pasillo · rack · nivel
+        // Cabecera: pasillo · rack
         doc.setFontSize(10)
         doc.setTextColor(100, 100, 100)
-        doc.text(`${pos.pasilloCodigo}  ·  ${pos.rackCodigo}`, LW / 2, 10, { align: 'center' })
+        doc.setFont('helvetica', 'normal')
+        doc.text(`${pos.pasilloCodigo}  ·  ${pos.rackCodigo}`, ox + LW / 2, oy + 10, { align: 'center' })
 
-        // Código de barras centrado
-        const barcodeX = 8
-        const barcodeY = 14
-        const barcodeW = LW - 16
-        const barcodeH = 55
-        doc.addImage(imgData, 'PNG', barcodeX, barcodeY, barcodeW, barcodeH)
+        // Código de barras
+        doc.addImage(imgData, 'PNG', ox + 8, oy + 14, LW - 16, 55)
 
         // Código legible en grande
         doc.setFontSize(18)
         doc.setTextColor(0, 0, 0)
         doc.setFont('helvetica', 'bold')
-        doc.text(pos.codigo, LW / 2, 82, { align: 'center' })
+        doc.text(pos.codigo, ox + LW / 2, oy + 82, { align: 'center' })
 
-        // Línea separadora debajo del código
+        // Línea separadora
         doc.setDrawColor(220, 220, 220)
         doc.setLineWidth(0.2)
-        doc.line(10, 86, LW - 10, 86)
+        doc.line(ox + 10, oy + 86, ox + LW - 10, oy + 86)
 
-        // Pie: nombre posición completo
+        // Pie
         doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
         doc.setTextColor(130, 130, 130)
-        doc.text(pos.codigo, LW / 2, 93, { align: 'center' })
+        doc.text(pos.codigo, ox + LW / 2, oy + 93, { align: 'center' })
 
         resolve()
       }
       img.onerror = () => { URL.revokeObjectURL(url); resolve() }
       img.src = url
     })
+  }
+
+  for (let i = 0; i < filtradas.length; i++) {
+    const slot = i % 2
+    if (i > 0 && slot === 0) doc.addPage('letter')
+    await dibujarEtiqueta(filtradas[i], marginH, ySlots[slot])
   }
 
   doc.save(`${nombreArchivo}.pdf`)
