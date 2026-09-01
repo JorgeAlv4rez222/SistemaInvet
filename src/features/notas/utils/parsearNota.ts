@@ -147,7 +147,8 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
     const cantidad = parseInt(cantStr, 10)
     if (!Number.isFinite(cantidad) || cantidad <= 0) continue
 
-    const codigoProducto = codItems.map((it) => it.str).join(' ').trim()
+    // Unir sin espacio y normalizar: pdf.js puede partir "cg001-wa" en varios items
+    const codigoProducto = codItems.map((it) => it.str).join('').replace(/\s+/g, '').trim()
     if (!codigoProducto) continue
 
     // Descripción: items a la derecha de xDesc (opcional, mejora la UI)
@@ -173,7 +174,7 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
 // ── Fallback: regex sobre texto plano ordenado visualmente ────────────────
 // Acepta cualquier código alfanumérico (con -, /, letras y números)
-const REGEX_PROD_TEXTO = /(\d+)\.\s+([A-Z0-9][A-Z0-9\/\-]{2,})\s+(.+?)\s+[\d,.]+\s+[\d,.]+(?=\s|$)/g
+const REGEX_PROD_TEXTO = /(\d+)\.\s+([A-Za-z0-9][A-Za-z0-9\/\-]{2,})\s+(.+?)\s+[\d,.]+\s+[\d,.]+(?=\s|$)/g
 
 function extraerProductosTextoPlano(texto: string, errores: string[]): LineaNota[] {
   const INICIO = /Cantidad\s+C[oó]d/i
