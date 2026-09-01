@@ -74,39 +74,11 @@ export function ConfirmarSubtareaPage() {
 
   const [validandoBarcode, setValidandoBarcode] = useState(false)
 
-  async function validarContraCatalogo(val: string): Promise<boolean> {
-    if (!val) return false
-    // Buscar por código de barras exacto en catálogo
-    try {
-      const prod = await productosApi.getByCodigoBarra(val)
-      if (prod) {
-        // Verificar que el producto encontrado corresponde al ítem de la subtarea
-        if (item?.producto_id && prod.id === item.producto_id) return true
-        if (prod.sku?.toLowerCase() === item?.codigo?.toLowerCase()) return true
-        return false
-      }
-    } catch { /* no encontrado por codigoBarra, intentar búsqueda general */ }
-    // Fallback: buscar por término general (SKU u otras variantes)
-    try {
-      const resultados = await productosApi.buscar(val)
-      if (resultados.length > 0) {
-        const match = resultados.find((p) =>
-          (item?.producto_id && p.id === item.producto_id) ||
-          p.sku?.toLowerCase() === item?.codigo?.toLowerCase()
-        )
-        return !!match
-      }
-    } catch { /* ignorar */ }
-    return false
-  }
-
   async function handleValidarBarcode(val: string) {
     if (!val.trim()) return
-    // Sin código de barras en catálogo ni productoId: cualquier scan confirma
-    if (!item?.codigo_barra && !item?.producto_id) { setBarcodeOk(true); setError(null); return }
-    setValidandoBarcode(true)
-    const ok = await validarContraCatalogo(val.trim())
-    setValidandoBarcode(false)
+    // Sin codigo_barra en el ítem: cualquier scan confirma
+    if (!item?.codigo_barra) { setBarcodeOk(true); setError(null); return }
+    const ok = val.trim() === item.codigo_barra
     if (ok) { setBarcodeOk(true); setError(null) }
     else setError('Código de barras incorrecto. Escanea el producto correcto.')
   }

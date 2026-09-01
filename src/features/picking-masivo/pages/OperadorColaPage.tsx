@@ -36,12 +36,17 @@ export function OperadorColaPage() {
   })
 
   const termino = busqueda.trim().toLowerCase()
-  const subtareasVisibles = termino
+  const subtareasVisibles = (termino
     ? subtareasFiltradas.filter((s) =>
         s.items_picking_masivo?.codigo?.toLowerCase().includes(termino) ||
         s.items_picking_masivo?.descripcion?.toLowerCase().includes(termino)
       )
     : subtareasFiltradas
+  ).slice().sort((a, b) => {
+    const la = a.items_picking_masivo?.lpn ?? ''
+    const lb = b.items_picking_masivo?.lpn ?? ''
+    return la.localeCompare(lb, undefined, { numeric: true })
+  })
 
   const cntMias      = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
   const cntTomadas   = subtareas.filter((s) => s.estado === 'bloqueado' && s.bloqueado_por !== operadorId).length
