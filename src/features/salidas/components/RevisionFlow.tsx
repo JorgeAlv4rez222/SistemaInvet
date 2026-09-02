@@ -90,6 +90,8 @@ type ModalChoferProps = {
   onCerrar: () => void
 }
 
+const CHOFERES = ['Darhyng Olea', 'Javier Arancibia', 'Jorge Alvarez', 'Gustavo Bunster']
+
 function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
   const [nombreChofer, setNombreChofer] = useState('')
   const [error, setError]               = useState<string | null>(null)
@@ -108,19 +110,31 @@ function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
       <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base font-semibold text-white mb-4">Marcar lista para despacho</h3>
-        <label className="block text-xs font-medium text-slate-400 mb-1">
-          Nombre del chofer <span className="text-red-400">*</span>
-        </label>
-        <input
-          type="text"
-          value={nombreChofer}
-          onChange={(e) => setNombreChofer(e.target.value)}
-          placeholder="Ej: Juan Pérez"
-          autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && nombreChofer.trim() && handleConfirmar()}
-          className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-white/10 text-white text-sm mb-4 focus:outline-none focus:border-sky-500"
-        />
+        <h3 className="text-base font-semibold text-white mb-1">Marcar lista para despacho</h3>
+        <p className="text-xs text-slate-400 mb-4">Selecciona el chofer</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+          {CHOFERES.map((chofer) => (
+            <button
+              key={chofer}
+              type="button"
+              onClick={() => setNombreChofer(chofer)}
+              style={{
+                padding: '0.7rem 1rem',
+                borderRadius: '8px',
+                border: nombreChofer === chofer ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
+                background: nombreChofer === chofer ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                color: nombreChofer === chofer ? '#38bdf8' : '#e2e8f0',
+                fontWeight: nombreChofer === chofer ? 700 : 400,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s',
+              }}
+            >
+              {chofer}
+            </button>
+          ))}
+        </div>
         {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
         <div className="flex gap-2">
           <button
