@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
-import { useSesionPicking, useBuscarLpn, useValidarLpn, useBuscarItem, useValidarItem, useDespacharSesion, useGuardarLpns } from '../hooks/usePickingMasivo'
+import { useSesionPicking, useBuscarLpn, useValidarLpn, useBuscarItem, useValidarItem, useDespacharSesion, useGuardarLpns, useGuardarLpnsEscaneados } from '../hooks/usePickingMasivo'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 
@@ -52,7 +52,8 @@ export function DespachoSesionPage() {
   const validarItem     = useValidarItem(sesionId)
 
   const despacharSesion = useDespacharSesion()
-  const guardarLpns     = useGuardarLpns()
+  const guardarLpns            = useGuardarLpns()
+  const guardarLpnsEscaneados  = useGuardarLpnsEscaneados()
 
   const [scanInput, setScanInput]                   = useState('')
   const [itemPendienteLpn, setItemPendienteLpn]     = useState<ItemPendienteLpn | null>(null)
@@ -106,6 +107,8 @@ export function DespachoSesionPage() {
   useEffect(() => {
     const lpnsDb = (sesion as any)?.lpns_excel as LpnEntry[] | undefined
     if (lpnsDb && lpnsDb.length > 0) setLpnsExcel(lpnsDb)
+    const escaneadosDb = (sesion as any)?.lpns_escaneados as string[] | undefined
+    if (escaneadosDb && escaneadosDb.length > 0) setLpnsEscaneados(new Set(escaneadosDb))
   }, [sesion])
 
   useEffect(() => {
@@ -314,6 +317,7 @@ export function DespachoSesionPage() {
         setLpnsExcel(entradas)
         // Guardar en BD para que sea accesible desde cualquier dispositivo
         guardarLpns.mutate({ sesionId, lpnsData: entradas })
+        guardarLpnsEscaneados.mutate({ sesionId, lpnsEscaneados: [] })
         setLpnsEscaneados(new Set())
         setLpnPendiente(null)
         setMostrarCargarLpn(false)
@@ -356,7 +360,9 @@ export function DespachoSesionPage() {
 
   function handleConfirmarLpnSodimac() {
     if (!lpnPendiente) return
-    setLpnsEscaneados((prev) => new Set([...prev, lpnPendiente.lpn]))
+    const nuevoSet = new Set([...lpnsEscaneados, lpnPendiente.lpn])
+    setLpnsEscaneados(nuevoSet)
+    guardarLpnsEscaneados.mutate({ sesionId, lpnsEscaneados: [...nuevoSet] })
     setLpnPendiente(null)
     setTimeout(() => lpnInputRef.current?.focus(), 50)
   }

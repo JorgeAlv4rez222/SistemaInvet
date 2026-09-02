@@ -268,6 +268,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ).json({ error: result.error })
     }
 
+    if (accion === 'guardar-lpns') {
+      const { sesionId, lpnsData } = req.body as { sesionId: string; lpnsData: unknown[] }
+      if (!sesionId || !Array.isArray(lpnsData)) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId y lpnsData requeridos' } })
+      const result = await pickingMasivoService.guardarLpns(sesionId, lpnsData)
+      return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
+    }
+
+    if (accion === 'guardar-lpns-escaneados') {
+      const { sesionId, lpnsEscaneados } = req.body as { sesionId: string; lpnsEscaneados: string[] }
+      if (!sesionId || !Array.isArray(lpnsEscaneados)) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId y lpnsEscaneados requeridos' } })
+      const result = await pickingMasivoService.guardarLpnsEscaneados(sesionId, lpnsEscaneados)
+      return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
+    }
+
     return res.status(400).json({ error: 'Acción POST no reconocida' })
   }
 

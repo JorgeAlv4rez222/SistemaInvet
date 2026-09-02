@@ -36,6 +36,10 @@ export function useGuardarLpns() {
   return useMutation({ mutationFn: pickingMasivoApi.guardarLpns })
 }
 
+export function useGuardarLpnsEscaneados() {
+  return useMutation({ mutationFn: pickingMasivoApi.guardarLpnsEscaneados })
+}
+
 export function useCrearSesion() {
   return useMutation({ mutationFn: pickingMasivoApi.crearSesion })
 }

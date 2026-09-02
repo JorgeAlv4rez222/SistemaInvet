@@ -448,11 +448,11 @@ export const pickingMasivoService = {
     // Cargar LPNs guardados en la tabla sesion_lpns
     const { data: lpnsRow } = await supabase
       .from('sesion_lpns')
-      .select('lpns_data')
+      .select('lpns_data, lpns_escaneados')
       .eq('sesion_id', sesionId)
       .single()
 
-    return { ok: true, data: { ...sesion, items: itemsConEquivalentes, lpns_excel: lpnsRow?.lpns_data ?? [] } }
+    return { ok: true, data: { ...sesion, items: itemsConEquivalentes, lpns_excel: lpnsRow?.lpns_data ?? [], lpns_escaneados: lpnsRow?.lpns_escaneados ?? [] } }
   },
 
   // ── 6. Cola de subtareas libres para un operador ──────────────────────────
@@ -836,11 +836,19 @@ export const pickingMasivoService = {
 
   // ── 14c. Validar ítem por id (flujo sin LPN — Sodimac) ───────────────────
   async guardarLpns(sesionId: string, lpnsData: unknown[]): Promise<ServiceResult<{ ok: boolean }>> {
-    // Eliminar registro anterior si existe y luego insertar
     await supabase.from('sesion_lpns').delete().eq('sesion_id', sesionId)
     const { error } = await supabase
       .from('sesion_lpns')
-      .insert({ sesion_id: sesionId, lpns_data: lpnsData })
+      .insert({ sesion_id: sesionId, lpns_data: lpnsData, lpns_escaneados: [] })
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { ok: true } }
+  },
+
+  async guardarLpnsEscaneados(sesionId: string, lpnsEscaneados: string[]): Promise<ServiceResult<{ ok: boolean }>> {
+    const { error } = await supabase
+      .from('sesion_lpns')
+      .update({ lpns_escaneados: lpnsEscaneados })
+      .eq('sesion_id', sesionId)
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
     return { ok: true, data: { ok: true } }
   },

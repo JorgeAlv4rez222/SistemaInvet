@@ -105,4 +105,7 @@ export const pickingMasivoApi = {
 
   guardarLpns: (body: { sesionId: string; lpnsData: unknown[] }) =>
     apiClient.post<{ ok: boolean }>('/picking-masivo?accion=guardar-lpns', body),
+
+  guardarLpnsEscaneados: (body: { sesionId: string; lpnsEscaneados: string[] }) =>
+    apiClient.post<{ ok: boolean }>('/picking-masivo?accion=guardar-lpns-escaneados', body),
 }
