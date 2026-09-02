@@ -70,7 +70,7 @@ function RevisionConDetalle({
     sku:                p.sku,
     nombre:             p.nombre,
     codigoBarra:             p.codigoBarra,
-    codigoBarraAlternativo:  p.codigoBarraAlternativo ?? null,
+    codigoBarraAlternativo:  p.codigoBaRalternativo ?? null,
     cantidadSolicitada:      p.cantidadSolicitada,
     cantidadDespachada: p.cantidadDespachada,
     revisadoAdmin:      p.revisadoAdmin,
