@@ -89,10 +89,11 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
   // ── Extracción columnar ───────────────────────────────────────────────────
   // 1. Encontrar la fila de encabezado: buscar el item "Cantidad" (o similar)
-  const HEADER_CANT = /^Cantidad$/i
-  const HEADER_COD  = /^C[oó]d(i[gó]o)?$/i
-  const HEADER_DESC = /^Descripci[oó]n$/i
-  const FIN_TABLA   = /^(Sub\s*Total|Condici[oó]n|En\s+efectivo|Descuento\s+1)$/i
+  const HEADER_CANT   = /^Cantidad$/i
+  const HEADER_COD    = /^C[oó]d(i[gó]o)?$/i
+  const HEADER_DESC   = /^Descripci[oó]n$/i
+  const HEADER_PRECIO = /^(Precio|P\.?\s*Unit(ario)?|Valor|Total|Importe|Neto)$/i
+  const FIN_TABLA     = /^(Sub\s*Total|Condici[oó]n|En\s+efectivo|Descuento\s+1)$/i
 
   const filas = agruparFilas(todosItems)
 
@@ -115,13 +116,14 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
   }
 
   // 2. Determinar rangos x de cada columna usando los encabezados
-  const xCant = headerFila.find((it) => HEADER_CANT.test(it.str))?.x ?? 0
-  const xCod  = headerFila.find((it) => HEADER_COD.test(it.str))?.x ?? 0
-  const xDesc = headerFila.find((it) => HEADER_DESC.test(it.str))?.x ?? 0
+  const xCant   = headerFila.find((it) => HEADER_CANT.test(it.str))?.x ?? 0
+  const xCod    = headerFila.find((it) => HEADER_COD.test(it.str))?.x ?? 0
+  const xDesc   = headerFila.find((it) => HEADER_DESC.test(it.str))?.x ?? 0
+  // Límite derecho de descripción: primera columna de precio que aparezca a la derecha de xDesc
+  const xPrecio = headerFila
+    .filter((it) => HEADER_PRECIO.test(it.str) && it.x > xDesc)
+    .sort((a, b) => a.x - b.x)[0]?.x ?? Infinity
 
-  // Columna "Cantidad": desde xCant hasta xCod
-  // Columna "Codigo":   desde xCod  hasta xDesc
-  // Columna "Desc":     desde xDesc en adelante (no la necesitamos para el mapeo)
   const MARGEN = 5 // tolerancia px
 
   // 3. Recorrer filas de productos (las que están DEBAJO del encabezado)
@@ -147,12 +149,16 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
     const cantidad = parseInt(cantStr, 10)
     if (!Number.isFinite(cantidad) || cantidad <= 0) continue
 
-    // Unir sin espacio y normalizar: pdf.js puede partir "cg001-wa" en varios items
-    const codigoProducto = codItems.map((it) => it.str).join('').replace(/\s+/g, '').trim()
+    // Excluir valores con formato de precio chileno (miles con punto o decimales con coma)
+    // Ej: "1.500", "1.500,00", "500,00" → precio. "9248", "HX-01", "cg001" → código válido
+    const ES_PRECIO = /^\$?\d{1,3}(\.\d{3})+([,]\d+)?$|^\$?\d+[,]\d{2}$/
+    const codigoProducto = codItems
+      .filter((it) => !ES_PRECIO.test(it.str.trim()))
+      .map((it) => it.str).join('').replace(/\s+/g, '').trim()
     if (!codigoProducto) continue
 
-    // Descripción: items a la derecha de xDesc (opcional, mejora la UI)
-    const descItems = fila.filter((it) => it.x >= xDesc - MARGEN)
+    // Descripción: entre xDesc y xPrecio (excluye columnas de precio)
+    const descItems = fila.filter((it) => it.x >= xDesc - MARGEN && it.x < xPrecio - MARGEN)
     const descripcion = descItems.map((it) => it.str).join(' ').trim() || codigoProducto
 
     const clave = `${codigoProducto}-${cantidad}`
