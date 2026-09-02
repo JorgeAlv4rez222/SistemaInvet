@@ -926,24 +926,44 @@ export function DespachoSesionPage() {
 
       {/* Modal chofer */}
       {mostrarChofer && (
-        <div className="modal-overlay" onClick={() => setMostrarChofer(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }}
+        >
+          <div
+            className="modal-box pm-despacho-modal"
+            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw', width: '360px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="modal-titulo">Confirmar despacho</h3>
-            <label className="pm-confirmar-label">
-              Nombre del chofer <span style={{ color: 'var(--danger)' }}>*</span>
-              <input
-                type="text"
-                className="pm-confirmar-input"
-                placeholder="Ej: Juan Pérez"
-                value={nombreChofer}
-                onChange={(e) => setNombreChofer(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && nombreChofer.trim() && handleDespachar()}
-                autoFocus
-              />
-            </label>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Selecciona el chofer</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+              {['Darhyng Olea', 'Javier Arancibia', 'Jorge Alvarez', 'Gustavo Bunster'].map((chofer) => (
+                <button
+                  key={chofer}
+                  type="button"
+                  onClick={() => setNombreChofer(chofer)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: nombreChofer === chofer ? '2px solid var(--accent)' : '1px solid var(--border)',
+                    background: nombreChofer === chofer ? 'var(--accent-dim, rgba(0,180,255,0.12))' : 'var(--bg-elevated)',
+                    color: nombreChofer === chofer ? 'var(--accent)' : 'var(--text-primary)',
+                    fontWeight: nombreChofer === chofer ? 700 : 400,
+                    fontSize: 'var(--font-size-base)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {chofer}
+                </button>
+              ))}
+            </div>
             {errorDespacho && <p className="pm-confirmar-barcode-error">{errorDespacho}</p>}
             <div className="pm-confirmar-acciones">
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => setMostrarChofer(false)} disabled={despacharSesion.isPending}>
+              <button className="btn-secundario pm-confirmar-btn" onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }} disabled={despacharSesion.isPending}>
                 Cancelar
               </button>
               <button
