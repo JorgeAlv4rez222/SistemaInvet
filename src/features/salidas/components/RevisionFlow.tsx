@@ -6,15 +6,16 @@ import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 
 export type ItemRevision = {
-  notaProductoId:     string
-  sku:                string
-  nombre:             string
-  codigoBarra:        string
-  cantidadSolicitada: number
-  cantidadDespachada: number
-  revisadoAdmin:      boolean
-  estado:             string
-  skuEquivalente:     string | null
+  notaProductoId:          string
+  sku:                     string
+  nombre:                  string
+  codigoBarra:             string
+  codigoBarraAlternativo:  string | null
+  cantidadSolicitada:      number
+  cantidadDespachada:      number
+  revisadoAdmin:           boolean
+  estado:                  string
+  skuEquivalente:          string | null
 }
 
 type Paso =
@@ -206,7 +207,11 @@ export function RevisionFlow({ notaId, numeroNota, nombreCliente, rutCliente, nu
 
   function handleEscanearProducto(codigo: string) {
     if (!codigo.trim() || paso.tipo !== 'escanear_producto') return
-    if (paso.item.codigoBarra && codigo.trim() !== paso.item.codigoBarra) {
+    const normalizar = (s: string) => s.replace(/^0+/, '')
+    const escaneado  = normalizar(codigo.trim())
+    const cbOk  = paso.item.codigoBarra        ? normalizar(paso.item.codigoBarra) === escaneado : true
+    const altOk = paso.item.codigoBarraAlternativo ? normalizar(paso.item.codigoBarraAlternativo) === escaneado : false
+    if (paso.item.codigoBarra && !cbOk && !altOk) {
       setError(`Producto incorrecto. Escanea ${paso.item.skuEquivalente ?? paso.item.sku}`)
       if (scanRef.current) scanRef.current.value = ''
       scanRef.current?.focus()

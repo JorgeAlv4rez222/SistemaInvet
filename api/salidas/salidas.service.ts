@@ -71,8 +71,8 @@ export const salidasService = {
       .from('nota_productos')
       .select(`
         *,
-        productos!nota_productos_producto_id_fkey(codigo_barra, sku, nombre),
-        productos_equivalente:productos!nota_productos_producto_equivalente_id_fkey(codigo_barra, sku),
+        productos!nota_productos_producto_id_fkey(codigo_barra, codigo_barra_alternativo, sku, nombre),
+        productos_equivalente:productos!nota_productos_producto_equivalente_id_fkey(codigo_barra, codigo_barra_alternativo, sku),
         notas_venta(id, estado, numero_nota)
       `)
       .eq('id', input.notaProductoId)
@@ -97,18 +97,24 @@ export const salidasService = {
     }
 
     // Verificar que el producto escaneado corresponde al ítem
-    type ProductoRef = { codigo_barra: string; sku: string; nombre: string }
+    type ProductoRef = { codigo_barra: string; codigo_barra_alternativo: string | null; sku: string; nombre: string }
     const productoRef    = notaProducto.productos as ProductoRef
-    const equivalenteRef = notaProducto.productos_equivalente as { codigo_barra: string; sku: string } | null
+    const equivalenteRef = notaProducto.productos_equivalente as { codigo_barra: string; codigo_barra_alternativo: string | null; sku: string } | null
 
-    const codigoEsperado = notaProducto.producto_equivalente_id
-      ? equivalenteRef?.codigo_barra
-      : productoRef.codigo_barra
+    const refActual = notaProducto.producto_equivalente_id ? equivalenteRef : productoRef
+    const codigoEsperado  = refActual?.codigo_barra ?? null
+    const codigoAlternativo = refActual?.codigo_barra_alternativo ?? null
     const skuEsperado = notaProducto.producto_equivalente_id
       ? (equivalenteRef?.sku ?? productoRef.sku)
       : productoRef.sku
 
-    if (codigoEsperado && codigoEsperado !== input.codigoProducto) {
+    const normalizar = (s: string) => s.replace(/^0+/, '')
+    const escaneado  = normalizar(input.codigoProducto)
+    const coincide   = !codigoEsperado
+      || normalizar(codigoEsperado) === escaneado
+      || (codigoAlternativo && normalizar(codigoAlternativo) === escaneado)
+
+    if (!coincide) {
       return {
         ok: false,
         error: {
