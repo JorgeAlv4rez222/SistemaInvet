@@ -73,6 +73,11 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
     return { filas: [], errores }
   }
 
+  if (idxCodigoBarra === -1) {
+    errores.push('El archivo no contiene columna de código de barras (UPC / EAN). Agrega una columna con encabezado "UPC", "EAN13", "EAN" o "Codigo Barra" e intenta de nuevo.')
+    return { filas: [], errores }
+  }
+
   const filas: FilaExcelPicking[] = []
   for (const fila of filasDatos) {
     const codigo      = String(fila[idxCodigo] ?? '').trim()

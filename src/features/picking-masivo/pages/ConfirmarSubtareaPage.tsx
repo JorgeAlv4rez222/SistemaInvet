@@ -23,7 +23,7 @@ export function ConfirmarSubtareaPage() {
   const esParcialEditable = subtarea?.estado === 'parcial' || subtarea?.estado === 'sin_stock'
 
   const item = subtarea?.items_picking_masivo
-  const codigoBarra = item?.codigo_barra ?? null
+  const codigoBarra = item?.codigo_barra?.trim() || null
   const lpn         = item?.lpn ?? null
 
   const [lpnConfirmado, setLpnConfirmado]       = useState<string | null>(null)
@@ -51,8 +51,8 @@ export function ConfirmarSubtareaPage() {
     } else {
       setCantidad(String(subtarea.cantidad_asignada))
     }
-    // Si el producto no tiene código de barras en catálogo, omitir escaneo
-    if (!item?.codigo_barra) {
+    // Solo omitir escaneo si el producto tiene item cargado y no tiene código de barras
+    if (item && !item.codigo_barra) {
       setBarcodeOk(true)
     } else {
       setBarcodeOk(false)
@@ -76,8 +76,8 @@ export function ConfirmarSubtareaPage() {
 
   async function handleValidarBarcode(val: string) {
     if (!val.trim()) return
-    // Sin codigo_barra en el ítem: cualquier scan confirma
-    if (!item?.codigo_barra) { setBarcodeOk(true); setError(null); return }
+    // Sin item cargado o sin código de barras: cualquier scan confirma
+    if (!item || !item.codigo_barra) { setBarcodeOk(true); setError(null); return }
     // Normalizar ceros iniciales: el Excel puede perder el cero del EAN13 al tratarlo como número
     const normalizar = (s: string) => s.replace(/^0+/, '')
     const ok = normalizar(val.trim()) === normalizar(item.codigo_barra)

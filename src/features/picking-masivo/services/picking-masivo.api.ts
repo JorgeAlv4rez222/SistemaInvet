@@ -43,13 +43,13 @@ export type SubtareaResumen = {
   item_id:           string
   motivo_diferencia: string | null
   items_picking_masivo: {
-    codigo:            string
-    descripcion:       string
-    cantidad_pedida:   number
+    codigo:             string
+    descripcion:        string
+    cantidad_pedida:    number
     cantidad_despachada: number
-    codigo_barra:      string | null
-    lpn:               string | null
-    producto_id:       string | null
+    codigo_barra:       string | null
+    lpn:                string | null
+    producto_id:        string | null
   } | null
 }
 
