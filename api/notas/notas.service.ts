@@ -303,36 +303,49 @@ export const notasService = {
     // Liberar notas abandonadas (sin actividad >10 min) antes de listar
     await supabase.rpc('liberar_notas_abandonadas')
 
-    let query = supabase
-      .from('notas_venta')
-      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), completada_por:usuarios!notas_venta_completada_por_id_fkey(nombre)')
-      .order('created_at', { ascending: false })
-
-    if (estado) query = query.eq('estado', estado)
-
-    const { data, error } = await query
-    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
-
     type RawNota = NotaVenta & {
       nota_productos: { id: string; estado: string }[]
       usuarios: { nombre: string } | null
-      completada_por: { nombre: string } | null
+      completada_por?: { nombre: string } | null
     }
 
-    const result: NotaResumen[] = (data as RawNota[] ?? []).map((n) => ({
-      notaId:             n.id,
-      numeroNota:         n.numero_nota,
-      nombreCliente:      n.nombre_cliente,
-      estado:             n.estado,
-      totalProductos:     n.nota_productos.length,
-      productosCompletos: n.nota_productos.filter((p) => ['completo', 'sin_stock'].includes(p.estado)).length,
-      creadoEn:           n.created_at,
-      importadoPor:       n.usuarios?.nombre ?? '',
-      tomadaPor:          n.tomada_por ?? null,
-      completadaPor:      n.completada_por?.nombre ?? null,
-    }))
+    const buildResult = (data: RawNota[]): NotaResumen[] =>
+      data.map((n) => ({
+        notaId:             n.id,
+        numeroNota:         n.numero_nota,
+        nombreCliente:      n.nombre_cliente,
+        estado:             n.estado,
+        totalProductos:     n.nota_productos.length,
+        productosCompletos: n.nota_productos.filter((p) => ['completo', 'sin_stock'].includes(p.estado)).length,
+        creadoEn:           n.created_at,
+        importadoPor:       n.usuarios?.nombre ?? '',
+        tomadaPor:          n.tomada_por ?? null,
+        completadaPor:      n.completada_por?.nombre ?? null,
+      }))
 
-    return { ok: true, data: result }
+    // Intentar con join completada_por (requiere migración 20260904_completada_por)
+    let q = supabase
+      .from('notas_venta')
+      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), completada_por:usuarios!notas_venta_completada_por_id_fkey(nombre)')
+      .order('created_at', { ascending: false })
+    if (estado) q = q.eq('estado', estado)
+    const { data, error } = await q
+
+    if (!error) return { ok: true, data: buildResult(data as RawNota[]) }
+
+    // Fallback: sin join completada_por (migración aún no ejecutada)
+    if (error.message.includes('completada_por') || error.code === '42703') {
+      let qFallback = supabase
+        .from('notas_venta')
+        .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
+        .order('created_at', { ascending: false })
+      if (estado) qFallback = qFallback.eq('estado', estado)
+      const { data: d2, error: e2 } = await qFallback
+      if (e2) return { ok: false, error: { code: 'DB_ERROR', message: e2.message } }
+      return { ok: true, data: buildResult(d2 as RawNota[]) }
+    }
+
+    return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
   },
 
   async obtenerDetalleNota(notaId: string, usuarioId?: string): Promise<ServiceResult<DetalleNota>> {
