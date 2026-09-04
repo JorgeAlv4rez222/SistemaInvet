@@ -17,6 +17,11 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     return result.ok ? json(result.data) : json({ error: result.error }, 500)
   }
 
+  if (vista === 'kpis-bi') {
+    const result = await dashboardService.obtenerKpisBi()
+    return result.ok ? json(result.data) : json({ error: result.error }, 500)
+  }
+
   if (vista === 'despachos-semana') {
     const result = await dashboardService.obtenerDespachosSemana()
     return result.ok ? json(result.data) : json({ error: result.error }, 500)

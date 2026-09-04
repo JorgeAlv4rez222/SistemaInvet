@@ -11,6 +11,17 @@ export type FiltrosDespachosMensuales = {
 
 export type DespachosMensuales = { meses: MesDespacho[]; total: number }
 
+export type TurnoStats = { completadas: number; enProceso: number; pendientes: number }
+export type ActividadItem = { hora: string; texto: string; tipo: 'ok' | 'info' | 'stock' | 'warn' | 'label' }
+
+export type KpisBi = {
+  despachados7dias: number
+  leadTimeHrs:      number | null
+  otifPct:          number | null
+  turno: { hoy: TurnoStats; semana: TurnoStats; mes: TurnoStats }
+  actividadReciente: ActividadItem[]
+}
+
 const MESES_LABEL = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 function labelMes(clave: string): string {
@@ -73,6 +84,102 @@ export const dashboardService = {
     const total = meses.reduce((s, m) => s + m.cantidad, 0)
 
     return { ok: true, data: { meses, total } }
+  },
+
+  async obtenerKpisBi(): Promise<ServiceResult<KpisBi>> {
+    const ahora = new Date()
+    const hoyInicio   = new Date(ahora); hoyInicio.setHours(0, 0, 0, 0)
+    const semanaInicio = new Date(ahora); semanaInicio.setDate(ahora.getDate() - 6); semanaInicio.setHours(0, 0, 0, 0)
+    const mesInicio   = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+    const mes30Inicio = new Date(ahora); mes30Inicio.setDate(ahora.getDate() - 30)
+
+    const [
+      despachosR,
+      notasDispR,
+      notasHoyR,
+      notasSemR,
+      notasMesR,
+      movR,
+    ] = await Promise.all([
+      supabase.from('despachos').select('id', { count: 'exact', head: true })
+        .gte('fecha_despacho', semanaInicio.toISOString()),
+      supabase.from('notas_venta').select('fecha_preparacion, fecha_despacho')
+        .eq('estado', 'despachada')
+        .gte('fecha_despacho', mes30Inicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('created_at', hoyInicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('created_at', semanaInicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('created_at', mesInicio.toISOString()),
+      supabase.from('movimientos')
+        .select('tipo, fecha, detalle, usuarios(nombre), productos(sku), notas_venta(numero_nota)')
+        .in('tipo', ['despacho', 'picking', 'ingreso', 'ingreso_parcial', 'cambio_estado_nota', 'traslado_reubicacion'])
+        .order('fecha', { ascending: false })
+        .limit(8),
+    ])
+
+    // Lead time promedio (horas)
+    const notasDisp = (notasDispR.data ?? []) as { fecha_preparacion: string | null; fecha_despacho: string | null }[]
+    const leadTimes = notasDisp
+      .filter(n => n.fecha_preparacion && n.fecha_despacho)
+      .map(n => (new Date(n.fecha_despacho!).getTime() - new Date(n.fecha_preparacion!).getTime()) / 3_600_000)
+      .filter(t => t >= 0 && t < 720)
+    const leadTimeHrs = leadTimes.length > 0
+      ? Math.round((leadTimes.reduce((s, t) => s + t, 0) / leadTimes.length) * 10) / 10
+      : null
+
+    // OTIF: % notas despachadas dentro de 24h de preparación
+    const otifPct = leadTimes.length > 0
+      ? Math.round((leadTimes.filter(t => t <= 24).length / leadTimes.length) * 1000) / 10
+      : null
+
+    // Rendimiento turno
+    const turno = (['hoy', 'semana', 'mes'] as const).reduce((acc, key, i) => {
+      const rows = ([notasHoyR.data, notasSemR.data, notasMesR.data][i] ?? []) as { estado: string }[]
+      acc[key] = {
+        completadas: rows.filter(r => r.estado === 'completa' || r.estado === 'despachada').length,
+        enProceso:   rows.filter(r => r.estado === 'preparacion').length,
+        pendientes:  rows.filter(r => r.estado === 'pendiente').length,
+      }
+      return acc
+    }, {} as { hoy: TurnoStats; semana: TurnoStats; mes: TurnoStats })
+
+    // Actividad reciente
+    const TIPO_MAP: Record<string, ActividadItem['tipo']> = {
+      despacho:             'ok',
+      picking:              'info',
+      ingreso:              'stock',
+      ingreso_parcial:      'stock',
+      cambio_estado_nota:   'info',
+      traslado_reubicacion: 'label',
+    }
+    const actividadReciente: ActividadItem[] = ((movR.data ?? []) as any[]).map((m) => {
+      const hora    = new Date(m.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      const usuario = (m.usuarios as { nombre: string } | null)?.nombre ?? 'Sistema'
+      const d       = (m.detalle ?? {}) as Record<string, unknown>
+      const sku     = (m.productos as { sku: string } | null)?.sku ?? (d.sku as string) ?? ''
+      const nv      = (m.notas_venta as { numero_nota: string } | null)?.numero_nota ?? (d.numeroNota as string) ?? ''
+      let texto = ''
+      switch (m.tipo) {
+        case 'despacho':             texto = `${usuario} despachó nota ${nv} al chofer ${(d.nombreChofer as string) ?? ''}`;                       break
+        case 'picking':              texto = `${usuario} preparó ${d.cantidadDespachada ?? ''} u. de ${sku} — NV ${nv}`;                           break
+        case 'ingreso':              texto = `${usuario} ingresó ${d.cantidadIngresada ?? ''} u. de ${sku} en ${(d.ubicacion as string) ?? 'bodega'}`; break
+        case 'ingreso_parcial':      texto = `${usuario} ingresó parcial ${d.cantidadIngresada ?? ''}/${d.cantidadEsperada ?? ''} u. de ${sku}`;    break
+        case 'traslado_reubicacion': texto = `${usuario} trasladó ${sku} de ${d.posicionOrigen ?? '?'} a ${d.posicionDestino ?? '?'}`;             break
+        case 'cambio_estado_nota':   texto = `${usuario} cambió nota ${nv} a estado ${d.estadoNuevo ?? ''}`;                                       break
+        default:                     texto = `${usuario} realizó ${m.tipo}`
+      }
+      return { hora, texto, tipo: TIPO_MAP[m.tipo] ?? 'info' }
+    })
+
+    return {
+      ok: true,
+      data: {
+        despachados7dias: (despachosR as any).count ?? 0,
+        leadTimeHrs,
+        otifPct,
+        turno,
+        actividadReciente,
+      },
+    }
   },
 
   async obtenerDespachosSemana(): Promise<ServiceResult<{ dias: { dia: string; label: string; cant: number }[]; total: number }>> {

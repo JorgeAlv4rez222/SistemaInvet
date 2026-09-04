@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDashboard, useDespachosMensuales, useDespachosSemana } from '../hooks/useDashboard'
+import { useDashboard, useDespachosMensuales, useDespachosSemana, useKpisBi } from '../hooks/useDashboard'
 import type { DiaDespacho } from '../hooks/useDashboard'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
@@ -211,18 +211,16 @@ export function DashboardBI() {
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
   useDespachosMensuales({})  // prefetch para posible uso futuro
   const { data: semanaData } = useDespachosSemana()
+  const { data: biData }     = useKpisBi()
 
   const mesActual    = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
   const periodoLabel = PERIODOS.find(p => p.key === periodo)?.label ?? ''
-  const turno        = TURNO_DATA[turnoTab]
-  const turnoTotal   = turno.completadas + turno.enProceso + turno.pendientes
-  const pctComp      = Math.round((turno.completadas / turnoTotal) * 100)
-  const pctProc      = Math.round((turno.enProceso   / turnoTotal) * 100)
-  const pctPend      = Math.round((turno.pendientes  / turnoTotal) * 100)
 
-  const ocupacionTotal = Math.round(
-    ZONAS_BODEGA.reduce((s, z) => s + z.pct, 0) / ZONAS_BODEGA.length
-  )
+  const turnoReal = biData?.turno[turnoTab]
+  const turnoTotal = turnoReal ? turnoReal.completadas + turnoReal.enProceso + turnoReal.pendientes : 0
+  const pctComp = turnoTotal > 0 ? Math.round((turnoReal!.completadas / turnoTotal) * 100) : 0
+  const pctProc = turnoTotal > 0 ? Math.round((turnoReal!.enProceso   / turnoTotal) * 100) : 0
+  const pctPend = turnoTotal > 0 ? Math.round((turnoReal!.pendientes  / turnoTotal) * 100) : 0
 
   return (
     <div className="bi-wrap">
@@ -299,27 +297,27 @@ export function DashboardBI() {
         <KpiExec
           icon={<IcoTarget />}
           label="Nivel de Servicio (OTIF)"
-          valor="95.4"
-          unidad="%"
-          delta="▲ +2.1%"
-          deltaLabel="vs mes anterior"
-          colorDelta="green"
+          valor={biData?.otifPct != null ? biData.otifPct.toFixed(1) : '—'}
+          unidad={biData?.otifPct != null ? '%' : ''}
+          delta={biData?.otifPct != null ? (biData.otifPct >= 90 ? '▲ Sobre meta' : '▼ Bajo meta') : ''}
+          deltaLabel="despachos últimos 30 días"
+          colorDelta={biData?.otifPct != null && biData.otifPct >= 90 ? 'green' : 'amber'}
         />
         <KpiExec
           icon={<IcoClock />}
           label="Lead Time Promedio"
-          valor="2.1"
-          unidad=" hrs"
-          delta="▼ −15 min"
-          deltaLabel="vs meta"
-          colorDelta="blue"
+          valor={biData?.leadTimeHrs != null ? biData.leadTimeHrs.toFixed(1) : '—'}
+          unidad={biData?.leadTimeHrs != null ? ' hrs' : ''}
+          delta={biData?.leadTimeHrs != null ? (biData.leadTimeHrs <= 24 ? '▼ Dentro del target' : '▲ Sobre target') : ''}
+          deltaLabel="prep → despacho"
+          colorDelta={biData?.leadTimeHrs != null && biData.leadTimeHrs <= 24 ? 'blue' : 'amber'}
         />
-<KpiExec
+        <KpiExec
           icon={<IcoTruck />}
           label="Pedidos Despachados"
-          valor={kpis ? '1,420' : '—'}
-          delta="▲ +12%"
-          deltaLabel="crecimiento"
+          valor={biData ? biData.despachados7dias.toLocaleString('es-CL') : '—'}
+          delta=""
+          deltaLabel="últimos 7 días"
           colorDelta="green"
         />
       </div>
@@ -353,38 +351,35 @@ export function DashboardBI() {
 
             {/* Barras horizontales */}
             <div className="bi-turno-barras">
-              {/* Completadas */}
               <div className="bi-turno-fila">
                 <div className="bi-turno-fila-label">
                   <span className="bi-turno-dot" style={{ background: '#34d399' }}/>
-                  <span>Completadas ({turno.completadas})</span>
+                  <span>Completadas ({turnoReal?.completadas ?? '—'})</span>
                 </div>
                 <div className="bi-turno-barra-bg">
                   <div className="bi-turno-barra-fill" style={{ width: `${pctComp}%`, background: '#34d399' }}/>
                 </div>
-                <span className="bi-turno-pct">{pctComp}%</span>
+                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctComp}%` : '—'}</span>
               </div>
-              {/* En proceso */}
               <div className="bi-turno-fila">
                 <div className="bi-turno-fila-label">
                   <span className="bi-turno-dot" style={{ background: '#38bdf8' }}/>
-                  <span>En Proceso ({turno.enProceso})</span>
+                  <span>En Proceso ({turnoReal?.enProceso ?? '—'})</span>
                 </div>
                 <div className="bi-turno-barra-bg">
                   <div className="bi-turno-barra-fill" style={{ width: `${pctProc}%`, background: '#38bdf8' }}/>
                 </div>
-                <span className="bi-turno-pct">{pctProc}%</span>
+                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctProc}%` : '—'}</span>
               </div>
-              {/* Pendientes */}
               <div className="bi-turno-fila">
                 <div className="bi-turno-fila-label">
                   <span className="bi-turno-dot" style={{ background: '#fbbf24' }}/>
-                  <span>Pendientes ({turno.pendientes})</span>
+                  <span>Pendientes ({turnoReal?.pendientes ?? '—'})</span>
                 </div>
                 <div className="bi-turno-barra-bg">
                   <div className="bi-turno-barra-fill" style={{ width: `${pctPend}%`, background: '#fbbf24' }}/>
                 </div>
-                <span className="bi-turno-pct">{pctPend}%</span>
+                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctPend}%` : '—'}</span>
               </div>
             </div>
 
@@ -414,7 +409,12 @@ export function DashboardBI() {
               </div>
             </div>
             <div className="bi-actividad-list">
-              {ACTIVIDAD_MOCK.map((ev, i) => (
+              {(biData?.actividadReciente ?? []).length === 0 && (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '8px 0' }}>
+                  {biData ? 'Sin actividad reciente' : 'Cargando…'}
+                </p>
+              )}
+              {(biData?.actividadReciente ?? []).map((ev, i) => (
                 <div key={i} className={`bi-actividad-item bi-act-${ev.tipo}`}>
                   <span className="bi-act-hora">{ev.hora}</span>
                   <span className="bi-act-dot"/>

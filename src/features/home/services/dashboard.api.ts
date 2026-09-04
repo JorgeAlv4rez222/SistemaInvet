@@ -20,10 +20,22 @@ function buildQuery(filtros: FiltrosDespachosMensuales): string {
 export type DiaDespacho = { dia: string; label: string; cant: number }
 export type DespachosSemana = { dias: DiaDespacho[]; total: number }
 
+export type TurnoStats   = { completadas: number; enProceso: number; pendientes: number }
+export type ActividadItem = { hora: string; texto: string; tipo: 'ok' | 'info' | 'stock' | 'warn' | 'label' }
+export type KpisBi = {
+  despachados7dias: number
+  leadTimeHrs:      number | null
+  otifPct:          number | null
+  turno: { hoy: TurnoStats; semana: TurnoStats; mes: TurnoStats }
+  actividadReciente: ActividadItem[]
+}
+
 export const dashboardApi = {
   despachosMensuales: (filtros: FiltrosDespachosMensuales) =>
     apiClient.get<DespachosMensuales>(`/dashboard?${buildQuery(filtros)}`),
   despachosSemana: () =>
     apiClient.get<DespachosSemana>('/dashboard?vista=despachos-semana'),
+  kpisBi: () =>
+    apiClient.get<KpisBi>('/dashboard?vista=kpis-bi'),
   clientes: () => apiClient.get<string[]>('/dashboard?vista=clientes'),
 }
