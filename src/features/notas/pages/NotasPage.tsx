@@ -367,7 +367,12 @@ export function NotasPage() {
                     <span className="nota-card-sep" aria-hidden="true">|</span>
                     <span className="nota-expand-item">
                       <IcoUser size={14} />
-                      {nota.tomadaPor ? (bloqueada ? 'En preparación' : 'Asignado') : 'Sin asignar'}
+                      {nota.estado === 'completa'
+                        ? (nota.completadaPor ?? nota.importadoPor ?? 'Sin asignar')
+                        : nota.tomadaPor
+                          ? (bloqueada ? 'En preparación' : 'Asignado')
+                          : 'Sin asignar'
+                      }
                     </span>
                   </div>
 

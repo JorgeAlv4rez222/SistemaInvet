@@ -37,6 +37,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(result.data)
   }
 
+  if (vista === 'equipo-bodega') {
+    const result = await dashboardService.obtenerEquipoBodega()
+    if (!result.ok) return res.status(500).json({ error: result.error })
+    return res.status(200).json(result.data)
+  }
+
   const [
     { count: totalProductos },
     { data: stocks },

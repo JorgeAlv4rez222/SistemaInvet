@@ -32,6 +32,11 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     return result.ok ? json(result.data) : json({ error: result.error }, 500)
   }
 
+  if (vista === 'equipo-bodega') {
+    const result = await dashboardService.obtenerEquipoBodega()
+    return result.ok ? json(result.data) : json({ error: result.error }, 500)
+  }
+
   const [
     { count: totalProductos },
     { data: stocks },

@@ -71,6 +71,7 @@ export type NotaResumen = {
   creadoEn:           string
   importadoPor:       string
   tomadaPor:          string | null
+  completadaPor:      string | null
 }
 
 export type DetalleNota = {
@@ -271,7 +272,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   // Eliminado el SELECT separado de notas_venta para reducir round-trips (M3).
   const estadoAnterior = 'preparacion'
 
-  await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null, fecha_preparacion: new Date().toISOString() }).eq('id', notaId)
+  await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null, fecha_preparacion: new Date().toISOString(), completada_por_id: usuarioId ?? null }).eq('id', notaId)
 
   // TC-NTA-006: EVT-008 cambio de estado automático — solo si hay un usuario a quien
   // atribuir el movimiento (p.ej. no cuando se autocorrige al simplemente leer la nota).
@@ -304,7 +305,7 @@ export const notasService = {
 
     let query = supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
+      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), completada_por:usuarios!notas_venta_completada_por_id_fkey(nombre)')
       .order('created_at', { ascending: false })
 
     if (estado) query = query.eq('estado', estado)
@@ -315,6 +316,7 @@ export const notasService = {
     type RawNota = NotaVenta & {
       nota_productos: { id: string; estado: string }[]
       usuarios: { nombre: string } | null
+      completada_por: { nombre: string } | null
     }
 
     const result: NotaResumen[] = (data as RawNota[] ?? []).map((n) => ({
@@ -327,6 +329,7 @@ export const notasService = {
       creadoEn:           n.created_at,
       importadoPor:       n.usuarios?.nombre ?? '',
       tomadaPor:          n.tomada_por ?? null,
+      completadaPor:      n.completada_por?.nombre ?? null,
     }))
 
     return { ok: true, data: result }

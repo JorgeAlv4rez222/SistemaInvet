@@ -30,6 +30,17 @@ export type KpisBi = {
   actividadReciente: ActividadItem[]
 }
 
+export type OperadorStats = {
+  usuarioId:       string
+  nombre:          string
+  pickingsHoy:     number
+  ritmoLph:        number
+  avancePct:       number
+  ultimaActividad: string | null
+  estado:          'activo' | 'en_nota' | 'inactivo'
+}
+export type EquipoBodega = { operadores: OperadorStats[] }
+
 export const dashboardApi = {
   despachosMensuales: (filtros: FiltrosDespachosMensuales) =>
     apiClient.get<DespachosMensuales>(`/dashboard?${buildQuery(filtros)}`),
@@ -38,4 +49,5 @@ export const dashboardApi = {
   kpisBi: () =>
     apiClient.get<KpisBi>('/dashboard?vista=kpis-bi'),
   clientes: () => apiClient.get<string[]>('/dashboard?vista=clientes'),
+  equipoBodega: () => apiClient.get<EquipoBodega>('/dashboard?vista=equipo-bodega'),
 }

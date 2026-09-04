@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../../shared/utils/apiClient'
 import { dashboardApi, type FiltrosDespachosMensuales } from '../services/dashboard.api'
-export type { DespachosSemana, DiaDespacho, KpisBi, TurnoStats, ActividadItem } from '../services/dashboard.api'
+export type { DespachosSemana, DiaDespacho, KpisBi, TurnoStats, ActividadItem, OperadorStats, EquipoBodega } from '../services/dashboard.api'
 
 export type DashboardKPIs = {
   totalProductos:   number
@@ -51,5 +51,14 @@ export function useClientesNotas() {
     queryKey:  ['dashboard', 'clientes'],
     queryFn:   dashboardApi.clientes,
     staleTime: 5 * 60_000,
+  })
+}
+
+export function useEquipoBodega() {
+  return useQuery({
+    queryKey:       ['dashboard', 'equipo-bodega'],
+    queryFn:        dashboardApi.equipoBodega,
+    staleTime:      0,
+    refetchInterval: 30_000,  // refresca cada 30s para ver cambios de estado
   })
 }
