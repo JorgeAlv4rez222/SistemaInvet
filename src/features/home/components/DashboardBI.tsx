@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDashboard, useDespachosMensuales } from '../hooks/useDashboard'
+import { useDashboard, useDespachosMensuales, useDespachosSemana } from '../hooks/useDashboard'
+import type { DiaDespacho } from '../hooks/useDashboard'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -23,14 +24,6 @@ const TURNO_DATA: Record<TurnoTab, { completadas: number; enProceso: number; pen
   mes:    { completadas: 214, enProceso: 9, pendientes: 32 },
 }
 
-// Despachos últimos 5 días (Lun–Vie) — mock
-const DESPACHOS_SEMANA = [
-  { dia: 'Lun', cant: 18 },
-  { dia: 'Mar', cant: 24 },
-  { dia: 'Mié', cant: 31 },
-  { dia: 'Jue', cant: 27 },
-  { dia: 'Vie', cant: 19 },
-]
 
 const ACTIVIDAD_MOCK = [
   { hora: '15:42', texto: '@jorge_alvarez completó auditoría NV-128762',          tipo: 'ok'    },
@@ -145,8 +138,8 @@ function KpiExec({
 
 // ── Gráfico barras diarias (SVG) ──────────────────────────────────────────
 
-function GraficoDiario() {
-  const data  = DESPACHOS_SEMANA
+function GraficoDiario({ data }: { data: DiaDespacho[] }) {
+  if (data.length === 0) return <div style={{ height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-muted)' }}>Cargando…</div>
   const maxV  = Math.max(1, ...data.map(d => d.cant))
   const W = 340; const H = 110; const PAD_B = 24; const PAD_L = 28
   const areaW = W - PAD_L; const areaH = H - PAD_B - 8
@@ -172,10 +165,10 @@ function GraficoDiario() {
         const y   = 8 + areaH - alt
         return (
           <g key={d.dia}>
-            <title>{d.dia}: {d.cant} despachos</title>
+            <title>{d.label}: {d.cant} despachos</title>
             <rect x={x} y={y} width={barW} height={alt} rx={3} fill="#0ea5e9"/>
             <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="rgba(148,163,184,0.7)">{d.cant}</text>
-            <text x={x + barW / 2} y={H - 8}  textAnchor="middle" fontSize={8} fill="rgba(148,163,184,0.6)">{d.dia}</text>
+            <text x={x + barW / 2} y={H - 8}  textAnchor="middle" fontSize={8} fill="rgba(148,163,184,0.6)">{d.label}</text>
           </g>
         )
       })}
@@ -217,6 +210,7 @@ export function DashboardBI() {
 
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
   useDespachosMensuales({})  // prefetch para posible uso futuro
+  const { data: semanaData } = useDespachosSemana()
 
   const mesActual    = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
   const periodoLabel = PERIODOS.find(p => p.key === periodo)?.label ?? ''
@@ -403,7 +397,7 @@ export function DashboardBI() {
                 Despachos de la Semana
               </h3>
             </div>
-            <GraficoDiario />
+            <GraficoDiario data={semanaData?.dias ?? []} />
           </div>
 
         </div>

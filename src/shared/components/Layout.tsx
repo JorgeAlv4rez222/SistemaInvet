@@ -53,7 +53,7 @@ const IcoReporte  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const NAV_ITEMS: NavItem[] = [
   // ── Solo Admin ───────────────────────────────────────────────────────────
   {
-    ruta: '/home', label: 'Dashboard BI', labelCorto: 'Dashboard', roles: ['admin'],
+    ruta: '/home', label: 'Dashboard BI', labelCorto: 'Dashboard', roles: ['admin', 'supervisor'],
     icono: IcoDashboard,
   },
   // ── Admin + Supervisor + Operador ────────────────────────────────────────

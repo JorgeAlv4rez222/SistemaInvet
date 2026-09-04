@@ -368,13 +368,6 @@ export function NotaDetallePage() {
               {item.cantidadDespachada}
             </span>
           </div>
-          <div className="nd-qty-sep" aria-hidden="true">·</div>
-          <div className="nd-qty-item">
-            <span className="nd-qty-label">Faltante</span>
-            <span className={`nd-qty-valor ${faltante > 0 ? 'nd-qty-valor--err' : 'nd-qty-valor--ok'}`}>
-              {faltante}
-            </span>
-          </div>
         </div>
 
         {/* ── Columna acciones ── */}
@@ -548,7 +541,7 @@ export function NotaDetallePage() {
         <div className="nd-progreso-info">
           <span className="nd-progreso-titulo">Progreso total</span>
           <span className="nd-progreso-fraccion">
-            {itemsCompletos}/{totalItems} ítems · {totalDespachado}/{totalSolicitado} uds
+            {itemsCompletos}/{totalItems} ítems
           </span>
           <span className={`nd-progreso-pct ${pctGlobal === 100 ? 'nd-progreso-pct--ok' : ''}`}>{pctGlobal}%</span>
         </div>
@@ -639,7 +632,7 @@ export function NotaDetallePage() {
         <div className="nd-pie-traza">
           <span>
             Nota {data.estado === 'despachada' ? 'despachada' : 'lista para despacho'} —
-            {' '}{itemsCompletos} de {totalItems} ítems completados ({totalDespachado}/{totalSolicitado} uds)
+            {' '}{itemsCompletos} de {totalItems} ítems completados
           </span>
         </div>
       )}

@@ -178,24 +178,6 @@ export function DashboardOperador() {
       {/* ── KPIs producción ───────────────────────────────────────────── */}
       <div className="tc-kpi-row">
 
-        <div className="tc-kpi-card tc-kpi-ok">
-          <div className="tc-kpi-ico"><IcoBox /></div>
-          <div className="tc-kpi-body">
-            <p className="tc-kpi-label">Ritmo de Picking (UPH)</p>
-            <p className="tc-kpi-valor">342 <span className="tc-kpi-unit">Uds/Hora</span></p>
-            <p className="tc-kpi-delta tc-delta-green">▲ +8% sobre la meta</p>
-          </div>
-        </div>
-
-        <div className="tc-kpi-card tc-kpi-info">
-          <div className="tc-kpi-ico"><IcoClock /></div>
-          <div className="tc-kpi-body">
-            <p className="tc-kpi-label">Tiempo Ciclo Promedio</p>
-            <p className="tc-kpi-valor">8.4 <span className="tc-kpi-unit">min/pedido</span></p>
-            <p className="tc-kpi-delta tc-delta-blue">🎯 Target: 10.0 min</p>
-          </div>
-        </div>
-
         <div className="tc-kpi-card tc-kpi-neutral">
           <div className="tc-kpi-ico"><IcoTruck /></div>
           <div className="tc-kpi-body">
@@ -221,18 +203,6 @@ export function DashboardOperador() {
 
         {/* ── Columna izquierda ──────────────────────────────────────── */}
         <div className="tc-col-left">
-
-          {/* Gráfico picking por hora */}
-          <div className="tc-panel">
-            <div className="tc-panel-header">
-              <div>
-                <h2 className="tc-panel-titulo"><IcoChart /> Ritmo de Preparación por Hora</h2>
-                <p className="tc-panel-sub">Pickings completados — turno actual hora a hora</p>
-              </div>
-              <span className="tc-badge-live">EN VIVO</span>
-            </div>
-            <GraficoPickingHora />
-          </div>
 
           {/* Flujo de trabajo */}
           <div className="tc-panel">

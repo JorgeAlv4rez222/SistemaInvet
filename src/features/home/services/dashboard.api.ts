@@ -17,8 +17,13 @@ function buildQuery(filtros: FiltrosDespachosMensuales): string {
   return params.toString()
 }
 
+export type DiaDespacho = { dia: string; label: string; cant: number }
+export type DespachosSemana = { dias: DiaDespacho[]; total: number }
+
 export const dashboardApi = {
   despachosMensuales: (filtros: FiltrosDespachosMensuales) =>
     apiClient.get<DespachosMensuales>(`/dashboard?${buildQuery(filtros)}`),
+  despachosSemana: () =>
+    apiClient.get<DespachosSemana>('/dashboard?vista=despachos-semana'),
   clientes: () => apiClient.get<string[]>('/dashboard?vista=clientes'),
 }

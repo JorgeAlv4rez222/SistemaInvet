@@ -158,8 +158,8 @@ export function HomePage() {
   const rol    = localStorage.getItem('user_rol') as UserRole | null
   const nombre = localStorage.getItem('user_nombre') ?? ''
 
-  // Admin: dashboard BI ejecutivo completo
-  if (rol === 'admin') {
+  // Admin + Supervisor: dashboard BI ejecutivo completo
+  if (rol === 'admin' || rol === 'supervisor') {
     return <DashboardBI />
   }
 

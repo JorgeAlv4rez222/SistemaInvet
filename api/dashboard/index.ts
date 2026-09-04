@@ -19,6 +19,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(result.data)
   }
 
+  if (vista === 'despachos-semana') {
+    const result = await dashboardService.obtenerDespachosSemana()
+    if (!result.ok) return res.status(500).json({ error: result.error })
+    return res.status(200).json(result.data)
+  }
+
   if (vista === 'clientes') {
     const result = await dashboardService.obtenerClientes()
     if (!result.ok) return res.status(500).json({ error: result.error })

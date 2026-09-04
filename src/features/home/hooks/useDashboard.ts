@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../../shared/utils/apiClient'
 import { dashboardApi, type FiltrosDespachosMensuales } from '../services/dashboard.api'
+export type { DespachosSemana, DiaDespacho } from '../services/dashboard.api'
 
 export type DashboardKPIs = {
   totalProductos:   number
@@ -26,6 +27,14 @@ export function useDespachosMensuales(filtros: FiltrosDespachosMensuales) {
     queryKey:  ['dashboard', 'despachos-mensuales', filtros],
     queryFn:   () => dashboardApi.despachosMensuales(filtros),
     staleTime: 60_000,
+  })
+}
+
+export function useDespachosSemana() {
+  return useQuery({
+    queryKey:  ['dashboard', 'despachos-semana'],
+    queryFn:   dashboardApi.despachosSemana,
+    staleTime: 5 * 60_000,
   })
 }
 
