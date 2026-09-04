@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import type { UserRole } from '../../../shared/types/base'
 import { useDashboard } from '../hooks/useDashboard'
 import { GraficoDespachosMensuales } from '../components/GraficoDespachosMensuales'
+import { DashboardBI } from '../components/DashboardBI'
+import { DashboardOperador } from '../components/DashboardOperador'
 
 // ── Íconos nav ────────────────────────────────────────────────────────────
 
@@ -26,8 +28,8 @@ const ICONOS: Record<string, React.ReactElement> = {
   ),
   notas: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" />
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
     </svg>
   ),
   salidas: (
@@ -64,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   { ruta: '/salidas',                 key: 'salidas',     label: 'NV despacho',    desc: 'Revisión antes de despacho',     roles: ['admin', 'supervisor'] },
   { ruta: '/traslados',               key: 'traslados',   label: 'Traslado',       desc: 'Re-ubicar e intercambiar' },
   { ruta: '/historial',               key: 'historial',   label: 'Historial',      desc: 'Auditoría de movimientos',       roles: ['admin', 'supervisor'] },
-  { ruta: '/picking-masivo', rutaOperador: '/picking-masivo/operador', key: 'picking', label: 'Picking Masivo', desc: 'Sesiones de picking Sodimac' },
+  { ruta: '/picking-masivo', rutaOperador: '/picking-masivo/operador', key: 'picking', label: 'Picking Masivo', desc: 'OC masivas' },
 ]
 
 // ── KPI card ──────────────────────────────────────────────────────────────
@@ -149,10 +151,17 @@ function IcoRack() {
 
 // ── Página ─────────────────────────────────────────────────────────────────
 
+// ── Dashboard por rol ─────────────────────────────────────────────────────
+
 export function HomePage() {
   const navigate = useNavigate()
   const rol    = localStorage.getItem('user_rol') as UserRole | null
   const nombre = localStorage.getItem('user_nombre') ?? ''
+
+  // Admin: dashboard BI ejecutivo completo
+  if (rol === 'admin') {
+    return <DashboardBI />
+  }
 
   const items = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
@@ -160,6 +169,54 @@ export function HomePage() {
 
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
 
+  // Supervisor: KPIs operacionales + gráfico despachos
+  if (rol === 'supervisor') {
+    return (
+      <div className="home-page">
+        <h1 className="home-titulo">
+          Hola{nombre && <span className="home-titulo-nombre">, {nombre}</span>} 👋
+        </h1>
+        <div className="kpi-grid">
+          <KpiCard
+            label="NV por revisar"
+            value={kpisLoading ? '—' : kpis?.notasDespacho ?? 0}
+            color={kpis?.notasDespacho ? 'amber' : 'slate'}
+            icon={<IcoTruck />}
+          />
+          <KpiCard
+            label="NV en preparación"
+            value={kpisLoading ? '—' : kpis?.notasPendientes ?? 0}
+            color={kpis?.notasPendientes ? 'amber' : 'slate'}
+            icon={<IcoBox />}
+          />
+          <KpiCard
+            label="Imp. en tránsito"
+            value={kpisLoading ? '—' : kpis?.ocPendientes ?? 0}
+            color={kpis?.ocPendientes ? 'red' : 'slate'}
+            icon={<IcoStack />}
+          />
+        </div>
+        <GraficoDespachosMensuales />
+        <p className="home-seccion-label">Módulos</p>
+        <div className="home-grid">
+          {items.map((item) => (
+            <button key={item.ruta} className="home-card" onClick={() => navigate(item.ruta)}>
+              <span className="home-icono">{ICONOS[item.key]}</span>
+              <span className="home-label">{item.label}</span>
+              <span className="home-desc">{item.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Operador: Torre de Control — Dashboard de producción
+  if (rol === 'operador') {
+    return <DashboardOperador />
+  }
+
+  // Fallback (rol desconocido): vista simple con todos los ítems
   return (
     <div className="home-page">
       <h1 className="home-titulo">
@@ -172,7 +229,7 @@ export function HomePage() {
           label="NV en preparación"
           value={kpisLoading ? '—' : kpis?.notasPendientes ?? 0}
           color={kpis?.notasPendientes ? 'amber' : 'slate'}
-          icon={<IcoClipboard />}
+          icon={<IcoBox />}
         />
         <KpiCard
           label="Imp. en transito"
@@ -183,7 +240,7 @@ export function HomePage() {
         <KpiCard
           label="NV por revisar"
           value={kpisLoading ? '—' : kpis?.notasDespacho ?? 0}
-          color={kpis?.notasDespacho ? 'purple' : 'slate'}
+          color={kpis?.notasDespacho ? 'amber' : 'slate'}
           icon={<IcoTruck />}
         />
       </div>

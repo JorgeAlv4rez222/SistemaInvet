@@ -81,6 +81,8 @@ export type DetalleNota = {
   numeroOc:            string | null
   comentarioDespacho:  string | null
   estado:              string
+  fechaPreparacion:    string | null
+  fechaDespacho:       string | null
   productos:           NotaProductoResumen[]
 }
 
@@ -269,7 +271,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   // Eliminado el SELECT separado de notas_venta para reducir round-trips (M3).
   const estadoAnterior = 'preparacion'
 
-  await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null }).eq('id', notaId)
+  await supabase.from('notas_venta').update({ estado: 'completa', tomada_por: null, tomada_en: null, fecha_preparacion: new Date().toISOString() }).eq('id', notaId)
 
   // TC-NTA-006: EVT-008 cambio de estado automático — solo si hay un usuario a quien
   // atribuir el movimiento (p.ej. no cuando se autocorrige al simplemente leer la nota).
@@ -394,6 +396,8 @@ export const notasService = {
         numeroOc:           data.numero_oc,
         comentarioDespacho: data.comentario_despacho ?? null,
         estado:             estadoNota,
+        fechaPreparacion:   (data as any).fecha_preparacion ?? null,
+        fechaDespacho:      (data as any).fecha_despacho ?? null,
         productos:          productosEnriquecidos,
       },
     }
@@ -886,7 +890,7 @@ export const notasService = {
       return { ok: false, error: { code: 'DB_ERROR', message: errorDespacho?.message ?? 'Error al crear despacho' } }
     }
 
-    await supabase.from('notas_venta').update({ estado: 'despachada' }).eq('id', input.notaId)
+    await supabase.from('notas_venta').update({ estado: 'despachada', nombre_chofer: input.nombreChofer, fecha_despacho: fechaDespacho }).eq('id', input.notaId)
 
     type NPEstado = { estado: string; comentario_operador: string | null }
     const nps = nota.nota_productos as NPEstado[]

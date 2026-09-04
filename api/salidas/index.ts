@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     const result = await salidasService.obtenerNotasParaRevision()
     if (!result.ok) return res.status(500).json({ error: result.error })
-    const mapped = result.data.map((n) => ({
+    const mapped = result.data.map((n: any) => ({
       notaId:             n.id,
       numeroNota:         n.numero_nota,
       nombreCliente:      n.nombre_cliente,
@@ -24,6 +24,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       totalProductos:     n.totalProductos,
       productosCompletos: n.totalRevisados,
       creadoEn:           n.created_at,
+      actualizadoEn:      n.updated_at,
+      nombreChofer:       n.nombre_chofer ?? null,
+      comentarioDespacho: n.comentario_despacho ?? null,
     }))
     return res.status(200).json(mapped)
   }

@@ -92,7 +92,7 @@ export function MapaGeneral({
             textAnchor="middle"
             className="mapa-svg-titulo"
           >
-            Plano General de racks - Grantt
+            Plano General Bodega
           </text>
 
           {Object.entries(FRANJAS_PASILLO).map(([codigoPasillo, franja]) => (

@@ -127,7 +127,7 @@ export function GraficoDespachosMensuales() {
         <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
           <IconFiltro /> Filtros
         </div>
-        <div className="grid grid-cols-1 tablet:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 tablet:grid-cols-2 gap-2">
           <div>
             <input
               type="text"
@@ -144,13 +144,6 @@ export function GraficoDespachosMensuales() {
 
           <ProductoAutocomplete seleccionado={productoSel} onSeleccionar={setProductoSel} />
 
-          <input
-            type="text"
-            placeholder="Nº de NV"
-            value={numeroNotaInput}
-            onChange={(e) => setNumeroNotaInput(e.target.value)}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-base)] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-          />
         </div>
         <div className="flex gap-2">
           <button

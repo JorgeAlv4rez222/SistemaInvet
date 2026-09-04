@@ -53,12 +53,12 @@ function UbicacionesModal({ p, onCerrar }: { p: ProductoConUbicacion; onCerrar: 
       <div className="excel-modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <div className="excel-header">
           <div className="excel-header-titulo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
-              <rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/>
-            </svg>
             <div>
-              <h2 style={{ fontSize: '1rem', margin: 0 }}>{p.nombre}</h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>SKU: {p.sku} · Stock total: {p.stock_total ?? 0}</p>
+              <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 700, color: '#4ade80', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '4px', padding: '2px 8px', display: 'inline-block', marginBottom: '0.3rem' }}>{p.sku}</span>
+              <h2 style={{ fontSize: '0.95rem', margin: '0 0 0.15rem 0', color: 'var(--text-primary)' }}>{p.nombre}</h2>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                Stock total: <strong style={{ color: (p.stock_total ?? 0) === 0 ? 'var(--danger)' : 'var(--success)' }}>{p.stock_total ?? 0}</strong>
+              </p>
             </div>
           </div>
           <button className="excel-btn-cerrar" onClick={onCerrar}>
@@ -105,11 +105,17 @@ function ProductoCard({ p, onClick }: { p: ProductoConUbicacion; onClick: () => 
   return (
     <button className="producto-card" style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }} onClick={onClick}>
       <div className="producto-card-header">
-        <span className="producto-card-nombre">{p.nombre}</span>
-        <BadgeUbicacion tipo={p.ubicacion.tipo} label={p.ubicacion.label} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 700, color: '#4ade80', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap', flexShrink: 0 }}>{p.sku}</span>
+          <span className="producto-card-nombre">{p.nombre}</span>
+        </div>
+        {p.ubicacion.tipo !== 'sin_stock' && (
+          <span className="producto-card-badge-ubicacion">
+            <BadgeUbicacion tipo={p.ubicacion.tipo} label={p.ubicacion.label} />
+          </span>
+        )}
       </div>
       <div className="producto-card-meta">
-        <span className="producto-card-sku">SKU: {p.sku}</span>
         {p.codigo_barra && (
           <span className="producto-card-cb">CB: {p.codigo_barra}</span>
         )}
@@ -176,6 +182,7 @@ export function ProductosPage() {
 
       {productos.length > 0 && (
         <div className="productos-lista">
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0 0 0.5rem 0' }} />
           <p className="productos-conteo">{productos.length} resultado{productos.length !== 1 ? 's' : ''}</p>
           {productos.map((p) => (
             <ProductoCard key={p.id} p={p} onClick={() => setProductoSeleccionado(p)} />
