@@ -169,48 +169,6 @@ export function HomePage() {
 
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
 
-  // Supervisor: KPIs operacionales + gráfico despachos
-  if (rol === 'supervisor') {
-    return (
-      <div className="home-page">
-        <h1 className="home-titulo">
-          Hola{nombre && <span className="home-titulo-nombre">, {nombre}</span>} 👋
-        </h1>
-        <div className="kpi-grid">
-          <KpiCard
-            label="NV por revisar"
-            value={kpisLoading ? '—' : kpis?.notasDespacho ?? 0}
-            color={kpis?.notasDespacho ? 'amber' : 'slate'}
-            icon={<IcoTruck />}
-          />
-          <KpiCard
-            label="NV en preparación"
-            value={kpisLoading ? '—' : kpis?.notasPendientes ?? 0}
-            color={kpis?.notasPendientes ? 'amber' : 'slate'}
-            icon={<IcoBox />}
-          />
-          <KpiCard
-            label="Imp. en tránsito"
-            value={kpisLoading ? '—' : kpis?.ocPendientes ?? 0}
-            color={kpis?.ocPendientes ? 'red' : 'slate'}
-            icon={<IcoStack />}
-          />
-        </div>
-        <GraficoDespachosMensuales />
-        <p className="home-seccion-label">Módulos</p>
-        <div className="home-grid">
-          {items.map((item) => (
-            <button key={item.ruta} className="home-card" onClick={() => navigate(item.ruta)}>
-              <span className="home-icono">{ICONOS[item.key]}</span>
-              <span className="home-label">{item.label}</span>
-              <span className="home-desc">{item.desc}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   // Operador: Torre de Control — Dashboard de producción
   if (rol === 'operador') {
     return <DashboardOperador />
