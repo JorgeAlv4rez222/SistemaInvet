@@ -306,46 +306,55 @@ export const notasService = {
     type RawNota = NotaVenta & {
       nota_productos: { id: string; estado: string }[]
       usuarios: { nombre: string } | null
-      completada_por?: { nombre: string } | null
     }
 
-    const buildResult = (data: RawNota[]): NotaResumen[] =>
-      data.map((n) => ({
-        notaId:             n.id,
-        numeroNota:         n.numero_nota,
-        nombreCliente:      n.nombre_cliente,
-        estado:             n.estado,
-        totalProductos:     n.nota_productos.length,
-        productosCompletos: n.nota_productos.filter((p) => ['completo', 'sin_stock'].includes(p.estado)).length,
-        creadoEn:           n.created_at,
-        importadoPor:       n.usuarios?.nombre ?? '',
-        tomadaPor:          n.tomada_por ?? null,
-        completadaPor:      n.completada_por?.nombre ?? null,
-      }))
-
-    // Intentar con join completada_por (requiere migración 20260904_completada_por)
     let q = supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), completada_por:usuarios!notas_venta_completada_por_id_fkey(nombre)')
+      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
       .order('created_at', { ascending: false })
     if (estado) q = q.eq('estado', estado)
+
     const { data, error } = await q
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
 
-    if (!error) return { ok: true, data: buildResult(data as RawNota[]) }
+    const notas = (data as RawNota[] ?? [])
 
-    // Fallback: sin join completada_por (migración aún no ejecutada)
-    if (error.message.includes('completada_por') || error.code === '42703') {
-      let qFallback = supabase
-        .from('notas_venta')
-        .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
-        .order('created_at', { ascending: false })
-      if (estado) qFallback = qFallback.eq('estado', estado)
-      const { data: d2, error: e2 } = await qFallback
-      if (e2) return { ok: false, error: { code: 'DB_ERROR', message: e2.message } }
-      return { ok: true, data: buildResult(d2 as RawNota[]) }
+    // Para notas completas: buscar en movimientos quién hizo el cambio a 'completa'
+    // Funciona para notas históricas (antes de la col completada_por_id) y futuras.
+    const completaIds = notas.filter(n => n.estado === 'completa').map(n => n.id)
+    const completadoresPorNota = new Map<string, string>()
+
+    if (completaIds.length > 0) {
+      const { data: movs } = await supabase
+        .from('movimientos')
+        .select('nota_venta_id, fecha, usuarios(nombre)')
+        .eq('tipo', 'cambio_estado_nota')
+        .contains('detalle', { estadoNuevo: 'completa' })
+        .in('nota_venta_id', completaIds)
+        .order('fecha', { ascending: false })
+
+      // Para cada nota tomar el movimiento más reciente (ya vienen desc por fecha)
+      for (const m of ((movs ?? []) as { nota_venta_id: string; usuarios: { nombre: string } | null }[])) {
+        if (!completadoresPorNota.has(m.nota_venta_id) && m.usuarios?.nombre) {
+          completadoresPorNota.set(m.nota_venta_id, m.usuarios.nombre)
+        }
+      }
     }
 
-    return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    const result: NotaResumen[] = notas.map((n) => ({
+      notaId:             n.id,
+      numeroNota:         n.numero_nota,
+      nombreCliente:      n.nombre_cliente,
+      estado:             n.estado,
+      totalProductos:     n.nota_productos.length,
+      productosCompletos: n.nota_productos.filter((p) => ['completo', 'sin_stock'].includes(p.estado)).length,
+      creadoEn:           n.created_at,
+      importadoPor:       n.usuarios?.nombre ?? '',
+      tomadaPor:          n.tomada_por ?? null,
+      completadaPor:      completadoresPorNota.get(n.id) ?? null,
+    }))
+
+    return { ok: true, data: result }
   },
 
   async obtenerDetalleNota(notaId: string, usuarioId?: string): Promise<ServiceResult<DetalleNota>> {
