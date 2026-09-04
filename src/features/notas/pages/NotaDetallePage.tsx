@@ -296,9 +296,9 @@ export function NotaDetallePage() {
     const terminado      = esTerminado(item)
     const parcialCerrado = terminado && item.estado === 'parcial'
     const puedePickear   = !terminado && !offline && !notaCerrada
-    const faltante       = Math.max(0, item.cantidadSolicitada - item.cantidadDespachada)
     const ubicPrincipal  = item.ubicaciones[0] ?? null
     const abierto        = expandidos.has(item.notaProductoId)
+    const nombreCorto    = item.nombre.length > 10 ? item.nombre.slice(0, 10) + '…' : item.nombre
 
     return (
       <div
@@ -339,17 +339,24 @@ export function NotaDetallePage() {
         </div>
 
         {/* ── Columna producto ── */}
-        <div className="nd-prod-info">
-          <span className="nd-prod-nombre">{item.nombre}</span>
-          <div className="nd-prod-codes">
-            <code className="nd-prod-sku">{item.sku}</code>
-            {item.codigoBarra && (
-              <code className="nd-prod-ean">{item.codigoBarra}</code>
-            )}
-            {item.skuEquivalente && (
-              <span className="nd-prod-equiv">↔ {item.skuEquivalente}</span>
-            )}
+        <div
+          className="nd-prod-info"
+          onClick={() => toggleExpandido(item.notaProductoId)}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="nd-prod-nombre-row">
+            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
+            <code className="nd-prod-sku-inline">{item.sku}</code>
           </div>
+          {item.codigoBarra && (
+            <code className="nd-prod-ean">{item.codigoBarra}</code>
+          )}
+          {abierto && (
+            <span className="nd-prod-nombre-completo">{item.nombre}</span>
+          )}
+          {item.skuEquivalente && (
+            <span className="nd-prod-equiv">↔ {item.skuEquivalente}</span>
+          )}
           {item.comentarioOperador && (
             <span className="nd-prod-comentario">{item.comentarioOperador}</span>
           )}
@@ -361,13 +368,17 @@ export function NotaDetallePage() {
             <span className="nd-qty-label">Solicitado</span>
             <span className="nd-qty-valor">{item.cantidadSolicitada}</span>
           </div>
-          <div className="nd-qty-sep" aria-hidden="true">·</div>
-          <div className="nd-qty-item">
-            <span className="nd-qty-label">Pickeado</span>
-            <span className={`nd-qty-valor ${item.cantidadDespachada > 0 ? 'nd-qty-valor--ok' : ''}`}>
-              {item.cantidadDespachada}
-            </span>
-          </div>
+          {terminado && (
+            <>
+              <div className="nd-qty-sep" aria-hidden="true">·</div>
+              <div className="nd-qty-item">
+                <span className="nd-qty-label">Pickeado</span>
+                <span className={`nd-qty-valor ${item.cantidadDespachada > 0 ? 'nd-qty-valor--ok' : ''}`}>
+                  {item.cantidadDespachada}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Columna acciones ── */}

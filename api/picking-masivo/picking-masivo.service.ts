@@ -435,6 +435,22 @@ export const pickingMasivoService = {
       }
     }
 
+    // Resolver nombres de operadores (bloqueado_por / completado_por)
+    const operadorIds = [...new Set(
+      (items ?? [])
+        .flatMap((i: any) => i.subtareas_picking_masivo ?? [])
+        .flatMap((s: any) => [s.bloqueado_por, s.completado_por].filter(Boolean))
+    )] as string[]
+
+    let operadoresMap: Record<string, string> = {}
+    if (operadorIds.length > 0) {
+      const { data: ops } = await supabase
+        .from('usuarios')
+        .select('id, nombre')
+        .in('id', operadorIds)
+      for (const u of ops ?? []) operadoresMap[u.id] = u.nombre
+    }
+
     const itemsConEquivalentes = (items ?? []).map((item: any) => ({
       ...item,
       subtareas_picking_masivo: (item.subtareas_picking_masivo ?? []).map((s: any) => ({
@@ -442,6 +458,8 @@ export const pickingMasivoService = {
         producto_equivalente: s.es_equivalente && s.producto_real_id
           ? (productosEquivalentesMap[s.producto_real_id] ?? null)
           : null,
+        bloqueado_por_nombre:  s.bloqueado_por  ? (operadoresMap[s.bloqueado_por]  ?? null) : null,
+        completado_por_nombre: s.completado_por ? (operadoresMap[s.completado_por] ?? null) : null,
       })),
     }))
 

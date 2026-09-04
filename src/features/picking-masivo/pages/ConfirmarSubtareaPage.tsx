@@ -1,48 +1,111 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useColaSubtareas, useConfirmarSubtarea, useEditarParcial } from '../hooks/usePickingMasivo'
+import { useColaSubtareas, useConfirmarSubtarea, useEditarParcial, useTomarSubtarea } from '../hooks/usePickingMasivo'
 import { productosApi } from '../../productos/services/productos.api'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import type { ProductoConUbicacion } from '../../productos/services/productos.api'
 
+// ── Íconos ────────────────────────────────────────────────────────────────────
+
+function IcoBack() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><polyline points="15 18 9 12 15 6"/></svg>
+}
+function IcoPin() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+}
+function IcoBox() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+}
+function IcoCheck() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}><polyline points="20 6 9 17 4 12"/></svg>
+}
+function IcoWarn() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+}
+function IcoTool() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+}
+function IcoScan() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
+}
+
+// ── Pantalla post-confirmación LPN ────────────────────────────────────────────
+
+function LpnConfirmadoScreen({ lpn, onNext }: { lpn: string; onNext: () => void }) {
+  return (
+    <div className="cf-lpn-wrap">
+      <div className="cf-lpn-check"><IcoCheck /></div>
+      <p className="cf-lpn-titulo">Producto confirmado</p>
+      <p className="cf-lpn-label">Etiqueta el bulto con este LPN:</p>
+      <div className="cf-lpn-codigo">{lpn}</div>
+      <button className="cf-btn cf-btn--primary cf-btn--xl" onClick={onNext}>
+        Siguiente producto →
+      </button>
+    </div>
+  )
+}
+
+// ── Página principal ───────────────────────────────────────────────────────────
+
 export function ConfirmarSubtareaPage() {
   const { id: sesionId, subtareaId } = useParams<{ id: string; subtareaId: string }>()
-  const navigate    = useNavigate()
-  const operadorId  = localStorage.getItem('user_id') ?? ''
+  const navigate   = useNavigate()
+  const operadorId = localStorage.getItem('user_id') ?? ''
+  const rol        = localStorage.getItem('user_rol') ?? ''
 
-  const { data, isLoading } = useColaSubtareas(sesionId ?? null)
-  const confirmarSubtarea   = useConfirmarSubtarea(sesionId ?? '')
-  const editarParcial       = useEditarParcial(sesionId ?? '')
+  const { data, isLoading }  = useColaSubtareas(sesionId ?? null)
+  const confirmarSubtarea    = useConfirmarSubtarea(sesionId ?? '')
+  const editarParcial        = useEditarParcial(sesionId ?? '')
+  const tomarSubtarea        = useTomarSubtarea(sesionId ?? '')
 
-  // La cola incluye libre+bloqueado; para editar parciales los buscamos en sesion detail
-  // La cola ya los incluye si volvemos a la misma subtarea en estado parcial tras reingreso.
-  // Buscamos en la cola completa (incluye bloqueado del mismo operador)
-  const subtarea = (data ?? []).find((s) => s.id === subtareaId)
-  const esParcialEditable = subtarea?.estado === 'parcial' || subtarea?.estado === 'sin_stock'
+  const [autoTomando, setAutoTomando]       = useState(false)
+  const [autoTomadoError, setAutoTomadoError] = useState<string | null>(null)
 
-  const item = subtarea?.items_picking_masivo
-  const codigoBarra = item?.codigo_barra?.trim() || null
-  const lpn         = item?.lpn ?? null
+  const subtarea           = (data ?? []).find(s => s.id === subtareaId)
+  const esParcialEditable  = subtarea?.estado === 'parcial' || subtarea?.estado === 'sin_stock'
 
-  const [lpnConfirmado, setLpnConfirmado]       = useState<string | null>(null)
+  // Auto-tomar si la subtarea existe pero no está bloqueada por este operador
+  useEffect(() => {
+    if (!subtarea || !subtareaId) return
+    if (subtarea.estado === 'completado') return
+    const esMia = subtarea.estado === 'bloqueado' && subtarea.bloqueado_por === operadorId
+    if (esMia) return
+    if (subtarea.estado === 'bloqueado') {
+      setAutoTomadoError('Esta subtarea está siendo procesada por otro operador.')
+      return
+    }
+    // estado 'libre' o 'parcial'/'sin_stock' sin bloqueo → auto-tomar
+    setAutoTomando(true)
+    setAutoTomadoError(null)
+    tomarSubtarea.mutateAsync({ subtareaId, usuarioId: operadorId })
+      .then(() => setAutoTomando(false))
+      .catch(() => {
+        setAutoTomando(false)
+        setAutoTomadoError('No se pudo tomar la subtarea. Vuelve a la cola e inténtalo de nuevo.')
+      })
+  }, [subtarea?.id, subtarea?.estado, subtarea?.bloqueado_por])
+  const item               = subtarea?.items_picking_masivo
+  const codigoBarra        = item?.codigo_barra?.trim() || null
+  const lpn                = item?.lpn ?? null
 
-  const [barcode, setBarcode]                   = useState('')
-  const [barcodeOk, setBarcodeOk]               = useState(false)
-  const [sinStockMode, setSinStockMode]         = useState(false)
-  const [cantidad, setCantidad]                 = useState('')
-  const [motivo, setMotivo]                     = useState('')
+  const [lpnConfirmado, setLpnConfirmado]         = useState<string | null>(null)
+  const [barcode, setBarcode]                     = useState('')
+  const [barcodeOk, setBarcodeOk]                 = useState(false)
+  const [sinStockMode, setSinStockMode]           = useState(false)
+  const [cantidad, setCantidad]                   = useState('')
+  const [motivo, setMotivo]                       = useState('')
   const [equivalenteActivo, setEquivalenteActivo] = useState(false)
-  const [busquedaEq, setBusquedaEq]             = useState('')
-  const [opcionesEq, setOpcionesEq]             = useState<ProductoConUbicacion[]>([])
-  const [equivalenteSel, setEquivalenteSel]     = useState<ProductoConUbicacion | null>(null)
-  const [buscandoEq, setBuscandoEq]             = useState(false)
-  const [error, setError]                       = useState<string | null>(null)
+  const [busquedaEq, setBusquedaEq]               = useState('')
+  const [opcionesEq, setOpcionesEq]               = useState<ProductoConUbicacion[]>([])
+  const [equivalenteSel, setEquivalenteSel]       = useState<ProductoConUbicacion | null>(null)
+  const [buscandoEq, setBuscandoEq]               = useState(false)
+  const [error, setError]                         = useState<string | null>(null)
+  const [validandoBarcode, setValidandoBarcode]   = useState(false)
 
   const barcodeRef = useRef<HTMLInputElement>(null)
 
-  // Pre-cargar cantidad y motivo si es parcial editable
   useEffect(() => {
     if (!subtarea) return
     if (esParcialEditable) {
@@ -51,7 +114,6 @@ export function ConfirmarSubtareaPage() {
     } else {
       setCantidad(String(subtarea.cantidad_asignada))
     }
-    // Solo omitir escaneo si el producto tiene item cargado y no tiene código de barras
     if (item && !item.codigo_barra) {
       setBarcodeOk(true)
     } else {
@@ -66,23 +128,19 @@ export function ConfirmarSubtareaPage() {
     let vigente = true
     setBuscandoEq(true)
     productosApi.buscar(busquedaEq.trim())
-      .then((res) => { if (vigente) setOpcionesEq(res) })
+      .then(res => { if (vigente) setOpcionesEq(res) })
       .catch(() => { if (vigente) setOpcionesEq([]) })
       .finally(() => { if (vigente) setBuscandoEq(false) })
     return () => { vigente = false }
   }, [busquedaEq, equivalenteActivo])
 
-  const [validandoBarcode, setValidandoBarcode] = useState(false)
-
   async function handleValidarBarcode(val: string) {
     if (!val.trim()) return
-    // Sin item cargado o sin código de barras: cualquier scan confirma
     if (!item || !item.codigo_barra) { setBarcodeOk(true); setError(null); return }
-    // Normalizar ceros iniciales: el Excel puede perder el cero del EAN13 al tratarlo como número
     const normalizar = (s: string) => s.replace(/^0+/, '')
     const ok = normalizar(val.trim()) === normalizar(item.codigo_barra)
     if (ok) { setBarcodeOk(true); setError(null) }
-    else setError('Código de barras incorrecto. Escanea el producto correcto.')
+    else setError('Código incorrecto. Escanea el producto correcto.')
   }
 
   function handleBarcodeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -96,55 +154,15 @@ export function ConfirmarSubtareaPage() {
     if (e.key === 'Enter') handleValidarBarcode(barcode)
   }
 
-  // Pantalla post-confirmación: mostrar LPN — va ANTES del check de subtarea
-  // porque al confirmar, la cola refresca y subtarea pasa a undefined antes de renderizar esto
-  if (lpnConfirmado) {
-    return (
-      <div className="notas-page pm-lpn-confirmado-page">
-        <div className="pm-lpn-confirmado-wrap">
-          <div className="pm-lpn-confirmado-check">✓</div>
-          <p className="pm-lpn-confirmado-titulo">Producto confirmado</p>
-          <p className="pm-lpn-confirmado-label">Etiqueta el bulto con este LPN:</p>
-          <div className="pm-lpn-confirmado-codigo">{lpnConfirmado}</div>
-          <button
-            className="btn-primario pm-lpn-confirmado-btn"
-            onClick={() => navigate(`/picking-masivo/operador/${sesionId}`)}
-          >
-            Siguiente producto
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (isLoading) return <div className="notas-page"><p className="cargando">Cargando…</p></div>
-  if (!subtarea)  return <div className="notas-page"><p className="error">Subtarea no encontrada o ya procesada</p></div>
-
-  const cantAsignada   = subtarea.cantidad_asignada
-  const cantNum        = parseInt(cantidad, 10) || 0
-  const requiereMotivo = cantNum < cantAsignada
-
   async function confirmar(cantidadFinal: number, motivoFinal: string | undefined) {
     if (!sesionId) return
     setError(null)
     try {
       if (esParcialEditable) {
-        await editarParcial.mutateAsync({
-          subtareaId: subtarea!.id,
-          usuarioId:  operadorId,
-          cantidadDespachada: cantidadFinal,
-          motivo:     motivoFinal,
-        })
+        await editarParcial.mutateAsync({ subtareaId: subtarea!.id, usuarioId: operadorId, cantidadDespachada: cantidadFinal, motivo: motivoFinal })
       } else {
-        await confirmarSubtarea.mutateAsync({
-          subtareaId:         subtarea!.id,
-          usuarioId:          operadorId,
-          cantidadDespachada: cantidadFinal,
-          motivo:             motivoFinal,
-          productoRealId:     equivalenteSel?.id,
-        })
+        await confirmarSubtarea.mutateAsync({ subtareaId: subtarea!.id, usuarioId: operadorId, cantidadDespachada: cantidadFinal, motivo: motivoFinal, productoRealId: equivalenteSel?.id })
       }
-      // Si el ítem tiene LPN, mostrar pantalla de confirmación con LPN antes de volver
       if (lpn && cantidadFinal > 0) {
         setLpnConfirmado(lpn)
       } else {
@@ -156,9 +174,9 @@ export function ConfirmarSubtareaPage() {
   }
 
   function handleConfirmarDespacho() {
-    if (!barcodeOk) { setError('Escanea el producto primero'); return }
-    if (cantNum <= 0)              { setError('Ingresa una cantidad válida'); return }
-    if (cantNum > cantAsignada)    { setError(`No puedes despachar más de lo asignado (${cantAsignada})`); return }
+    if (!barcodeOk)                              { setError('Escanea el producto primero'); return }
+    if (cantNum <= 0)                            { setError('Ingresa una cantidad válida'); return }
+    if (cantNum > cantAsignada)                  { setError(`No puedes despachar más de lo asignado (${cantAsignada})`); return }
     if (cantNum < cantAsignada && !motivo.trim()) { setError('El motivo es obligatorio para despacho parcial'); return }
     confirmar(cantNum, cantNum < cantAsignada ? motivo.trim() : undefined)
   }
@@ -168,198 +186,280 @@ export function ConfirmarSubtareaPage() {
     confirmar(0, motivo.trim())
   }
 
-  const isPending = confirmarSubtarea.isPending || editarParcial.isPending
+  // ── Early returns ──
+  if (autoTomando) return (
+    <div className="cf-page">
+      <p className="cargando">Tomando subtarea…</p>
+    </div>
+  )
+  if (autoTomadoError) return (
+    <div className="cf-page">
+      <div className="cf-error-banner" style={{ margin: '2rem auto', maxWidth: 480 }}>
+        <IcoWarn /> {autoTomadoError}
+      </div>
+      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <button className="cf-volver-btn" onClick={() => navigate(`/picking-masivo/operador/${sesionId}`)}>
+          <IcoBack /> Volver a la Cola
+        </button>
+      </div>
+    </div>
+  )
+  if (lpnConfirmado) {
+    return (
+      <div className="cf-page">
+        <LpnConfirmadoScreen lpn={lpnConfirmado} onNext={() => navigate(`/picking-masivo/operador/${sesionId}`)} />
+      </div>
+    )
+  }
+  if (isLoading) return <div className="cf-page"><p className="cargando">Cargando…</p></div>
+  if (!subtarea)  return <div className="cf-page"><p className="error-msg">Subtarea no encontrada o ya procesada</p></div>
+
+  const cantAsignada = subtarea.cantidad_asignada
+  const cantNum      = parseInt(cantidad, 10) || 0
+  const requiereMotivo = cantNum < cantAsignada
+  const isPending    = confirmarSubtarea.isPending || editarParcial.isPending
+
+  const oc      = subtarea.items_picking_masivo?.lpn ?? ''
+  const desc    = equivalenteSel
+    ? `${equivalenteSel.sku}${equivalenteSel.nombre && equivalenteSel.nombre !== equivalenteSel.sku ? ` — ${equivalenteSel.nombre}` : ''}`
+    : `${item?.descripcion ?? item?.codigo ?? ''}`
+  const sku     = equivalenteSel ? equivalenteSel.sku : (item?.codigo ?? '')
+  const ean     = codigoBarra
 
   return (
-    <div className="notas-page pm-confirmar-page">
-      <button className="btn-volver" style={{ marginBottom: 'var(--spacing-sm)' }} onClick={() => navigate(`/picking-masivo/operador/${sesionId}`)}>
-        ← Volver
-      </button>
-      <div className="pm-confirmar-header">
-        {subtarea.posicion_codigo === '—'
-          ? <span className="pm-confirmar-barra-acento" />
-          : <span className="pm-confirmar-pos">{subtarea.posicion_codigo}</span>
-        }
-        <span className="pm-confirmar-prod">
-          {equivalenteSel
-            ? `${equivalenteSel.sku}${equivalenteSel.nombre && equivalenteSel.nombre !== equivalenteSel.sku ? ` — ${equivalenteSel.nombre}` : ''}`
-            : `${item?.codigo ?? ''}${item?.descripcion && item.descripcion !== item.codigo ? ` — ${item.descripcion}` : ''}`
-          }
-        </span>
-        <span className="pm-confirmar-cant">Solicitado: {cantAsignada}</span>
-        {lpn && (
-          <span className="pm-confirmar-lpn">LPN: <strong>{lpn}</strong></span>
-        )}
-        {esParcialEditable && (
-          <span className="badge badge-parcial">Editando parcial</span>
-        )}
+    <div className="cf-page">
+
+      {/* ── Cabecera ── */}
+      <div className="cf-header">
+        <button className="cf-volver-btn" onClick={() => navigate(`/picking-masivo/operador/${sesionId}`)}>
+          <IcoBack /> Volver a la Cola
+        </button>
+        <div className="cf-ctx-bar">
+          {subtarea.posicion_codigo && subtarea.posicion_codigo !== '—' && (
+            <span className="cf-ctx-pill">
+              <IcoPin /> {subtarea.posicion_codigo}
+            </span>
+          )}
+          {lpn && (
+            <span className="cf-ctx-pill cf-ctx-pill--lpn">
+              LPN Destino: <strong>{lpn}</strong>
+            </span>
+          )}
+          {esParcialEditable && (
+            <span className="cf-ctx-pill cf-ctx-pill--warn">Editando parcial</span>
+          )}
+        </div>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {/* ── Bloques de contexto: Ubicación + Producto ── */}
+      <div className="cf-context-grid">
 
-      <div className="pm-confirmar-form">
-        {!barcodeOk && !sinStockMode && (
-          <>
-            {/* Botón Sin stock — encima del escaneo */}
+        <div className="cf-context-block cf-context-block--rack">
+          <span className="cf-block-label"><IcoPin /> RACK / UBICACIÓN</span>
+          <span className="cf-rack-codigo">
+            {subtarea.posicion_codigo !== '—' ? subtarea.posicion_codigo : '— Sin ubicación —'}
+          </span>
+        </div>
+
+        <div className="cf-context-block cf-context-block--producto">
+          <span className="cf-block-label"><IcoBox /> PRODUCTO</span>
+          <span className="cf-prod-desc">{desc || '—'}</span>
+          <div className="cf-prod-codes">
+            <span className="cf-sku-tag">SKU: {sku}</span>
+            {ean && <span className="cf-ean-tag">EAN: {ean}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Cantidad solicitada ── */}
+      <div className="cf-solicitado">
+        <span className="cf-solicitado-label">CANTIDAD SOLICITADA</span>
+        <span className="cf-solicitado-val">{cantAsignada}<span className="cf-solicitado-unit"> Uds</span></span>
+      </div>
+
+      {error && (
+        <div className="cf-error-banner">
+          <IcoWarn /> {error}
+        </div>
+      )}
+
+      {/* ── Bloque escáner ── */}
+      {!barcodeOk && !sinStockMode && (
+        <div className="cf-scanner-section">
+          <div className="cf-scanner-header">
+            <div className="cf-scanner-dot" />
+            <span className="cf-scanner-label">ESCÁNER ACTIVO</span>
+          </div>
+          <div className="cf-scanner-input-row">
+            <input
+              ref={barcodeRef}
+              type="text"
+              inputMode="numeric"
+              className={`cf-scanner-input ${error && !barcodeOk ? 'cf-scanner-input--error' : ''}`}
+              placeholder="Pistolear EAN / Código de Barra aquí…"
+              value={barcode}
+              onChange={handleBarcodeChange}
+              onKeyDown={handleBarcodeKeyDown}
+              autoComplete="off"
+              disabled={validandoBarcode}
+            />
+            <BarcodeScanner
+              title="Escanear con cámara"
+              onDetected={codigo => { setBarcode(codigo); handleValidarBarcode(codigo) }}
+            />
+          </div>
+          <button
+            className="cf-btn cf-btn--verify"
+            disabled={!barcode.trim() || validandoBarcode}
+            onClick={() => handleValidarBarcode(barcode)}
+          >
+            {validandoBarcode ? 'Validando…' : 'Verificar código'}
+          </button>
+        </div>
+      )}
+
+      {/* ── Escaneado OK ── */}
+      {barcodeOk && !sinStockMode && (
+        <div className="cf-scan-ok">
+          <IcoCheck /> Producto escaneado correctamente
+        </div>
+      )}
+
+      {/* ── Sin stock: solo motivo ── */}
+      {sinStockMode && (
+        <div className="cf-sinstock-section">
+          <div className="cf-sinstock-banner">
+            <IcoWarn /> Sin stock — se registrará como 0 unidades despachadas
+          </div>
+          <label className="cf-label">
+            Motivo (obligatorio)
+            <textarea
+              className="cf-textarea"
+              value={motivo}
+              onChange={e => setMotivo(e.target.value)}
+              placeholder="Motivo de falta de stock…"
+              autoFocus
+            />
+          </label>
+        </div>
+      )}
+
+      {/* ── Control de cantidad ── */}
+      {barcodeOk && !sinStockMode && (
+        <div className="cf-cantidad-section">
+          <span className="cf-label-titulo">CANTIDAD PICKEDA</span>
+          <div className="cf-cantidad-row">
+            <input
+              type="number"
+              className="cf-cantidad-input"
+              min={0}
+              max={cantAsignada}
+              value={cantidad}
+              onChange={e => setCantidad(e.target.value)}
+              onKeyDown={onlyNumbersKeyDown}
+              onPaste={onlyNumbersPaste}
+              autoFocus
+            />
             <button
-              type="button"
-              className="btn-secundario"
-              style={{ width: '100%', marginBottom: 'var(--spacing-sm)', color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.4)' }}
-              onClick={() => { setSinStockMode(true); setError(null) }}
+              className="cf-carga-total-btn cf-carga-total-btn--confirm"
+              disabled={isPending}
+              onClick={handleConfirmarDespacho}
             >
-              Sin stock
+              {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar cantidad'}
             </button>
+          </div>
 
-            <label className="pm-confirmar-label">
-              {validandoBarcode ? 'Validando…' : codigoBarra ? 'Escanear código de barras' : 'Escanear producto'}
-              <div className="pm-confirmar-barcode-row">
-                <input
-                  ref={barcodeRef}
-                  type="text"
-                  inputMode="numeric"
-                  className={`pm-confirmar-input ${error && !barcodeOk ? 'pm-confirmar-input--error' : ''}`}
-                  placeholder="Escanea o ingresa el código…"
-                  value={barcode}
-                  onChange={handleBarcodeChange}
-                  onKeyDown={handleBarcodeKeyDown}
-                  autoComplete="off"
-                  disabled={validandoBarcode}
-                />
-                <BarcodeScanner
-                  title="Escanear con cámara"
-                  onDetected={(codigo) => { setBarcode(codigo); handleValidarBarcode(codigo) }}
-                />
-              </div>
-              <button
-                type="button"
-                className="btn-primario"
-                style={{ marginTop: 'var(--spacing-xs)' }}
-                disabled={!barcode.trim() || validandoBarcode}
-                onClick={() => handleValidarBarcode(barcode)}
-              >
-                {validandoBarcode ? 'Validando…' : 'Verificar'}
-              </button>
+          {requiereMotivo && (
+            <label className="cf-label">
+              Motivo de diferencia (obligatorio)
+              <textarea
+                className="cf-textarea"
+                value={motivo}
+                onChange={e => setMotivo(e.target.value)}
+                placeholder="Motivo de la diferencia…"
+              />
             </label>
-          </>
-        )}
+          )}
 
-        {/* Modo sin stock: solo pide motivo */}
+          {!esParcialEditable && item?.codigo?.includes('-') && (
+            <button
+              className={`cf-toggle-btn ${equivalenteActivo ? 'cf-toggle-btn--activo' : ''}`}
+              onClick={() => { setEquivalenteActivo(v => !v); setEquivalenteSel(null); setBusquedaEq('') }}
+            >
+              Producto equivalente
+            </button>
+          )}
+
+          {equivalenteActivo && (
+            <div className="cf-equivalente-wrap">
+              <input
+                type="search"
+                className="cf-scanner-input"
+                placeholder="Buscar producto equivalente…"
+                value={equivalenteSel ? `${equivalenteSel.sku} — ${equivalenteSel.nombre}` : busquedaEq}
+                onChange={e => { setBusquedaEq(e.target.value); setEquivalenteSel(null) }}
+                autoComplete="off"
+              />
+              {!equivalenteSel && busquedaEq.trim() && (
+                <div className="cf-equivalente-lista">
+                  {buscandoEq && <p className="cargando">Buscando…</p>}
+                  {!buscandoEq && opcionesEq.length === 0 && <p style={{ padding: 12, color: 'var(--text-muted)', fontSize: 13 }}>Sin resultados</p>}
+                  {!buscandoEq && opcionesEq.map(p => (
+                    <button key={p.id} className="cf-equivalente-opcion" onClick={() => setEquivalenteSel(p)}>
+                      {p.sku} — {p.nombre}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Acciones principales ── */}
+      <div className="cf-acciones">
+
+        {/* Sin stock: confirmar o cancelar */}
         {sinStockMode && (
           <>
-            <div style={{ padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', fontSize: '0.85rem', color: 'var(--danger)', fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}>
-              Sin stock — se registrará como 0 unidades despachadas
-            </div>
-            <label className="pm-confirmar-label">
-              Motivo (obligatorio)
-              <textarea
-                className="pm-confirmar-textarea"
-                value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Motivo de falta de stock…"
-                autoFocus
-              />
-            </label>
+            <button
+              className="cf-btn cf-btn--sinstock cf-btn--xl"
+              disabled={isPending || !motivo.trim()}
+              onClick={handleSinStock}
+            >
+              <IcoWarn />
+              {isPending ? 'Registrando…' : 'CONFIRMAR SIN STOCK'}
+            </button>
+            <button
+              className="cf-btn cf-btn--secondary"
+              disabled={isPending}
+              onClick={() => { setSinStockMode(false); setMotivo(''); setError(null) }}
+            >
+              Cancelar
+            </button>
           </>
         )}
 
-        {/* Cantidad — visible solo si barcode está ok */}
-        {barcodeOk && (
-          <>
-            <div className="pm-confirmar-barcode-ok">
-              Producto escaneado correctamente
-            </div>
+        {/* Reportar sin stock (desde modo normal) */}
+        {!sinStockMode && (
+          <button
+            className="cf-btn cf-btn--warn"
+            onClick={() => { setSinStockMode(true); setError(null) }}
+          >
+            <IcoWarn /> Reportar Sin Stock / Incompleto
+          </button>
+        )}
 
-            <label className="pm-confirmar-label">
-              Ingrese cantidad:
-              <input
-                type="number"
-                className="pm-confirmar-input"
-                min={0}
-                max={cantAsignada}
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                onKeyDown={onlyNumbersKeyDown}
-                onPaste={onlyNumbersPaste}
-                autoFocus
-              />
-            </label>
-
-            {requiereMotivo && (
-              <label className="pm-confirmar-label">
-                Motivo (obligatorio)
-                <textarea
-                  className="pm-confirmar-textarea"
-                  value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
-                  placeholder="Motivo de la diferencia…"
-                />
-              </label>
-            )}
-
-            {!esParcialEditable && item?.codigo?.includes('-') && (
-              <button
-                type="button"
-                className={`filtro-btn pm-confirmar-toggle-btn ${equivalenteActivo ? 'activo' : ''}`}
-                onClick={() => { setEquivalenteActivo((v) => !v); setEquivalenteSel(null); setBusquedaEq('') }}
-              >
-                Producto equivalente
-              </button>
-            )}
-
-
-            {equivalenteActivo && (
-              <div className="ing-busqueda">
-                <input
-                  type="search"
-                  placeholder="Buscar producto equivalente…"
-                  value={equivalenteSel ? `${equivalenteSel.sku} — ${equivalenteSel.nombre}` : busquedaEq}
-                  onChange={(e) => { setBusquedaEq(e.target.value); setEquivalenteSel(null) }}
-                  autoComplete="off"
-                />
-              </div>
-            )}
-
-            {equivalenteActivo && !equivalenteSel && busquedaEq.trim() && (
-              <div className="ing-productos-lista pm-equivalente-lista">
-                {buscandoEq && <p className="cargando">Buscando…</p>}
-                {!buscandoEq && opcionesEq.length === 0 && <p className="picking-nombre">Sin resultados</p>}
-                {!buscandoEq && opcionesEq.map((p) => (
-                  <button key={p.id} type="button" className="ing-prod-fila" onClick={() => setEquivalenteSel(p)}>
-                    <span>{p.sku} — {p.nombre}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+        {/* Solo supervisor */}
+        {(rol === 'supervisor' || rol === 'admin') && barcodeOk && !sinStockMode && (
+          <button
+            className="cf-btn cf-btn--supervisor"
+            onClick={() => { setEquivalenteActivo(v => !v) }}
+          >
+            <IcoTool /> Autorizar Ajuste de Inventario
+          </button>
         )}
       </div>
-
-      {sinStockMode && (
-        <div className="pm-confirmar-acciones">
-          <button className="btn-secundario pm-confirmar-btn" disabled={isPending} onClick={() => { setSinStockMode(false); setMotivo(''); setError(null) }}>
-            Cancelar
-          </button>
-          <button
-            className="pm-confirmar-btn"
-            style={{ flex: 1, padding: '0.6rem 1rem', background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem' }}
-            disabled={isPending || !motivo.trim()}
-            onClick={handleSinStock}
-          >
-            {isPending ? 'Registrando…' : 'Confirmar sin stock'}
-          </button>
-        </div>
-      )}
-
-      {barcodeOk && !sinStockMode && (
-        <div className="pm-confirmar-acciones">
-          <button className="btn-secundario pm-confirmar-btn" disabled={isPending} onClick={handleSinStock}>
-            Sin stock
-          </button>
-          <button className="btn-primario pm-confirmar-btn" disabled={isPending} onClick={handleConfirmarDespacho}>
-            {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

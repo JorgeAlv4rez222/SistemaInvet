@@ -229,6 +229,15 @@ export function RevisionFlow({
   const [error, setError]         = useState<string | null>(null)
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [mostrarModalChofer, setMostrarModalChofer] = useState(false)
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+
+  function toggleExpandido(id: string) {
+    setExpandidos(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   const scanRef     = useRef<HTMLInputElement>(null)
   const cantidadRef = useRef<HTMLInputElement>(null)
@@ -305,9 +314,11 @@ export function RevisionFlow({
   // ── Fila de producto (grid plano igual que NotaDetallePage) ──────────────
 
   function renderFila(item: ItemRevision) {
-    const revisado   = item.revisadoAdmin
-    const esSinStock = item.estado === 'sin_stock'
+    const revisado     = item.revisadoAdmin
+    const esSinStock   = item.estado === 'sin_stock'
     const puedeRevisar = !revisado && !offline && !yaDespachada
+    const abierto      = expandidos.has(item.notaProductoId)
+    const nombreCorto  = item.nombre.length > 10 ? item.nombre.slice(0, 10) + '…' : item.nombre
 
     const dotClass = revisado
       ? 'nd-dot nd-dot--ok'
@@ -317,39 +328,36 @@ export function RevisionFlow({
 
     const badgeClass = revisado
       ? 'nd-prod-badge nd-prod-badge--revisado'
-      : esSinStock
-        ? 'nd-prod-badge nd-prod-badge--warn'
-        : 'nd-prod-badge nd-prod-badge--warn'
+      : 'nd-prod-badge nd-prod-badge--warn'
 
     const badgeLabel = revisado ? 'Revisado' : esSinStock ? 'Sin stock' : 'Pendiente'
 
     return (
       <div key={item.notaProductoId} className={`nd-prod-row rv-prod-row ${revisado ? 'nd-prod-row--terminado' : 'nd-prod-row--pendiente'}`}>
 
-        {/* Dot de estado */}
-        <div className="nd-prod-dot">
-          <span className={dotClass} />
-        </div>
-
         {/* Info del producto */}
-        <div className="nd-prod-info" style={{ gridColumn: 'span 2' }}>
-          <span className="nd-prod-nombre">{item.nombre}</span>
-          <div className="nd-prod-codes">
-            <code className="nd-prod-sku">{item.skuEquivalente ?? item.sku}</code>
-            {item.codigoBarra && <code className="nd-prod-ean">{item.codigoBarra}</code>}
-            {item.skuEquivalente && (
-              <span className="nd-prod-equiv">↔ equiv. de {item.sku}</span>
-            )}
+        <div
+          className="nd-prod-info"
+          style={{ gridColumn: 'span 2', cursor: 'pointer' }}
+          onClick={() => toggleExpandido(item.notaProductoId)}
+        >
+          <div className="nd-prod-nombre-row">
+            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
+            <code className="nd-prod-sku-inline">{item.skuEquivalente ?? item.sku}</code>
           </div>
+          {item.codigoBarra && (
+            <code className="nd-prod-ean">{item.codigoBarra}</code>
+          )}
+          {abierto && (
+            <span className="nd-prod-nombre-completo">{item.nombre}</span>
+          )}
+          {item.skuEquivalente && (
+            <span className="nd-prod-equiv">↔ equiv. de {item.sku}</span>
+          )}
         </div>
 
         {/* Cantidades */}
         <div className="nd-prod-qty rv-prod-qty">
-          <div className="nd-qty-item">
-            <span className="nd-qty-label">Solicitado</span>
-            <span className="nd-qty-valor">{item.cantidadSolicitada}</span>
-          </div>
-          <span className="nd-qty-sep">·</span>
           <div className="nd-qty-item">
             <span className="nd-qty-label">Despachado</span>
             <span className={`nd-qty-valor ${revisado ? 'nd-qty-valor--ok' : ''}`}>{item.cantidadDespachada}</span>
@@ -495,7 +503,6 @@ export function RevisionFlow({
 
           {/* Header tabla */}
           <div className="nd-tabla-header rv-tabla-header">
-            <div className="nd-col-dot" />
             <div style={{ gridColumn: 'span 2' }}>Producto</div>
             <div className="nd-col-qty">Cantidades</div>
             <div className="nd-col-acc">Estado</div>

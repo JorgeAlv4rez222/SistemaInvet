@@ -72,9 +72,13 @@ function OlaCard({
         <div className="pm-ola-header-left">
           <span className="pm-ola-cliente">{s.nombre_cliente ?? s.numero_oc}</span>
           <div className="pm-ola-meta">
-            <span className="pm-ola-oc">OC: <strong>{s.numero_oc}</strong></span>
-            <span className="pm-ola-sep">|</span>
-            <span className="pm-ola-lpn">LPN: <strong>{s.numero_oc_pedido ?? s.numero_oc}</strong></span>
+            {s.numero_oc_pedido && (
+              <>
+                <span className="pm-ola-oc">OC: <strong>{s.numero_oc_pedido}</strong></span>
+                <span className="pm-ola-sep">|</span>
+              </>
+            )}
+            <span className="pm-ola-fecha-entrega">Entrega: <strong>{s.numero_oc}</strong></span>
             <span className="pm-ola-sep">|</span>
             <span className="pm-ola-fecha">Creada: {fmtFecha(s.creado_en)}</span>
             {s.creado_por_usuario && (
@@ -100,7 +104,7 @@ function OlaCard({
         {/* Progreso */}
         <div className="pm-ola-progreso">
           <div className="pm-ola-progreso-header">
-            <span className="pm-ola-uds">📦 {udsTxt}</span>
+            <span className="pm-ola-uds">{udsTxt}</span>
             <span className="pm-ola-pct">{pct}%</span>
           </div>
           <ProgressBar pct={pct} estado={estado} />
@@ -108,11 +112,8 @@ function OlaCard({
 
         {/* Operadores */}
         <div className="pm-ola-operadores">
-          {estado === 'en_proceso' ? (
-            <span className="pm-ola-tomado">
-              👥 En picking activo
-            </span>
-          ) : estado === 'libre' || estado === 'validando' ? (
+          {estado === 'en_proceso' ? null
+          : estado === 'libre' || estado === 'validando' ? (
             <span className="pm-ola-esperando">
               👤 Esperando primer operador en bodega
             </span>
@@ -122,7 +123,7 @@ function OlaCard({
             </span>
           ) : estado === 'despachada' ? (
             <span className="pm-ola-completada-txt">
-              🚛 Despachada al chofer {s.nombre_chofer ?? '—'}{s.despachado_en ? ` · ${fmtFecha(s.despachado_en)}` : ''}
+              Despachada por {s.nombre_chofer ?? '—'}{s.despachado_en ? ` · ${fmtFecha(s.despachado_en)}` : ''}
             </span>
           ) : (
             <span className="pm-ola-cancelada-txt">🚫 Sesión cancelada</span>
@@ -135,7 +136,7 @@ function OlaCard({
             className="pm-ola-btn pm-ola-btn--monitoreo"
             onClick={onVerDetalle}
           >
-            👁️ VER MONITOREO EN VIVO
+            {estado === 'despachada' || estado === 'cancelada' ? 'Ver detalle' : 'Ver monitoreo'}
           </button>
 
           {puedeEditar && (
@@ -191,7 +192,9 @@ export function PickingMasivoPage() {
       (s.numero_oc_pedido ?? '').toLowerCase().includes(q)
 
     const estado = derivarEstado(s)
-    const matchEstado = filtroEstado === 'todas' || estado === filtroEstado
+    const matchEstado = filtroEstado === 'todas' ||
+      estado === filtroEstado ||
+      (filtroEstado === 'completada' && estado === 'despachada')
 
     return matchBusq && matchEstado
   })
@@ -219,7 +222,7 @@ export function PickingMasivoPage() {
 
       {/* ── Cabecera ── */}
       <div className="pm-admin-top">
-        <h1 className="pm-admin-titulo">📦 Gestión de Picking Masivo</h1>
+        <h1 className="pm-admin-titulo">Gestión de Picking Masivo</h1>
         {ROL === 'admin' && (
           <button className="btn-primario pm-admin-nueva-btn" onClick={() => navigate('/picking-masivo/nueva')}>
             + Nueva Sesión
@@ -233,26 +236,22 @@ export function PickingMasivoPage() {
           className={`pm-admin-kpi pm-admin-kpi--proceso ${filtroEstado === 'en_proceso' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => setFiltroEstado(f => f === 'en_proceso' ? 'todas' : 'en_proceso')}
         >
-          <span className="pm-admin-kpi-ico">⚡</span>
+          <span className="pm-admin-kpi-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </span>
           <div>
             <span className="pm-admin-kpi-val">{activas.length}</span>
-            <span className="pm-admin-kpi-label">Olas Activas</span>
+            <span className="pm-admin-kpi-label">Sesiones Activas</span>
           </div>
         </button>
 
-        <button className="pm-admin-kpi pm-admin-kpi--uds" onClick={() => setFiltroEstado('en_proceso')}>
-          <span className="pm-admin-kpi-ico">📦</span>
-          <div>
-            <span className="pm-admin-kpi-val">{udsEnPicking.toLocaleString('es-CL')}</span>
-            <span className="pm-admin-kpi-label">Uds en Picking</span>
-          </div>
-        </button>
-
-        <button
+<button
           className={`pm-admin-kpi pm-admin-kpi--libre ${filtroEstado === 'libre' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => setFiltroEstado(f => f === 'libre' ? 'todas' : 'libre')}
         >
-          <span className="pm-admin-kpi-ico">⏳</span>
+          <span className="pm-admin-kpi-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
           <div>
             <span className="pm-admin-kpi-val">{libres.length}</span>
             <span className="pm-admin-kpi-label">Libre / Pendiente</span>
@@ -263,7 +262,9 @@ export function PickingMasivoPage() {
           className={`pm-admin-kpi pm-admin-kpi--completadas ${filtroEstado === 'completada' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => setFiltroEstado(f => f === 'completada' ? 'todas' : 'completada')}
         >
-          <span className="pm-admin-kpi-ico">✅</span>
+          <span className="pm-admin-kpi-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
           <div>
             <span className="pm-admin-kpi-val">{completadas.length}</span>
             <span className="pm-admin-kpi-label">Completadas</span>

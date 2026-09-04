@@ -292,36 +292,6 @@ export function DashboardBI() {
         />
       </div>
 
-      {/* ── Fila KPIs ejecutivos ─────────────────────────────────────────── */}
-      <div className="bi-kpi-row">
-        <KpiExec
-          icon={<IcoTarget />}
-          label="Nivel de Servicio (OTIF)"
-          valor={biData?.otifPct != null ? biData.otifPct.toFixed(1) : '—'}
-          unidad={biData?.otifPct != null ? '%' : ''}
-          delta={biData?.otifPct != null ? (biData.otifPct >= 90 ? '▲ Sobre meta' : '▼ Bajo meta') : ''}
-          deltaLabel="despachos últimos 30 días"
-          colorDelta={biData?.otifPct != null && biData.otifPct >= 90 ? 'green' : 'amber'}
-        />
-        <KpiExec
-          icon={<IcoClock />}
-          label="Lead Time Promedio"
-          valor={biData?.leadTimeHrs != null ? biData.leadTimeHrs.toFixed(1) : '—'}
-          unidad={biData?.leadTimeHrs != null ? ' hrs' : ''}
-          delta={biData?.leadTimeHrs != null ? (biData.leadTimeHrs <= 24 ? '▼ Dentro del target' : '▲ Sobre target') : ''}
-          deltaLabel="prep → despacho"
-          colorDelta={biData?.leadTimeHrs != null && biData.leadTimeHrs <= 24 ? 'blue' : 'amber'}
-        />
-        <KpiExec
-          icon={<IcoTruck />}
-          label="Pedidos Despachados"
-          valor={biData ? biData.despachados7dias.toLocaleString('es-CL') : '—'}
-          delta=""
-          deltaLabel="últimos 7 días"
-          colorDelta="green"
-        />
-      </div>
-
       {/* ── Cuerpo principal 60/40 ───────────────────────────────────────── */}
       <div className="bi-body">
 
@@ -426,6 +396,36 @@ export function DashboardBI() {
 
 
         </div>
+      </div>
+
+      {/* ── Fila KPIs ejecutivos ─────────────────────────────────────────── */}
+      <div className="bi-kpi-row">
+        <KpiExec
+          icon={<IcoTarget />}
+          label="Nivel de Servicio (OTIF)"
+          valor={biData?.otifPct != null ? biData.otifPct.toFixed(1) : '—'}
+          unidad={biData?.otifPct != null ? '%' : ''}
+          delta={biData?.otifPct != null ? (biData.otifPct >= 90 ? '▲ Sobre meta' : '▼ Bajo meta') : ''}
+          deltaLabel="despachos últimos 30 días"
+          colorDelta={biData?.otifPct != null && biData.otifPct >= 90 ? 'green' : 'amber'}
+        />
+        <KpiExec
+          icon={<IcoClock />}
+          label="Lead Time Promedio"
+          valor={biData?.leadTimeHrs != null ? biData.leadTimeHrs.toFixed(1) : '—'}
+          unidad={biData?.leadTimeHrs != null ? ' hrs' : ''}
+          delta={biData?.leadTimeHrs != null ? (biData.leadTimeHrs <= 24 ? '▼ Dentro del target' : '▲ Sobre target') : ''}
+          deltaLabel="prep → despacho"
+          colorDelta={biData?.leadTimeHrs != null && biData.leadTimeHrs <= 24 ? 'blue' : 'amber'}
+        />
+        <KpiExec
+          icon={<IcoTruck />}
+          label="Pedidos Despachados"
+          valor={biData ? biData.despachados7dias.toLocaleString('es-CL') : '—'}
+          delta=""
+          deltaLabel="últimos 7 días"
+          colorDelta="green"
+        />
       </div>
     </div>
   )

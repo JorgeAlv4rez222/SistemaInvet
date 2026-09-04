@@ -124,7 +124,7 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
     .filter((it) => HEADER_PRECIO.test(it.str) && it.x > xDesc)
     .sort((a, b) => a.x - b.x)[0]?.x ?? Infinity
 
-  const MARGEN = 5 // tolerancia px
+  const MARGEN = 12 // tolerancia px — aumentado para capturar códigos que arrancan antes del header
 
   // 3. Recorrer filas de productos (las que están DEBAJO del encabezado)
   const productos: LineaNota[] = []
@@ -154,7 +154,7 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
     const ES_PRECIO = /^\$?\d{1,3}(\.\d{3})+([,]\d+)?$|^\$?\d+[,]\d{2}$/
     const codigoProducto = codItems
       .filter((it) => !ES_PRECIO.test(it.str.trim()))
-      .map((it) => it.str).join('').replace(/\s+/g, '').trim()
+      .map((it) => it.str.trim()).join('').trim()
     if (!codigoProducto) continue
 
     // Descripción: entre xDesc y xPrecio (excluye columnas de precio)
@@ -180,7 +180,7 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
 // ── Fallback: regex sobre texto plano ordenado visualmente ────────────────
 // Acepta cualquier código alfanumérico (con -, /, letras y números)
-const REGEX_PROD_TEXTO = /(\d+)\.\s+([A-Za-z0-9][A-Za-z0-9\/\-]{2,})\s+(.+?)\s+[\d,.]+\s+[\d,.]+(?=\s|$)/g
+const REGEX_PROD_TEXTO = /(\d+)\.?\s+([A-Za-z0-9][A-Za-z0-9\/\-\.]{2,})\s+(.+?)\s+[\d,.]+\s+[\d,.]+(?=\s|$)/g
 
 function extraerProductosTextoPlano(texto: string, errores: string[]): LineaNota[] {
   const INICIO = /Cantidad\s+C[oó]d/i

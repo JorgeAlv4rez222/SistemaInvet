@@ -379,14 +379,14 @@ export function DespachoSesionPage() {
     }
   }
 
-  if (isLoading) return <div className="notas-page"><p className="cargando">Cargando…</p></div>
-  if (!sesion)   return <div className="notas-page"><p className="error">Sesión no encontrada</p></div>
+  if (isLoading) return <div className="desp-page"><p className="cargando">Cargando…</p></div>
+  if (!sesion)   return <div className="desp-page"><p className="error-msg">Sesión no encontrada</p></div>
 
   if (sesion.estado !== 'completada' && sesion.estado !== 'despachado') {
     return (
-      <div className="notas-page">
-        <p className="error">La sesión debe estar completada para iniciar el despacho</p>
-        <button className="btn-secundario" onClick={() => navigate('/picking-masivo')}>Volver</button>
+      <div className="desp-page">
+        <p className="error-msg">La sesión debe estar completada para iniciar el despacho</p>
+        <button className="desp-volver-btn" onClick={() => navigate('/picking-masivo')}>← Volver</button>
       </div>
     )
   }
@@ -396,59 +396,78 @@ export function DespachoSesionPage() {
   const totalValidados = validados.length
   const todosProductosValidados = totalValidados >= totalItems
   const isPending      = buscarLpn.isPending || buscarItem.isPending
+  const pct            = totalItems > 0 ? Math.round((totalValidados / totalItems) * 100) : 0
 
   // Sodimac fase 2: LPNs
   const totalLpns          = lpnsExcel.length
   const lpnsValidadosN     = lpnsEscaneados.size
   const todosLpnsValidados = totalLpns > 0 && lpnsValidadosN >= totalLpns
 
+  const ESTADO_LABELS: Record<string, string> = { completado: 'Completado', parcial: 'Parcial', sin_stock: 'Sin stock' }
+
   return (
-    <div className="notas-page pm-despacho-page">
-      <div className="pm-despacho-header">
-        <button className="btn-volver" onClick={() => navigate(`/picking-masivo/${sesionId}`)}>← Volver</button>
-        <div className="pm-despacho-titulo-wrap" style={{ fontSize: '1.75rem' }}>
-          <span className="pm-despacho-titulo-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
-          <span className="pm-despacho-titulo-sep">—</span>
-          <span className="pm-despacho-titulo-label">{faseSodimac === 'lpns' ? 'Validación de Carga' : 'Validación de Preparación'}</span>
+    <div className="desp-page">
+
+      {/* ── Cabecera ── */}
+      <div className="desp-header">
+        <button className="desp-volver-btn" onClick={() => navigate(`/picking-masivo/${sesionId}`)}>
+          ← Volver
+        </button>
+        <div className="desp-header-info">
+          <span className="desp-cliente">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+          <span className="desp-fase-label">
+            {!sesionTieneLpn && faseSodimac === 'lpns' ? 'Validación de Carga' : 'Validación de Preparación'}
+          </span>
+        </div>
+        <div className="desp-progreso-pill">{totalValidados}/{totalItems} · {pct}%</div>
+      </div>
+
+      {/* ── Barra de progreso ── */}
+      <div className="desp-progreso-wrap">
+        <div className="desp-progreso-bg">
+          <div className="desp-progreso-fill" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
-      {/* ── FASE 1: Escáner productos (LPN o código de barra según cliente) ── */}
+      {/* ── FASE 1: Escáner ── */}
       {sesion.estado === 'completada' && (!sesionTieneLpn ? faseSodimac === 'productos' : true) && (
-        <div className="pm-despacho-scanner-card">
+        <div className="desp-scanner-wrap">
           {!sesionTieneLpn && todosProductosValidados && (
-            <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid var(--success)', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--success)' }}>
+            <div className="desp-todos-ok">
               ✓ Todos los productos validados. Confirma la preparación para continuar.
             </div>
           )}
-          <label className="pm-confirmar-label">
-            {sesionTieneLpn ? 'Escanear LPN' : 'Escanear código de barra'}
-            <div className="pm-confirmar-barcode-row">
-              <input
-                ref={inputRef}
-                type="text"
-                className={`pm-confirmar-input ${errorScan ? 'pm-confirmar-input--error' : ''}`}
-                placeholder={sesionTieneLpn ? 'Escanea o ingresa el LPN…' : 'Escanea el código de barra o código…'}
-                value={scanInput}
-                onChange={(e) => { setScanInput(e.target.value); setErrorScan(null) }}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return
-                  if (!sesionTieneLpn && todosProductosValidados) return
-                  sesionTieneLpn ? handleBuscarLpn(scanInput) : handleBuscarItem(scanInput)
-                }}
-                disabled={!sesionTieneLpn && todosProductosValidados}
-                autoFocus={!((!sesionTieneLpn) && todosProductosValidados)}
-                autoComplete="off"
-              />
-              <BarcodeScanner
-                title="Escanear con cámara"
-                onDetected={(val) => sesionTieneLpn ? handleBuscarLpn(val) : handleBuscarItem(val)}
-              />
-            </div>
-          </label>
-          {errorScan && <p className="pm-confirmar-barcode-error">{errorScan}</p>}
+          <div className="desp-scanner-header">
+            <div className="desp-scanner-dot" />
+            <span className="desp-scanner-label">
+              ESCÁNER ACTIVO — {sesionTieneLpn ? 'LPN' : 'Código de barra'}
+            </span>
+          </div>
+          <div className="desp-scanner-input-row">
+            <input
+              ref={inputRef}
+              type="text"
+              className={`desp-scanner-input ${errorScan ? 'desp-scanner-input--error' : ''}`}
+              placeholder={sesionTieneLpn ? 'Escanea o ingresa el LPN…' : 'Escanea el código de barra o código…'}
+              value={scanInput}
+              onChange={(e) => { setScanInput(e.target.value); setErrorScan(null) }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                if (!sesionTieneLpn && todosProductosValidados) return
+                sesionTieneLpn ? handleBuscarLpn(scanInput) : handleBuscarItem(scanInput)
+              }}
+              disabled={!sesionTieneLpn && todosProductosValidados}
+              autoFocus={!((!sesionTieneLpn) && todosProductosValidados)}
+              autoComplete="off"
+            />
+            <BarcodeScanner
+              title="Escanear con cámara"
+              onDetected={(val) => sesionTieneLpn ? handleBuscarLpn(val) : handleBuscarItem(val)}
+            />
+          </div>
+          {errorScan && <p className="desp-scanner-error">{errorScan}</p>}
           <button
-            className="btn-primario pm-despacho-scan-btn"
+            className="desp-scan-btn"
             disabled={!scanInput.trim() || isPending || (!sesionTieneLpn && todosProductosValidados)}
             onClick={() => sesionTieneLpn ? handleBuscarLpn(scanInput) : handleBuscarItem(scanInput)}
           >
@@ -457,12 +476,11 @@ export function DespachoSesionPage() {
         </div>
       )}
 
-      {/* Botón Confirmar Preparación arriba — Sodimac fase 1 */}
+      {/* Confirmar Preparación — Sodimac fase 1 */}
       {!sesionTieneLpn && faseSodimac === 'productos' && todosProductosValidados && sesion.estado === 'completada' && (
         <button
-          className="btn-primario pm-despacho-despachar-btn"
+          className="desp-action-btn desp-action-btn--confirmar"
           disabled={preparacionConfirmada}
-          title={preparacionConfirmada ? 'Preparación ya confirmada' : undefined}
           onClick={() => {
             try { localStorage.setItem(`pm_productos_ok_${sesionId}`, '1') } catch {}
             setPreparacionConfirmada(true)
@@ -473,58 +491,61 @@ export function DespachoSesionPage() {
         </button>
       )}
 
-      {/* Lista de productos validados (fase 1) */}
+      {/* ── Lista de validados — fase 1 ── */}
       {(!sesionTieneLpn ? faseSodimac === 'productos' : true) && (validados.length > 0 || (items && items.length > 0)) && (
-        <div className="pm-despacho-validados-card">
-          {/* Fila 1: Validados / Pendientes + contador */}
+        <div className="desp-lista-card">
+
+          {/* Filtros Sodimac */}
           {!sesionTieneLpn && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button type="button" style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: !filtroPendientes ? 'var(--accent)' : 'transparent', color: !filtroPendientes ? 'white' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(false)}>Validados</button>
-                <button type="button" style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroPendientes ? 'var(--warning)' : 'transparent', color: filtroPendientes ? '#000' : 'var(--text-secondary)' }} onClick={() => setFiltroPendientes(true)}>Pendientes</button>
+            <>
+              <div className="desp-filtros-row">
+                <div className="desp-filtros">
+                  <button className={`desp-filtro-btn ${!filtroPendientes ? 'desp-filtro-btn--activo' : ''}`} onClick={() => setFiltroPendientes(false)}>Validados</button>
+                  <button className={`desp-filtro-btn ${filtroPendientes ? 'desp-filtro-btn--pendiente' : ''}`} onClick={() => setFiltroPendientes(true)}>Pendientes</button>
+                </div>
+                <span className="desp-ratio">{totalValidados}/{totalItems}</span>
               </div>
-              <span className="pm-despacho-validados-ratio">{totalValidados}/{totalItems}</span>
-            </div>
+              {!filtroPendientes && (
+                <div className="desp-subfiltros">
+                  <input
+                    type="search"
+                    className="desp-busqueda"
+                    placeholder="Buscar por código o nombre…"
+                    value={busquedaSodimac}
+                    onChange={(e) => setBusquedaSodimac(e.target.value)}
+                  />
+                  <div className="desp-estado-filtros">
+                    {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
+                      <button
+                        key={f}
+                        className={`desp-estado-btn desp-estado-btn--${f.replace('_', '-')} ${filtroEstadoDespacho === f ? 'desp-estado-btn--activo' : ''}`}
+                        onClick={() => setFiltroEstadoDespacho(f)}
+                      >
+                        {f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-          {/* Fila 2: búsqueda + Todos/Parcial/Sin stock (solo validados Sodimac) */}
-          {!sesionTieneLpn && !filtroPendientes && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-              <input
-                type="search"
-                placeholder="Buscar por código o nombre…"
-                value={busquedaSodimac}
-                onChange={(e) => setBusquedaSodimac(e.target.value)}
-                style={{ flex: 1, minWidth: '160px', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}
-              />
-              {(['todos', 'parcial', 'sin_stock'] as const).map((f) => (
-                <button key={f} type="button"
-                  onClick={() => setFiltroEstadoDespacho(f)}
-                  style={{ padding: '0.5rem 0.9rem', fontSize: '0.75rem', fontWeight: 600, borderRadius: '0.5rem', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap',
-                    background: filtroEstadoDespacho === f ? (f === 'parcial' ? 'var(--warning)' : f === 'sin_stock' ? 'var(--danger)' : 'var(--primary)') : 'var(--surface)',
-                    color: filtroEstadoDespacho === f ? (f === 'todos' ? 'white' : '#000') : 'var(--text-secondary)',
-                  }}
-                >{f === 'todos' ? 'Todos' : f === 'parcial' ? 'Parcial' : 'Sin stock'}</button>
-              ))}
-            </div>
-          )}
-          {/* Título de sección */}
-          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+
+          <p className="desp-lista-titulo">
             {filtroPendientes ? 'Pendientes de validar' : `Productos Validados (${validados.length})`}
           </p>
-          <div className="pm-items-lista">
+
+          <div className="desp-items">
             {sesionTieneLpn
               ? validadosLpn.map((v) => (
-                  <div
-                    key={v.itemId}
-                    className="pm-item-card pm-despacho-validado-fila pm-despacho-validado-fila--click"
-                    onClick={() => setDetalleLpn(v)}
-                  >
-                    <div className="pm-despacho-validado-info">
-                      <span className="pm-despacho-validado-codigo">{v.codigo}</span>
-                      {v.tienda && <span className="pm-despacho-validado-tienda">{v.tienda}</span>}
+                  <div key={v.itemId} className="desp-item desp-item--validado" onClick={() => setDetalleLpn(v)}>
+                    <div className="desp-item-info">
+                      <span className="desp-item-codigo">{v.codigo}</span>
+                      {v.tienda && <span className="desp-item-meta">{v.tienda}</span>}
                     </div>
-                    <span className="pm-despacho-validado-cant">{v.cantidadPedida}</span>
-                    <span className="pm-despacho-validado-check">✓</span>
+                    <div className="desp-item-right">
+                      <span className="desp-item-cant">{v.cantidadPedida} uds</span>
+                      <span className="desp-item-check">✓</span>
+                    </div>
                   </div>
                 ))
               : filtroPendientes
@@ -533,14 +554,12 @@ export function DespachoSesionPage() {
                   .map((i) => {
                     const despachada = (i.subtareas_picking_masivo ?? []).reduce((s, t) => s + (t.cantidad_despachada ?? 0), 0)
                     return (
-                      <div key={i.id} className="pm-item-card pm-despacho-validado-fila">
-                        <div className="pm-despacho-validado-info">
-                          <span className="pm-despacho-validado-codigo">{i.codigo}</span>
-                          <span className="pm-despacho-validado-desc">{i.descripcion}</span>
+                      <div key={i.id} className="desp-item desp-item--pendiente">
+                        <div className="desp-item-info">
+                          <span className="desp-item-codigo">{i.codigo}</span>
+                          <span className="desp-item-meta">{i.descripcion}</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                          <span className="pm-despacho-validado-cant" style={{ color: 'var(--text-muted)' }}>{despachada}/{i.cantidad_pedida}</span>
-                        </div>
+                        <span className="desp-item-cant desp-item-cant--muted">{despachada}/{i.cantidad_pedida}</span>
                       </div>
                     )
                   })
@@ -553,33 +572,36 @@ export function DespachoSesionPage() {
                   })
                   .map((v) => {
                     const expandido = productoExpandido === v.itemId
-                    const ESTADO_LABELS: Record<string, string> = { completado: 'Completado', parcial: 'Parcial', sin_stock: 'Sin stock' }
                     return (
-                      <div key={v.itemId} className="ing-prod-item pm-item-card">
+                      <div key={v.itemId} className="desp-item">
                         <div
-                          className="ing-prod-fila pm-item-header"
+                          className="desp-item-fila"
                           role="button" tabIndex={0}
                           onClick={() => setProductoExpandido(expandido ? null : v.itemId)}
                           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setProductoExpandido(expandido ? null : v.itemId)}
                         >
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                            <span className="ing-prod-nombre">{v.descripcion || v.codigo}</span>
-                            <span className="ing-prod-sku">{v.codigo}</span>
+                          <div className="desp-item-info">
+                            <span className="desp-item-nombre">{v.descripcion || v.codigo}</span>
+                            <span className="desp-item-codigo">{v.codigo}</span>
                           </div>
-                          <div className="ing-prod-fila-derecha" style={{ gap: '0.5rem' }}>
-                            <span className={`badge badge-${v.estado.replace(/_/g, '-')}`}>{ESTADO_LABELS[v.estado] ?? v.estado}</span>
-                            <span className="pm-item-chevron">{expandido ? '▲' : '▼'}</span>
+                          <div className="desp-item-right">
+                            <span className={`desp-estado-badge desp-estado-badge--${v.estado.replace(/_/g, '-')}`}>
+                              {ESTADO_LABELS[v.estado] ?? v.estado}
+                            </span>
+                            <span className="desp-chevron">{expandido ? '▲' : '▼'}</span>
                           </div>
                         </div>
                         {expandido && (
-                          <div style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', background: 'rgba(103, 207, 232, 0.15)', border: '1px solid rgba(103, 207, 232, 0.35)', display: 'flex', gap: 'var(--spacing-lg)', marginTop: '0.5rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Solicitado OC</span>
-                              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white' }}>{v.cantidadPedida}</span>
+                          <div className="desp-item-detalle">
+                            <div className="desp-detalle-col">
+                              <span className="desp-detalle-label">Solicitado OC</span>
+                              <span className="desp-detalle-val">{v.cantidadPedida}</span>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ fontSize: '0.68rem', color: '#67cfe8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Enviado</span>
-                              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: v.cantidadDespachada < v.cantidadPedida ? 'var(--warning)' : 'var(--success)' }}>{v.cantidadDespachada}</span>
+                            <div className="desp-detalle-col">
+                              <span className="desp-detalle-label">Enviado</span>
+                              <span className={`desp-detalle-val ${v.cantidadDespachada < v.cantidadPedida ? 'desp-detalle-val--warn' : 'desp-detalle-val--ok'}`}>
+                                {v.cantidadDespachada}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -592,23 +614,25 @@ export function DespachoSesionPage() {
       )}
 
       {sesion.estado === 'despachado' && (
-        <div className="pm-despacho-completado">OC despachada</div>
+        <div className="desp-completado">OC despachada ✓</div>
       )}
 
-      {/* Botón Despachar Carga (Imperial únicamente) */}
+      {/* Despachar Carga — Imperial */}
       {sesionTieneLpn && todosProductosValidados && sesion.estado === 'completada' && !mostrarChofer && (
-        <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarChofer(true)}>
+        <button className="desp-action-btn desp-action-btn--despachar" onClick={() => setMostrarChofer(true)}>
           Despachar Carga
         </button>
       )}
 
-      {/* ── FASE 2 (Sodimac): escáner LPN ── */}
+      {/* ── FASE 2 Sodimac: escáner LPN ── */}
       {!sesionTieneLpn && faseSodimac === 'lpns' && sesion.estado === 'completada' && (
         <>
-          <div className="pm-despacho-scanner-card">
-            <div className="pm-despacho-fase-label" style={{ color: 'white' }}>Validación de LPN</div>
-            {/* Carga de Excel LPN directamente en esta pantalla */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="desp-scanner-wrap">
+            <div className="desp-scanner-header">
+              <div className="desp-scanner-dot" />
+              <span className="desp-scanner-label">ESCÁNER ACTIVO — LPN</span>
+            </div>
+            <div className="desp-excel-row">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -616,78 +640,56 @@ export function DespachoSesionPage() {
                 style={{ display: 'none' }}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoExcel(f) }}
               />
-              <button
-                type="button"
-                className="btn-secundario"
-                onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: '0.85rem' }}
-              >
+              <button type="button" className="desp-excel-btn" onClick={() => fileInputRef.current?.click()}>
                 📎 {lpnsExcel.length > 0 ? `Excel cargado (${lpnsExcel.length} LPNs)` : 'Cargar Excel de LPNs'}
               </button>
-              {errorExcel && <span style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>{errorExcel}</span>}
+              {errorExcel && <span className="desp-scanner-error">{errorExcel}</span>}
             </div>
-            <label className="pm-confirmar-label">
-              Escanear LPN
-              <div className="pm-confirmar-barcode-row">
-                <input
-                  ref={lpnInputRef}
-                  type="text"
-                  className={`pm-confirmar-input ${errorLpnScan ? 'pm-confirmar-input--error' : ''}`}
-                  placeholder="Escanea o ingresa el LPN…"
-                  value={lpnScanInput}
-                  onChange={(e) => { setLpnScanInput(e.target.value); setErrorLpnScan(null) }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleEscanearLpn(lpnScanInput)}
-                  autoFocus
-                  autoComplete="off"
-                />
-                <BarcodeScanner title="Escanear con cámara" onDetected={handleEscanearLpn} />
-              </div>
-            </label>
-            {errorLpnScan && <p className="pm-confirmar-barcode-error">{errorLpnScan}</p>}
-            <button
-              className="btn-primario pm-despacho-scan-btn"
-              disabled={!lpnScanInput.trim()}
-              onClick={() => handleEscanearLpn(lpnScanInput)}
-            >
+            <div className="desp-scanner-input-row">
+              <input
+                ref={lpnInputRef}
+                type="text"
+                className={`desp-scanner-input ${errorLpnScan ? 'desp-scanner-input--error' : ''}`}
+                placeholder="Escanea o ingresa el LPN…"
+                value={lpnScanInput}
+                onChange={(e) => { setLpnScanInput(e.target.value); setErrorLpnScan(null) }}
+                onKeyDown={(e) => e.key === 'Enter' && handleEscanearLpn(lpnScanInput)}
+                autoFocus
+                autoComplete="off"
+              />
+              <BarcodeScanner title="Escanear con cámara" onDetected={handleEscanearLpn} />
+            </div>
+            {errorLpnScan && <p className="desp-scanner-error">{errorLpnScan}</p>}
+            <button className="desp-scan-btn" disabled={!lpnScanInput.trim()} onClick={() => handleEscanearLpn(lpnScanInput)}>
               Validar
             </button>
           </div>
 
-          {/* Lista LPNs pendientes / validados */}
-          <div className="pm-despacho-validados-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  type="button"
-                  style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroLpns === 'pendientes' ? 'var(--warning)' : 'transparent', color: filtroLpns === 'pendientes' ? '#000' : 'var(--text-secondary)' }}
-                  onClick={() => setFiltroLpns('pendientes')}
-                >
+          {/* Lista LPNs */}
+          <div className="desp-lista-card">
+            <div className="desp-filtros-row">
+              <div className="desp-filtros">
+                <button className={`desp-filtro-btn ${filtroLpns === 'pendientes' ? 'desp-filtro-btn--pendiente' : ''}`} onClick={() => setFiltroLpns('pendientes')}>
                   Pendientes ({totalLpns - lpnsValidadosN})
                 </button>
-                <button
-                  type="button"
-                  style={{ padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, borderRadius: '999px', border: '1px solid var(--border)', cursor: 'pointer', background: filtroLpns === 'validados' ? 'var(--accent)' : 'transparent', color: filtroLpns === 'validados' ? 'white' : 'var(--text-secondary)' }}
-                  onClick={() => setFiltroLpns('validados')}
-                >
+                <button className={`desp-filtro-btn ${filtroLpns === 'validados' ? 'desp-filtro-btn--activo' : ''}`} onClick={() => setFiltroLpns('validados')}>
                   Validados ({lpnsValidadosN})
                 </button>
               </div>
-              <span className="pm-despacho-validados-ratio">{lpnsValidadosN}/{totalLpns}</span>
+              <span className="desp-ratio">{lpnsValidadosN}/{totalLpns}</span>
             </div>
-            <div className="pm-items-lista">
+            <div className="desp-items">
               {lpnsExcel
                 .filter((entry) => filtroLpns === 'validados' ? lpnsEscaneados.has(entry.lpn) : !lpnsEscaneados.has(entry.lpn))
                 .map((entry) => {
                   const validado = lpnsEscaneados.has(entry.lpn)
                   return (
-                    <div key={entry.lpn} className={`pm-item-card pm-despacho-validado-fila${validado ? '' : ' pm-despacho-lpn-pendiente'}`}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                        <span className="pm-despacho-validado-codigo" style={{ fontFamily: 'monospace' }}>{entry.lpn}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{entry.totalEmpaque} empaque{entry.totalEmpaque !== 1 ? 's' : ''}</span>
+                    <div key={entry.lpn} className={`desp-item ${validado ? 'desp-item--validado' : 'desp-item--pendiente'}`}>
+                      <div className="desp-item-info">
+                        <span className="desp-item-codigo desp-item-codigo--mono">{entry.lpn}</span>
+                        <span className="desp-item-meta">{entry.totalEmpaque} empaque{entry.totalEmpaque !== 1 ? 's' : ''}</span>
                       </div>
-                      <span className={validado ? 'pm-despacho-validado-check' : 'pm-despacho-lpn-pendiente-icon'}>
-                        {validado ? '✓' : '○'}
-                      </span>
+                      <span className={validado ? 'desp-item-check' : 'desp-item-pending'}>{validado ? '✓' : '○'}</span>
                     </div>
                   )
                 })}
@@ -695,176 +697,101 @@ export function DespachoSesionPage() {
           </div>
 
           {todosLpnsValidados && (
-            <button className="btn-primario pm-despacho-despachar-btn" onClick={() => setMostrarChofer(true)}>
+            <button className="desp-action-btn desp-action-btn--despachar" onClick={() => setMostrarChofer(true)}>
               Despachar Carga
             </button>
           )}
         </>
       )}
 
-      {/* Modal confirmación LPN escaneado (Sodimac fase 2) */}
+      {/* ── Modal: LPN escaneado (Sodimac fase 2) ── */}
       {lpnPendiente && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setLpnPendiente(null)}
-        >
-          <div
-            className="modal-box pm-despacho-modal"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw', width: '360px' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">LPN Escaneado</h3>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">LPN</span>
-              <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', color: 'var(--accent-green)' }}>{lpnPendiente.lpn}</span>
+        <div className="modal-overlay" onClick={() => setLpnPendiente(null)}>
+          <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">LPN Escaneado</h3>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">LPN</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--green">{lpnPendiente.lpn}</span>
             </div>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Cantidad de empaques</span>
-              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>{lpnPendiente.totalEmpaque}</span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Cantidad de empaques</span>
+              <span className="desp-modal-valor desp-modal-valor--xl">{lpnPendiente.totalEmpaque}</span>
             </div>
-
-            {/* Botón Ver detalle */}
             <button
               type="button"
-              style={{ width: '100%', marginTop: 'var(--spacing-sm)', padding: '0.5rem 1rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              className="desp-detalle-toggle"
               onClick={() => setLpnDetalleAbierto((p) => !p)}
             >
               <span>Ver detalle ({lpnPendiente.items.length} código{lpnPendiente.items.length !== 1 ? 's' : ''})</span>
-              <span style={{ fontSize: '0.65rem' }}>{lpnDetalleAbierto ? '▲' : '▼'}</span>
+              <span>{lpnDetalleAbierto ? '▲' : '▼'}</span>
             </button>
-
             {lpnDetalleAbierto && (
-              <div style={{ marginTop: 'var(--spacing-xs)', maxHeight: '220px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <div className="desp-detalle-lista">
                 {lpnPendiente.items.map((it, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.75rem', borderBottom: idx < lpnPendiente.items.length - 1 ? '1px solid var(--border)' : 'none', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-sm)', color: 'var(--accent-green)' }}>{it.codigo}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{it.tienda}</span>
+                  <div key={idx} className="desp-detalle-fila">
+                    <div className="desp-item-info">
+                      <span className="desp-item-codigo desp-item-codigo--mono desp-item-codigo--green">{it.codigo}</span>
+                      <span className="desp-item-meta">{it.tienda}</span>
                     </div>
-                    <span style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap' }}>{it.cantidad} u.</span>
+                    <span className="desp-item-cant">{it.cantidad} u.</span>
                   </div>
                 ))}
               </div>
             )}
-
-            <div className="pm-confirmar-acciones" style={{ marginTop: 'var(--spacing-md)' }}>
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => setLpnPendiente(null)}>
-                Cancelar
-              </button>
-              <button className="btn-primario pm-confirmar-btn" onClick={handleConfirmarLpnSodimac}>
-                Confirmar LPN
-              </button>
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setLpnPendiente(null)}>Cancelar</button>
+              <button className="desp-modal-btn desp-modal-btn--primary" onClick={handleConfirmarLpnSodimac}>Confirmar LPN</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal cargar Excel LPN (Sodimac) */}
-      {mostrarCargarLpn && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setMostrarCargarLpn(false)}
-        >
-          <div
-            className="modal-box pm-despacho-modal"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">Cargar Excel de LPN</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
-              Sube el archivo Excel con las columnas <strong>LPN, CODIGO, TIENDA, CANTIDAD DE EMPAQUE</strong>.
-              El sistema extraerá los LPN únicos para validar.
-            </p>
-            {errorExcel && <p className="pm-confirmar-barcode-error">{errorExcel}</p>}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              style={{ display: 'none' }}
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoExcel(f) }}
-            />
-            <div className="pm-confirmar-acciones">
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => setMostrarCargarLpn(false)}>
-                Cancelar
-              </button>
-              <button className="btn-primario pm-confirmar-btn" onClick={() => fileInputRef.current?.click()}>
-                Seleccionar archivo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal detalle LPN validado (solo Imperial) */}
+      {/* ── Modal: Detalle LPN validado (Imperial) ── */}
       {detalleLpn && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setDetalleLpn(null)}
-        >
-          <div
-            className="modal-box"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '3px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', width: '90vw', maxWidth: '420px' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">{detalleLpn.codigo}</h3>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Tienda</span>
-              <span className="pm-despacho-modal-valor">{detalleLpn.tienda ?? '—'}</span>
+        <div className="modal-overlay" onClick={() => setDetalleLpn(null)}>
+          <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">{detalleLpn.codigo}</h3>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Tienda</span>
+              <span className="desp-modal-valor">{detalleLpn.tienda ?? '—'}</span>
             </div>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Cantidad</span>
-              <span className="pm-despacho-modal-valor"><strong>{detalleLpn.cantidadPedida}</strong></span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Cantidad</span>
+              <span className="desp-modal-valor desp-modal-valor--xl">{detalleLpn.cantidadPedida}</span>
             </div>
-            <div className="pm-despacho-modal-fila" style={{ marginTop: 'var(--spacing-sm)' }}>
-              <span className="pm-despacho-modal-label">LPN</span>
-              <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 700, color: 'var(--accent)' }}>{detalleLpn.lpn}</span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">LPN</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--accent">{detalleLpn.lpn}</span>
             </div>
-            <button className="btn-secundario" style={{ width: '100%', marginTop: 'var(--spacing-md)' }} onClick={() => setDetalleLpn(null)}>
-              Cerrar
-            </button>
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" style={{ flex: 1 }} onClick={() => setDetalleLpn(null)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal confirmación LPN (Imperial) */}
+      {/* ── Modal: Confirmar bulto (Imperial) ── */}
       {itemPendienteLpn && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setItemPendienteLpn(null)}
-        >
-          <div
-            className="modal-box pm-despacho-modal"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">Confirmar bulto</h3>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Código</span>
-              <span className="pm-despacho-modal-valor">{itemPendienteLpn.codigo}</span>
+        <div className="modal-overlay" onClick={() => setItemPendienteLpn(null)}>
+          <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">Confirmar bulto</h3>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Código</span>
+              <span className="desp-modal-valor">{itemPendienteLpn.codigo}</span>
             </div>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Cantidad</span>
-              <span className="pm-despacho-modal-valor"><strong>{itemPendienteLpn.cantidadPedida}</strong> uds</span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Cantidad</span>
+              <span className="desp-modal-valor desp-modal-valor--xl">{itemPendienteLpn.cantidadPedida} uds</span>
             </div>
             {itemPendienteLpn.tienda && (
-              <div className="pm-despacho-modal-fila">
-                <span className="pm-despacho-modal-label">Tienda</span>
-                <span className="pm-despacho-modal-valor">{itemPendienteLpn.tienda}</span>
+              <div className="desp-modal-fila">
+                <span className="desp-modal-label">Tienda</span>
+                <span className="desp-modal-valor">{itemPendienteLpn.tienda}</span>
               </div>
             )}
-            <div className="pm-confirmar-acciones" style={{ marginTop: 'var(--spacing-md)' }}>
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => setItemPendienteLpn(null)}>
-                Volver
-              </button>
-              <button
-                className="btn-primario pm-confirmar-btn"
-                disabled={validarLpn.isPending}
-                onClick={handleConfirmarLpn}
-              >
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setItemPendienteLpn(null)}>Volver</button>
+              <button className="desp-modal-btn desp-modal-btn--primary" disabled={validarLpn.isPending} onClick={handleConfirmarLpn}>
                 {validarLpn.isPending ? 'Confirmando…' : 'Confirmado'}
               </button>
             </div>
@@ -872,51 +799,29 @@ export function DespachoSesionPage() {
         </div>
       )}
 
-      {/* Modal confirmación producto (Sodimac) */}
+      {/* ── Modal: Confirmar producto (Sodimac) ── */}
       {itemPendienteSodimac && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => setItemPendienteSodimac(null)}
-        >
-          <div
-            className="modal-box pm-despacho-modal"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">Confirmar producto</h3>
+        <div className="modal-overlay" onClick={() => setItemPendienteSodimac(null)}>
+          <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">Confirmar producto</h3>
             {itemPendienteSodimac.cantidadDespachada < itemPendienteSodimac.cantidadPedida && (
-              <div style={{ marginBottom: '0.75rem' }}>
-                <span style={{ background: 'var(--accent-yellow, #f59e0b)', color: '#000', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', padding: '2px 10px', borderRadius: '999px', textTransform: 'uppercase' }}>
-                  Parcial
-                </span>
-              </div>
+              <span className="desp-parcial-badge">Parcial</span>
             )}
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Código</span>
-              <span className="pm-despacho-modal-valor" style={{ fontFamily: 'monospace', color: 'var(--accent-green)' }}>{itemPendienteSodimac.codigo}</span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Código</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--green">{itemPendienteSodimac.codigo}</span>
             </div>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Cant. solicitada</span>
-              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>
-                {itemPendienteSodimac.cantidadPedida}
-              </span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Cant. solicitada</span>
+              <span className="desp-modal-valor desp-modal-valor--xl">{itemPendienteSodimac.cantidadPedida}</span>
             </div>
-            <div className="pm-despacho-modal-fila">
-              <span className="pm-despacho-modal-label">Cant. despachada</span>
-              <span className="pm-despacho-modal-valor" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>
-                {itemPendienteSodimac.cantidadDespachada}
-              </span>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Cant. despachada</span>
+              <span className="desp-modal-valor desp-modal-valor--xl">{itemPendienteSodimac.cantidadDespachada}</span>
             </div>
-            <div className="pm-confirmar-acciones" style={{ marginTop: 'var(--spacing-md)' }}>
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => setItemPendienteSodimac(null)}>
-                Volver
-              </button>
-              <button
-                className="btn-primario pm-confirmar-btn"
-                disabled={validarItem.isPending}
-                onClick={handleConfirmarSodimac}
-              >
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setItemPendienteSodimac(null)}>Volver</button>
+              <button className="desp-modal-btn desp-modal-btn--primary" disabled={validarItem.isPending} onClick={handleConfirmarSodimac}>
                 {validarItem.isPending ? 'Confirmando…' : 'Confirmado'}
               </button>
             </div>
@@ -924,53 +829,30 @@ export function DespachoSesionPage() {
         </div>
       )}
 
-      {/* Modal chofer */}
+      {/* ── Modal: Chofer ── */}
       {mostrarChofer && (
-        <div
-          className="modal-overlay"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
-          onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }}
-        >
-          <div
-            className="modal-box pm-despacho-modal"
-            style={{ background: 'var(--bg-card, #1e2229)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', padding: '1.5rem', minWidth: '300px', maxWidth: '90vw', width: '360px' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="modal-titulo">Confirmar despacho</h3>
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Selecciona el chofer</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div className="modal-overlay" onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }}>
+          <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">Confirmar despacho</h3>
+            <p className="desp-modal-sub">Selecciona el chofer</p>
+            <div className="desp-choferes">
               {['Darhyng Olea', 'Javier Arancibia', 'Jorge Alvarez', 'Gustavo Bunster'].map((chofer) => (
                 <button
                   key={chofer}
                   type="button"
+                  className={`desp-chofer-btn ${nombreChofer === chofer ? 'desp-chofer-btn--sel' : ''}`}
                   onClick={() => setNombreChofer(chofer)}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: nombreChofer === chofer ? '2px solid var(--accent)' : '1px solid var(--border)',
-                    background: nombreChofer === chofer ? 'var(--accent-dim, rgba(0,180,255,0.12))' : 'var(--bg-elevated)',
-                    color: nombreChofer === chofer ? 'var(--accent)' : 'var(--text-primary)',
-                    fontWeight: nombreChofer === chofer ? 700 : 400,
-                    fontSize: 'var(--font-size-base)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s',
-                  }}
                 >
                   {chofer}
                 </button>
               ))}
             </div>
-            {errorDespacho && <p className="pm-confirmar-barcode-error">{errorDespacho}</p>}
-            <div className="pm-confirmar-acciones">
-              <button className="btn-secundario pm-confirmar-btn" onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }} disabled={despacharSesion.isPending}>
+            {errorDespacho && <p className="desp-scanner-error">{errorDespacho}</p>}
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" disabled={despacharSesion.isPending} onClick={() => { setMostrarChofer(false); setNombreChofer(''); setErrorDespacho(null) }}>
                 Cancelar
               </button>
-              <button
-                className="btn-primario pm-confirmar-btn"
-                disabled={!nombreChofer.trim() || despacharSesion.isPending}
-                onClick={handleDespachar}
-              >
+              <button className="desp-modal-btn desp-modal-btn--primary" disabled={!nombreChofer.trim() || despacharSesion.isPending} onClick={handleDespachar}>
                 {despacharSesion.isPending ? 'Despachando…' : 'Confirmar despacho'}
               </button>
             </div>
