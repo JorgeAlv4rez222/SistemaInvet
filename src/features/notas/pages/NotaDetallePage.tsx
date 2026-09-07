@@ -298,7 +298,7 @@ export function NotaDetallePage() {
     const puedePickear   = !terminado && !offline && !notaCerrada
     const ubicPrincipal  = item.ubicaciones[0] ?? null
     const abierto        = expandidos.has(item.notaProductoId)
-    const nombreCorto    = item.nombre.length > 10 ? item.nombre.slice(0, 10) + '…' : item.nombre
+    const nombreCorto    = item.nombre.length > 12 ? item.nombre.slice(0, 12) + '…' : item.nombre
 
     return (
       <div

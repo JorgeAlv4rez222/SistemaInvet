@@ -581,8 +581,17 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
                       </td>
                       <td className="hnv-traz-td hnv-traz-td--op">{m.usuario}</td>
                       <td className="hnv-traz-td hnv-traz-td--fecha">
-                        <span className="hnv-fecha-dia">{m.fecha.slice(0, 10).split('-').reverse().join('-')}</span>
-                        <span className="hnv-fecha-hora">{m.fecha.slice(11, 16)} hrs</span>
+                        {(() => {
+                          const d = new Date(m.fecha)
+                          const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                          const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                          return (
+                            <>
+                              <span className="hnv-fecha-dia">{dia}</span>
+                              <span className="hnv-fecha-hora">{hora} hrs</span>
+                            </>
+                          )
+                        })()}
                       </td>
                     </tr>
                   ))}

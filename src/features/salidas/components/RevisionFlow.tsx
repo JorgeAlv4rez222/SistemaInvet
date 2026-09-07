@@ -318,7 +318,7 @@ export function RevisionFlow({
     const esSinStock   = item.estado === 'sin_stock'
     const puedeRevisar = !revisado && !offline && !yaDespachada
     const abierto      = expandidos.has(item.notaProductoId)
-    const nombreCorto  = item.nombre.length > 10 ? item.nombre.slice(0, 10) + '…' : item.nombre
+    const nombreCorto  = item.nombre.length > 12 ? item.nombre.slice(0, 12) + '…' : item.nombre
 
     const dotClass = revisado
       ? 'nd-dot nd-dot--ok'
