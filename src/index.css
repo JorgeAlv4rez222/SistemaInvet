@@ -3242,6 +3242,207 @@ label {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   HISTORIAL KARDEX — Tabla densa de movimientos (hkardex-*)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Panel de filtros */
+.hkardex-filtros-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.hkardex-search {
+  width: 100%;
+  background: var(--bg-card, var(--bg-elevated));
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 9px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.hkardex-search:focus { border-color: var(--accent); }
+.hkardex-search::placeholder { color: var(--text-muted); }
+.hkardex-filtros-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.hkardex-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hkardex-label--err .hkardex-select,
+.hkardex-label--err .hkardex-date { border-color: #f87171; }
+.hkardex-label-txt {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hkardex-select,
+.hkardex-date {
+  background: var(--bg-card, var(--bg-elevated));
+  border: 1px solid var(--border-light);
+  border-radius: 7px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.hkardex-select:focus,
+.hkardex-date:focus { border-color: var(--accent); }
+.hkardex-btn-aplicar { min-height: 36px; align-self: flex-end; }
+.hkardex-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.hkardex-btn-export:hover:not(:disabled) {
+  border-color: #4ade80;
+  color: #4ade80;
+  background: rgba(74,222,128,0.08);
+}
+.hkardex-btn-export:disabled { opacity: 0.4; cursor: default; }
+
+/* Resumen */
+.hkardex-resumen {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 0;
+}
+.hkardex-resumen strong { color: var(--text-secondary); }
+
+/* Tabla Kardex */
+.hkardex-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+.hkardex-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.hkardex-thead-tr {
+  background: #1a2535;
+  border-bottom: 2px solid var(--border-light);
+}
+.hkardex-th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.hkardex-th--r { text-align: right; }
+.hkardex-fila {
+  border-bottom: 1px solid rgba(51,65,85,0.6);
+  transition: background 0.1s;
+}
+.hkardex-fila:last-child { border-bottom: none; }
+.hkardex-fila:hover { background: rgba(30,41,59,0.7); }
+.hkardex-td {
+  padding: 9px 14px;
+  vertical-align: middle;
+}
+
+/* Fecha / Hora */
+.hkardex-td--fecha { white-space: nowrap; }
+.hkardex-fecha-dia { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-secondary); font-family: monospace; }
+.hkardex-fecha-hora { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-muted); font-family: monospace; }
+
+/* Producto */
+.hkardex-td--prod { min-width: 180px; }
+.hkardex-prod-nombre { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-primary); line-height: 1.3; }
+.hkardex-prod-sku {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #7dd3fc;
+  background: rgba(56,189,248,0.1);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+/* Ubicación */
+.hkardex-ubic-code {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* Cantidad */
+.hkardex-td--cant { text-align: right; white-space: nowrap; }
+.hkardex-cant-num { font-size: 15px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.hkardex-uds { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+/* Referencia */
+.hkardex-ref-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.hkardex-ref-btn:hover { background: rgba(74,222,128,0.2); }
+.hkardex-ref-btn--imp { color: #7dd3fc; background: rgba(125,211,252,0.1); border-color: rgba(125,211,252,0.25); }
+.hkardex-ref-btn--imp:hover { background: rgba(125,211,252,0.2); }
+
+/* Operador */
+.hkardex-td--op { white-space: nowrap; }
+.hkardex-op { font-size: 12.5px; color: var(--text-secondary); }
+
+/* Nil */
+.hkardex-nil { color: var(--text-muted); font-size: 12px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hkardex-th:nth-child(4), .hkardex-td--ubic,
+  .hkardex-th:nth-child(6), .hkardex-td--ref { display: none; }
+  .hkardex-filtros-fila { flex-direction: column; align-items: stretch; }
+  .hkardex-btn-aplicar,
+  .hkardex-btn-export { align-self: flex-start; }
+}
+
 /* ── Paginación ── */
 .historial-paginacion {
   display: flex;

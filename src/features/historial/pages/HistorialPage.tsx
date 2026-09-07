@@ -33,14 +33,6 @@ function IconSearch() {
     </svg>
   )
 }
-function IconHistorial() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={48} height={48}>
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  )
-}
-
 // ── Colores por tipo de movimiento ────────────────────────────────────────
 
 const TIPO_CONFIG: Record<string, { color: string; bg: string; icono: string }> = {
@@ -1080,18 +1072,97 @@ function PickingHistorialView() {
   )
 }
 
+// ── Tabla Kardex — vista densa admin ─────────────────────────────────────
+
+function TablaKardex({
+  movimientos,
+  onDetalle,
+}: {
+  movimientos: MovimientoHistorial[]
+  onDetalle:   ((ctx: DetalleContexto) => void) | null
+}) {
+  if (movimientos.length === 0) {
+    return <p className="vacio">Sin movimientos para los filtros aplicados</p>
+  }
+  return (
+    <div className="hkardex-scroll">
+      <table className="hkardex-tabla">
+        <thead>
+          <tr className="hkardex-thead-tr">
+            <th className="hkardex-th">FECHA / HORA</th>
+            <th className="hkardex-th">TIPO</th>
+            <th className="hkardex-th">PRODUCTO / SKU</th>
+            <th className="hkardex-th">UBICACIÓN</th>
+            <th className="hkardex-th hkardex-th--r">CANTIDAD</th>
+            <th className="hkardex-th">REFERENCIA</th>
+            <th className="hkardex-th">OPERADOR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {movimientos.map(m => {
+            const d        = new Date(m.fecha)
+            const fechaStr = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+            const horaStr  = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+            return (
+              <tr key={m.movimientoId} className="hkardex-fila">
+                <td className="hkardex-td hkardex-td--fecha">
+                  <span className="hkardex-fecha-dia">{fechaStr}</span>
+                  <span className="hkardex-fecha-hora"> · {horaStr}</span>
+                </td>
+                <td className="hkardex-td">
+                  <BadgeTipo tipo={m.tipo} />
+                </td>
+                <td className="hkardex-td hkardex-td--prod">
+                  {m.nombreProducto && <span className="hkardex-prod-nombre">{m.nombreProducto}</span>}
+                  {m.producto       && <code  className="hkardex-prod-sku">{m.producto}</code>}
+                </td>
+                <td className="hkardex-td hkardex-td--ubic">
+                  {m.ubicacion
+                    ? <code className="hkardex-ubic-code">{m.ubicacion}</code>
+                    : <span className="hkardex-nil">—</span>
+                  }
+                </td>
+                <td className="hkardex-td hkardex-td--cant">
+                  {m.cantidad !== null
+                    ? <><strong className="hkardex-cant-num">{m.cantidad}</strong><span className="hkardex-uds"> Uds</span></>
+                    : <span className="hkardex-nil">—</span>
+                  }
+                </td>
+                <td className="hkardex-td hkardex-td--ref">
+                  {m.notaNumero && onDetalle && m.notaVentaId
+                    ? <button className="hkardex-ref-btn" onClick={() => onDetalle({ tipo: 'nota', notaId: m.notaVentaId!, numero: m.notaNumero! })}>NV {m.notaNumero}</button>
+                    : m.importacionCodigo && onDetalle
+                      ? <button className="hkardex-ref-btn hkardex-ref-btn--imp" onClick={() => onDetalle({ tipo: 'ingreso', importacionId: m.movimientoId, codigo: m.importacionCodigo! })}>{m.importacionCodigo}</button>
+                      : <span className="hkardex-nil">—</span>
+                  }
+                </td>
+                <td className="hkardex-td hkardex-td--op">
+                  <span className="hkardex-op">{m.usuario}</span>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ── Página principal ───────────────────────────────────────────────────────
 
 type ErrorFiltro = { desde?: string; hasta?: string; rango?: string }
 
 export function HistorialPage() {
-  const [vista,      setVista]      = useState<'movimientos' | 'notas' | 'ingresos' | 'picking'>('movimientos')
-  const [filtros,    setFiltros]    = useState<ObtenerMovimientosInput | null>(null)
-  const [detalle,    setDetalle]    = useState<DetalleContexto>(null)
-  const [tipoInput,  setTipoInput]  = useState('')
-  const [desdeInput, setDesdeInput] = useState('')
-  const [hastaInput, setHastaInput] = useState('')
-  const [errores,    setErrores]    = useState<ErrorFiltro>({})
+  const hoyIso = new Date().toISOString().slice(0, 10)
+
+  const [vista,               setVista]               = useState<'movimientos' | 'notas' | 'ingresos' | 'picking'>('movimientos')
+  const [filtros,             setFiltros]             = useState<ObtenerMovimientosInput | null>({ limite: LIMITE, offset: 0, desde: hoyIso, hasta: hoyIso })
+  const [detalle,             setDetalle]             = useState<DetalleContexto>(null)
+  const [tipoInput,           setTipoInput]           = useState('')
+  const [desdeInput,          setDesdeInput]          = useState(hoyIso)
+  const [hastaInput,          setHastaInput]          = useState(hoyIso)
+  const [errores,             setErrores]             = useState<ErrorFiltro>({})
+  const [busquedaMovimientos, setBusquedaMovimientos] = useState('')
 
   const { data, isLoading, isError } = useMovimientos(filtros ?? { limite: LIMITE, offset: 0 })
 
@@ -1099,6 +1170,18 @@ export function HistorialPage() {
   const offset   = filtros?.offset ?? 0
   const hayMas   = offset + LIMITE < total
   const hayAntes = offset > 0
+
+  const movimientosFiltrados = useMemo(() => {
+    const lista = data?.movimientos ?? []
+    if (!busquedaMovimientos.trim()) return lista
+    const q = busquedaMovimientos.toLowerCase()
+    return lista.filter(m =>
+      m.producto?.toLowerCase().includes(q) ||
+      m.nombreProducto?.toLowerCase().includes(q) ||
+      m.usuario.toLowerCase().includes(q) ||
+      m.detalle.toLowerCase().includes(q)
+    )
+  }, [data?.movimientos, busquedaMovimientos])
 
   function validar(): ErrorFiltro {
     const errs: ErrorFiltro = {}
@@ -1123,15 +1206,44 @@ export function HistorialPage() {
   }
 
   function handleLimpiar() {
+    const hoy = new Date().toISOString().slice(0, 10)
     setTipoInput('')
-    setDesdeInput('')
-    setHastaInput('')
+    setDesdeInput(hoy)
+    setHastaInput(hoy)
     setErrores({})
-    setFiltros(null)
+    setBusquedaMovimientos('')
+    setFiltros({ limite: LIMITE, offset: 0, desde: hoy, hasta: hoy })
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') handleBuscar()
+  }
+
+  function exportarCSV() {
+    if (movimientosFiltrados.length === 0) return
+    const headers = ['Fecha', 'Hora', 'Tipo', 'SKU', 'Producto', 'Ubicacion', 'Cantidad', 'Referencia', 'Operador']
+    const rows = movimientosFiltrados.map(m => {
+      const d = new Date(m.fecha)
+      return [
+        d.toLocaleDateString('es-CL').replace(/\//g, '-'),
+        d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        m.tipo,
+        m.producto ?? '',
+        m.nombreProducto ?? '',
+        m.ubicacion ?? '',
+        String(m.cantidad ?? ''),
+        m.notaNumero ?? m.importacionCodigo ?? '',
+        m.usuario,
+      ]
+    })
+    const csv  = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `historial-movimientos-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // Detalle vistas
@@ -1141,8 +1253,6 @@ export function HistorialPage() {
   if (detalle?.tipo === 'nota') {
     return <DetalleNota notaId={detalle.notaId} onCerrar={() => setDetalle(null)} />
   }
-
-  const buscado = filtros !== null
 
   return (
     <div className="historial-page">
@@ -1212,115 +1322,86 @@ export function HistorialPage() {
       )}
 
       {vista === 'movimientos' && <>
-      <h1 className="historial-titulo">Historial de movimientos</h1>
-
-      {/* Panel de filtros */}
-      <div className="hist-filtros-panel">
-        <div className="hist-filtros-titulo">
-          <IconFiltro />
-          <span>Filtros de búsqueda</span>
-        </div>
-
-        <div className="hist-filtros-grid">
-          <label className="hist-label">
-            Tipo de movimiento
-            <select value={tipoInput} onChange={(e) => setTipoInput(e.target.value)} onKeyDown={handleKeyDown}>
+      {/* ── Panel de filtros Kardex ── */}
+      <div className="hkardex-filtros-panel">
+        <input
+          className="hkardex-search"
+          type="text"
+          placeholder="Buscar por SKU, nombre de producto u operador..."
+          value={busquedaMovimientos}
+          onChange={e => setBusquedaMovimientos(e.target.value)}
+        />
+        <div className="hkardex-filtros-fila">
+          <label className="hkardex-label">
+            <span className="hkardex-label-txt">Tipo</span>
+            <select className="hkardex-select" value={tipoInput} onChange={e => setTipoInput(e.target.value)} onKeyDown={handleKeyDown}>
               <option value="">Todos los tipos</option>
-              {TIPOS_MOVIMIENTO.map((t) => (
-                <option key={t} value={t}>{TIPO_LABELS[t]}</option>
-              ))}
+              {TIPOS_MOVIMIENTO.map(t => <option key={t} value={t}>{TIPO_LABELS[t]}</option>)}
             </select>
           </label>
-
-          <label className={`hist-label${errores.desde ? ' hist-label--error' : ''}`}>
-            Desde
-            <input
-              type="date"
-              value={desdeInput}
+          <label className={`hkardex-label${errores.desde ? ' hkardex-label--err' : ''}`}>
+            <span className="hkardex-label-txt">Desde</span>
+            <input className="hkardex-date" type="date" value={desdeInput}
               max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => { setDesdeInput(e.target.value); setErrores((p) => ({ ...p, desde: undefined, rango: undefined })) }}
+              onChange={e => { setDesdeInput(e.target.value); setErrores(p => ({ ...p, desde: undefined, rango: undefined })) }}
               onKeyDown={handleKeyDown}
             />
-            {errores.desde && <span className="hist-error-msg">{errores.desde}</span>}
           </label>
-
-          <label className={`hist-label${errores.hasta ? ' hist-label--error' : ''}`}>
-            Hasta
-            <input
-              type="date"
-              value={hastaInput}
+          <label className={`hkardex-label${errores.hasta ? ' hkardex-label--err' : ''}`}>
+            <span className="hkardex-label-txt">Hasta</span>
+            <input className="hkardex-date" type="date" value={hastaInput}
               max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => { setHastaInput(e.target.value); setErrores((p) => ({ ...p, hasta: undefined, rango: undefined })) }}
+              onChange={e => { setHastaInput(e.target.value); setErrores(p => ({ ...p, hasta: undefined, rango: undefined })) }}
               onKeyDown={handleKeyDown}
             />
-            {errores.hasta && <span className="hist-error-msg">{errores.hasta}</span>}
           </label>
-        </div>
-
-        {errores.rango && <p className="hist-error-rango">{errores.rango}</p>}
-
-        <div className="hist-filtros-acciones">
-          <button className="btn-primario hist-btn-buscar" onClick={handleBuscar}>
-            <IconSearch /> Buscar
+          <button className="btn-primario hkardex-btn-aplicar" onClick={handleBuscar}>
+            <IconSearch /> Aplicar
           </button>
-          {buscado && (
-            <button className="btn-secundario" onClick={handleLimpiar}>Limpiar filtros</button>
-          )}
+          <button className="btn-secundario" onClick={handleLimpiar}>Hoy</button>
+          <button
+            className="hkardex-btn-export"
+            onClick={exportarCSV}
+            disabled={movimientosFiltrados.length === 0}
+            title="Exportar a CSV"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar CSV
+          </button>
         </div>
+        {(errores.desde || errores.hasta || errores.rango) && (
+          <p className="hist-error-rango">{errores.rango ?? errores.desde ?? errores.hasta}</p>
+        )}
       </div>
 
-      {/* Estado vacío — sin búsqueda aún */}
-      {!buscado && (
-        <div className="hist-estado-vacio">
-          <IconHistorial />
-          <p>Aplica un filtro o rango de fecha para ver los movimientos</p>
-        </div>
-      )}
+      {isLoading && <div className="hist-cargando"><span className="spinner" /><span>Cargando movimientos…</span></div>}
+      {isError   && <p className="error">Error al cargar historial. Intenta nuevamente.</p>}
 
-      {/* Resultados */}
-      {buscado && (
+      {!isLoading && !isError && (
         <>
-          {isLoading && (
-            <div className="hist-cargando">
-              <span className="spinner" />
-              <span>Buscando movimientos…</span>
+          <div className="hkardex-resumen">
+            {busquedaMovimientos.trim()
+              ? <span><strong>{movimientosFiltrados.length}</strong> resultado{movimientosFiltrados.length !== 1 ? 's' : ''} · filtro de texto activo</span>
+              : <span><strong>{total}</strong> movimiento{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}</span>
+            }
+          </div>
+
+          <TablaKardex movimientos={movimientosFiltrados} onDetalle={setDetalle} />
+
+          {total > LIMITE && !busquedaMovimientos.trim() && (
+            <div className="historial-paginacion">
+              <button className="btn-secundario" disabled={!hayAntes}
+                onClick={() => setFiltros(f => f ? { ...f, offset: Math.max(0, (f.offset ?? 0) - LIMITE) } : f)}>
+                ← Anterior
+              </button>
+              <span className="paginacion-info">{offset + 1}–{Math.min(offset + LIMITE, total)} de {total}</span>
+              <button className="btn-secundario" disabled={!hayMas}
+                onClick={() => setFiltros(f => f ? { ...f, offset: (f.offset ?? 0) + LIMITE } : f)}>
+                Siguiente →
+              </button>
             </div>
-          )}
-          {isError && <p className="error">Error al cargar historial. Intenta nuevamente.</p>}
-
-          {!isLoading && !isError && (
-            <>
-              <div className="hist-resumen">
-                {total === 0
-                  ? <span>No se encontraron movimientos con los filtros aplicados</span>
-                  : <span><strong>{total}</strong> movimiento{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}</span>
-                }
-              </div>
-
-              <ListaMovimientos movimientos={data?.movimientos ?? []} onDetalle={setDetalle} />
-
-              {total > LIMITE && (
-                <div className="historial-paginacion">
-                  <button
-                    className="btn-secundario"
-                    disabled={!hayAntes}
-                    onClick={() => setFiltros((f) => f ? { ...f, offset: Math.max(0, (f.offset ?? 0) - LIMITE) } : f)}
-                  >
-                    ← Anterior
-                  </button>
-                  <span className="paginacion-info">
-                    {offset + 1}–{Math.min(offset + LIMITE, total)} de {total}
-                  </span>
-                  <button
-                    className="btn-secundario"
-                    disabled={!hayMas}
-                    onClick={() => setFiltros((f) => f ? { ...f, offset: (f.offset ?? 0) + LIMITE } : f)}
-                  >
-                    Siguiente →
-                  </button>
-                </div>
-              )}
-            </>
           )}
         </>
       )}
