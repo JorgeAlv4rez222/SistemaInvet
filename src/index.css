@@ -5781,8 +5781,18 @@ label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 20px;
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 12px rgba(22,163,74,0.35);
+}
+.nd-btn-enviar:hover:not(:disabled) {
+  background: #15803d !important;
+  box-shadow: 0 0 18px rgba(22,163,74,0.5);
 }
 
 /* Meta strip */
