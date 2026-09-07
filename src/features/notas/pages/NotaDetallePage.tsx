@@ -572,7 +572,6 @@ export function NotaDetallePage() {
       {/* Cabecera de columnas */}
       {(pendientes.length > 0 || completados.length > 0) && (
         <div className="nd-tabla-header">
-          <div className="nd-col-dot" />
           <div className="nd-col-loc">Ubicación</div>
           <div className="nd-col-info">Producto</div>
           <div className="nd-col-qty">Cantidades</div>
