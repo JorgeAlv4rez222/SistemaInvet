@@ -305,23 +305,6 @@ export function NotaDetallePage() {
         key={item.notaProductoId}
         className={`nd-prod-row ${terminado ? 'nd-prod-row--terminado' : 'nd-prod-row--pendiente'}`}
       >
-        {/* ── Columna ubicación ── */}
-        <div className="nd-prod-loc">
-          {ubicPrincipal ? (
-            <span className="nd-loc-badge">
-              <IcoRack size={11} />
-              {ubicPrincipal.posicionCodigo ?? '—'}
-            </span>
-          ) : (
-            <span className="nd-loc-badge nd-loc-badge--sin">Sin ubic.</span>
-          )}
-          {ubicPrincipal && (
-            <span className="nd-loc-lote" title={`Lote: ${ubicPrincipal.loteId}`}>
-              {formatearFecha(ubicPrincipal.fechaIngreso)}
-            </span>
-          )}
-        </div>
-
         {/* ── Columna producto ── */}
         <div
           className="nd-prod-info"
@@ -336,7 +319,24 @@ export function NotaDetallePage() {
             <code className="nd-prod-ean">{item.codigoBarra}</code>
           )}
           {abierto && (
-            <span className="nd-prod-nombre-completo">{item.nombre}</span>
+            <>
+              <span className="nd-prod-nombre-completo">{item.nombre}</span>
+              <div className="nd-prod-loc nd-prod-loc--expandido">
+                {ubicPrincipal ? (
+                  <span className="nd-loc-badge">
+                    <IcoRack size={11} />
+                    {ubicPrincipal.posicionCodigo ?? '—'}
+                  </span>
+                ) : (
+                  <span className="nd-loc-badge nd-loc-badge--sin">Sin ubicación</span>
+                )}
+                {ubicPrincipal && (
+                  <span className="nd-loc-lote" title={`Lote: ${ubicPrincipal.loteId}`}>
+                    {formatearFecha(ubicPrincipal.fechaIngreso)}
+                  </span>
+                )}
+              </div>
+            </>
           )}
           {item.skuEquivalente && (
             <span className="nd-prod-equiv">↔ {item.skuEquivalente}</span>
@@ -572,7 +572,6 @@ export function NotaDetallePage() {
       {/* Cabecera de columnas */}
       {(pendientes.length > 0 || completados.length > 0) && (
         <div className="nd-tabla-header">
-          <div className="nd-col-loc">Ubicación</div>
           <div className="nd-col-info">Producto</div>
           <div className="nd-col-qty">Cantidades</div>
           <div className="nd-col-acc">Estado / Acción</div>
