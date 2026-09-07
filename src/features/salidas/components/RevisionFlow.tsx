@@ -245,7 +245,7 @@ export function RevisionFlow({
 
   const totalItems    = items.length
   const itemsRevisados = items.filter((i) => i.revisadoAdmin).length
-  const todosRevisados = revisadoEnSesion || estadoNota === 'completa' || (items.length > 0 && items.every((i) => i.revisadoAdmin))
+  const todosRevisados = revisadoEnSesion || (items.length > 0 && items.every((i) => i.revisadoAdmin))
   const pctGlobal     = totalItems > 0 ? Math.round((itemsRevisados / totalItems) * 100) : 0
   const todosOk       = pctGlobal === 100
 
