@@ -511,7 +511,6 @@ export function RevisionFlow({
           {pendientes.length > 0 && (
             <section>
               <h3 className="nd-seccion-titulo">
-                <span className="nd-dot nd-dot--pending" style={{ display: 'inline-block', marginRight: '0.4rem' }} />
                 Pendientes ({pendientes.length})
               </h3>
               <div className="nd-productos-lista">
@@ -523,7 +522,6 @@ export function RevisionFlow({
           {completados.length > 0 && (
             <section className={pendientes.length > 0 ? 'nd-productos-lista--completados' : ''}>
               <h3 className="nd-seccion-titulo">
-                <span className="nd-dot nd-dot--ok" style={{ display: 'inline-block', marginRight: '0.4rem' }} />
                 Revisados ({completados.length})
               </h3>
               <div className="nd-productos-lista">
