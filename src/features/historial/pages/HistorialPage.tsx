@@ -483,107 +483,111 @@ function ProductoHistorialCard({
 function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => void }) {
   const { data, isLoading, isError, error } = useMovimientosPorNota(notaId)
 
-  // Agrupar movimientos por SKU — excluye eventos sin producto, agrupa equivalentes bajo el SKU original
-  const { porSku, equivRevMap } = useMemo(() => {
-    const empty = { porSku: [] as [string, MovimientoHistorial[]][], equivRevMap: new Map<string, string>() }
-    if (!data) return empty
-    try {
-      // Tipos sin producto asociado — excluir de las tarjetas de producto
-      const TIPOS_SIN_PRODUCTO = new Set(['cambio_estado_nota', 'despacho', 'picking', 'revision_admin'])
-
-      // equivRevMap: skuEquivalente → skuOriginal (para mostrar "Reemplazó a" en la tarjeta del equivalente)
-      const equivRevMap = new Map<string, string>()
-      for (const m of data.movimientos ?? []) {
-        if (m.tipo === 'equivalente_usado' && m.skuEquivalente && m.skuOriginal) {
-          equivRevMap.set(m.skuEquivalente, m.skuOriginal)
-        }
-      }
-
-      const map = new Map<string, MovimientoHistorial[]>()
-      for (const m of data.movimientos ?? []) {
-        // Saltar movimientos sin ninguna referencia a producto
-        if (TIPOS_SIN_PRODUCTO.has(m.tipo)) continue
-        if (!m.producto && !m.skuOriginal) continue
-
-        let key: string
-        if (m.tipo === 'equivalente_usado') {
-          key = m.skuOriginal!  // agrupar bajo el SKU original pedido
-        } else {
-          key = m.producto ?? m.skuOriginal!
-        }
-
-        if (!map.has(key)) map.set(key, [])
-        map.get(key)!.push(m)
-      }
-      return { porSku: Array.from(map.entries()), equivRevMap }
-    } catch (e) {
-      console.error('[DetalleNota] error:', e, data)
-      return empty
-    }
+  const filas = useMemo(() => {
+    if (!data) return [] as MovimientoHistorial[]
+    const TIPOS_EXCLUIDOS = new Set(['cambio_estado_nota', 'despacho', 'picking', 'revision_admin', 'equivalente_usado'])
+    return (data.movimientos ?? []).filter(m => !TIPOS_EXCLUIDOS.has(m.tipo) && m.producto)
   }, [data])
+
+  const totalSolicitado = filas.reduce((s, m) => s + (m.cantidadSolicitada ?? m.cantidad ?? 0), 0)
+  const totalPicked     = filas.reduce((s, m) => s + (m.cantidad ?? 0), 0)
+  const pct             = totalSolicitado > 0 ? Math.round((totalPicked / totalSolicitado) * 100) : 0
 
   const estadoCfg = data ? (ESTADO_NOTA_CFG[data.estado] ?? { label: data.estado, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }) : null
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-
+    <div className="hnv-detalle">
       {/* Cabecera */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onCerrar}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-lg px-3 py-2 hover:bg-[var(--bg-elevated)] transition-colors"
-        >
-          ← Volver
-        </button>
-        <h3 className="text-lg font-bold text-[var(--text-primary)]">Productos de la nota</h3>
+      <div className="hnv-detalle-header">
+        <button className="hnv-volver" onClick={onCerrar}>← Volver al Historial</button>
+        <div className="hnv-detalle-titulo-row">
+          <span className="hnv-detalle-titulo">Detalle NV: {data?.nota ?? '…'}</span>
+          {estadoCfg && (
+            <span className="hnv-badge" style={{ color: estadoCfg.color, background: estadoCfg.bg, borderColor: estadoCfg.color + '40' }}>
+              {estadoCfg.label}
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading && <div className="hist-cargando"><span className="spinner" /><span>Cargando…</span></div>}
       {isError   && <p className="error">Error al cargar detalle: {(error as Error)?.message ?? 'desconocido'}</p>}
 
-      {data && estadoCfg && (
+      {data && (
         <>
-          {/* Meta de la nota */}
-          <div className="bg-[var(--bg-surface)] rounded-xl p-4 flex flex-wrap items-center gap-3 border border-[var(--border-light)]">
-            <span className="text-xl font-extrabold text-[var(--text-primary)]">{data.nota}</span>
-            <span className="text-sm text-[var(--text-secondary)]">Cliente: <strong>{data.cliente}</strong></span>
-            <span
-              className="text-xs font-bold px-2.5 py-1 rounded-full border"
-              style={{ color: estadoCfg.color, background: estadoCfg.bg, borderColor: estadoCfg.color + '40' }}
-            >
-              {estadoCfg.label}
-            </span>
+          {/* Datos generales */}
+          <div className="hnv-detalle-meta">
+            <div className="hnv-meta-grid">
+              <div className="hnv-meta-item">
+                <span className="hnv-meta-label">Cliente</span>
+                <span className="hnv-meta-val">{data.cliente}</span>
+              </div>
+              <div className="hnv-meta-item">
+                <span className="hnv-meta-label">Estado</span>
+                <span className="hnv-meta-val">{estadoCfg?.label ?? data.estado}</span>
+              </div>
+              {data.despacho && (
+                <div className="hnv-meta-item">
+                  <span className="hnv-meta-label">Despachado por</span>
+                  <span className="hnv-meta-val">
+                    {data.despacho.nombreChofer} · {isoADMY(data.despacho.fechaDespacho)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="hnv-progreso-wrap">
+              <div className="hnv-progreso-label">
+                <span>Progreso Total</span>
+                <span>{totalPicked} / {totalSolicitado} Uds ({pct}%)</span>
+              </div>
+              <div className="hnv-progreso-bar">
+                <div className="hnv-progreso-fill" style={{ width: `${Math.min(pct, 100)}%` }} />
+              </div>
+            </div>
           </div>
 
-          {/* Despacho */}
-          {data.despacho && (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] rounded-xl border-l-4 border-[#86efac]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#86efac" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-                <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-              </svg>
-              <span className="text-sm text-[var(--text-secondary)]">
-                Despachado por <strong className="text-[var(--text-primary)]">{data.despacho.nombreChofer}</strong>
-                <span className="text-[var(--text-muted)]"> · {isoADMY(data.despacho.fechaDespacho)}</span>
-              </span>
-            </div>
-          )}
-
-          {/* Tarjetas por producto — accordion */}
-          {porSku.length === 0 && <p className="vacio">Sin movimientos registrados para esta nota</p>}
-
-          <div className="notas-lista-panel">
-            <div className="notas-lista-scroll">
-              <div className="notas-lista-filas">
-                {porSku.map(([sku, movs]) => (
-                  <ProductoHistorialCard
-                    key={sku}
-                    sku={sku}
-                    movs={movs}
-                    equivRevMap={equivRevMap}
-                    comentario={data?.comentariosPorSku[sku] ?? null}
-                  />
-                ))}
-              </div>
+          {/* Tabla de trazabilidad */}
+          <div className="hnv-traz-wrap">
+            <div className="hnv-traz-titulo">DETALLE DE TRAZABILIDAD Y PRODUCTOS</div>
+            <div className="hnv-tabla-scroll">
+              <table className="hnv-traz-tabla">
+                <thead>
+                  <tr className="hnv-traz-thead-tr">
+                    <th className="hnv-traz-th">UBICACIÓN RACK</th>
+                    <th className="hnv-traz-th">PRODUCTO Y DESCRIPCIÓN</th>
+                    <th className="hnv-traz-th">SOLICITADO / PICKED</th>
+                    <th className="hnv-traz-th">OPERADOR RESPONSABLE</th>
+                    <th className="hnv-traz-th">FECHA / HORA REGISTRO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="hnv-vacio">Sin movimientos registrados para esta nota</td>
+                    </tr>
+                  ) : filas.map(m => (
+                    <tr key={m.movimientoId} className="hnv-traz-fila">
+                      <td className="hnv-traz-td hnv-traz-td--rack">
+                        <code className="hnv-rack-code">{m.ubicacion ?? '—'}</code>
+                      </td>
+                      <td className="hnv-traz-td hnv-traz-td--prod">
+                        <span className="hnv-prod-nombre">{m.nombreProducto ?? '—'}</span>
+                        <span className="hnv-prod-sku">SKU: {m.producto}</span>
+                      </td>
+                      <td className="hnv-traz-td hnv-traz-td--cant">
+                        <span className="hnv-cant-sol">{m.cantidadSolicitada ?? '—'}</span>
+                        <span className="hnv-cant-sep"> / </span>
+                        <span className="hnv-cant-pick">{m.cantidad ?? 0}</span>
+                      </td>
+                      <td className="hnv-traz-td hnv-traz-td--op">{m.usuario}</td>
+                      <td className="hnv-traz-td hnv-traz-td--fecha">
+                        <span className="hnv-fecha-dia">{m.fecha.slice(0, 10).split('-').reverse().join('-')}</span>
+                        <span className="hnv-fecha-hora">{m.fecha.slice(11, 16)} hrs</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </>
@@ -607,7 +611,7 @@ const ESTADO_NOTA_COLORS: Record<string, { color: string; bg: string }> = {
   despachada:  { color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)' },
 }
 
-function NotaHistorialCard({
+function NotaHistorialRow({
   nota,
   onDetalle,
 }: {
@@ -620,74 +624,103 @@ function NotaHistorialCard({
   })
 
   return (
-    <div
-      className="nota-fila-item"
-      role="button"
-      tabIndex={0}
+    <tr
+      className="hnv-fila"
       onClick={() => onDetalle(nota.notaId)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDetalle(nota.notaId) } }}
-      style={{ cursor: 'pointer' }}
     >
-      <div className="nota-fila nota-fila--hist">
-        <div className="nota-fila-principal">
-          <span className="nota-fila-numero">{nota.numeroNota}</span>
-          <span className="nota-fila-cliente">{nota.nombreCliente}</span>
-        </div>
-        <span className="nota-fila-fecha">{fecha}</span>
-        <div className="nota-fila-estado">
-          <span
-            className="badge"
-            style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.color}40` }}
-          >
-            {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
-          </span>
-        </div>
-      </div>
-    </div>
+      <td className="hnv-td hnv-td--numero">{nota.numeroNota}</td>
+      <td className="hnv-td hnv-td--cliente">{nota.nombreCliente}</td>
+      <td className="hnv-td hnv-td--fecha">{fecha}</td>
+      <td className="hnv-td hnv-td--items">{nota.totalProductos} SKUs</td>
+      <td className="hnv-td hnv-td--origen">—</td>
+      <td className="hnv-td hnv-td--estado">
+        <span className="hnv-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.color + '40' }}>
+          {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
+        </span>
+      </td>
+      <td className="hnv-td hnv-td--accion">
+        <button
+          className="hnv-btn-ver"
+          onClick={(e) => { e.stopPropagation(); onDetalle(nota.notaId) }}
+        >
+          Ver detalle
+        </button>
+      </td>
+    </tr>
   )
 }
 
 function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void }) {
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [busqueda, setBusqueda] = useState('')
   const { data, isLoading, isError } = useNotas(filtroEstado || undefined)
-  const notas = data ?? []
+
+  const notas = useMemo(() => {
+    const todas = data ?? []
+    if (!busqueda.trim()) return todas
+    const q = busqueda.toLowerCase()
+    return todas.filter(n =>
+      n.numeroNota.toLowerCase().includes(q) ||
+      n.nombreCliente.toLowerCase().includes(q)
+    )
+  }, [data, busqueda])
 
   return (
-    <div className="hist-notas-view">
-      <h2 className="hing-titulo">Notas de Venta</h2>
-      <div className="hist-notas-filtros">
-        {(['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const).map((e) => (
-          <button
-            key={e}
-            className={`filtro-btn${filtroEstado === e ? ' activo' : ''}`}
-            onClick={() => setFiltroEstado(e)}
-          >
-            {e ? ESTADO_NOTA_LABELS[e] : 'Todas'}
-          </button>
-        ))}
+    <div className="hnv-view">
+      {/* Barra de filtros */}
+      <div className="hnv-filtros">
+        <div className="hnv-search-wrap">
+          <input
+            className="hnv-search"
+            type="text"
+            placeholder="Buscar por N° NV, cliente..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+        </div>
+        <div className="hnv-estado-tabs">
+          {(['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const).map((e) => (
+            <button
+              key={e}
+              className={`hnv-tab${filtroEstado === e ? ' activo' : ''}`}
+              onClick={() => setFiltroEstado(e)}
+            >
+              {e ? ESTADO_NOTA_LABELS[e] : `Todas${data ? ` (${data.length})` : ''}`}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading && <div className="hist-cargando"><span className="spinner" /><span>Cargando notas…</span></div>}
       {isError   && <p className="error">Error al cargar notas</p>}
 
       {!isLoading && !isError && (
-        <>
-          <p className="notas-conteo">{notas.length} nota{notas.length !== 1 ? 's' : ''}</p>
-          {notas.length === 0
-            ? <p className="vacio">No hay notas con este estado</p>
-            : (
-              <div className="notas-lista-panel">
-                <div className="notas-lista-scroll">
-                  <div className="notas-lista-filas">
-                    {notas.map((n) => (
-                      <NotaHistorialCard key={n.notaId} nota={n} onDetalle={onDetalle} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )
-          }
-        </>
+        <div className="hnv-tabla-wrap">
+          <div className="hnv-tabla-scroll">
+            <table className="hnv-tabla">
+              <thead>
+                <tr className="hnv-thead-tr">
+                  <th className="hnv-th">NV N°</th>
+                  <th className="hnv-th">CLIENTE</th>
+                  <th className="hnv-th">FECHA</th>
+                  <th className="hnv-th">SKUs</th>
+                  <th className="hnv-th">ORIGEN PICKING</th>
+                  <th className="hnv-th">ESTADO</th>
+                  <th className="hnv-th">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notas.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="hnv-vacio">No hay notas con este criterio</td>
+                  </tr>
+                ) : notas.map(n => (
+                  <NotaHistorialRow key={n.notaId} nota={n} onDetalle={onDetalle} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   )

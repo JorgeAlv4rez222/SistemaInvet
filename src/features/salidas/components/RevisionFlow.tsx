@@ -342,8 +342,8 @@ export function RevisionFlow({
           onClick={() => toggleExpandido(item.notaProductoId)}
         >
           <div className="nd-prod-nombre-row">
-            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
             <code className="nd-prod-sku-inline">{item.skuEquivalente ?? item.sku}</code>
+            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
           </div>
           {item.codigoBarra && (
             <code className="nd-prod-ean">{item.codigoBarra}</code>

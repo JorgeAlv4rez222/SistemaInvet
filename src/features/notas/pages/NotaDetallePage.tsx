@@ -312,8 +312,8 @@ export function NotaDetallePage() {
           style={{ cursor: 'pointer' }}
         >
           <div className="nd-prod-nombre-row">
-            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
             <code className="nd-prod-sku-inline">{item.sku}</code>
+            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
           </div>
           {item.codigoBarra && (
             <code className="nd-prod-ean">{item.codigoBarra}</code>

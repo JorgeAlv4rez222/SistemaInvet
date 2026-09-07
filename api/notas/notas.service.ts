@@ -151,7 +151,7 @@ export type EnviarARevisionResult = {
 
 //Constantes (prefijos que sirve para equivalente en caso de S.STOCK)
 
-const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL', 'BO'] as const
+const PREFIJOS_EQUIVALENTES = ['HX', 'EK', 'BOL', 'BO', 'GT', 'BK'] as const
 
 //Helpers
 

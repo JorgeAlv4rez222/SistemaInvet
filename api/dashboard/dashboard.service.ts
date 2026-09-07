@@ -100,7 +100,12 @@ export const dashboardService = {
   async obtenerKpisBi(): Promise<ServiceResult<KpisBi>> {
     const ahora = new Date()
     const hoyInicio   = new Date(ahora); hoyInicio.setHours(0, 0, 0, 0)
-    const semanaInicio = new Date(ahora); semanaInicio.setDate(ahora.getDate() - 6); semanaInicio.setHours(0, 0, 0, 0)
+    // Semana calendario: desde el lunes de esta semana (0=dom → retroceder 6, 1=lun → 0, etc.)
+    const semanaInicio = new Date(ahora)
+    const diaSemana = ahora.getDay()
+    const diasDesdelunes = diaSemana === 0 ? 6 : diaSemana - 1
+    semanaInicio.setDate(ahora.getDate() - diasDesdelunes)
+    semanaInicio.setHours(0, 0, 0, 0)
     const mesInicio   = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
     const mes30Inicio = new Date(ahora); mes30Inicio.setDate(ahora.getDate() - 30)
 
@@ -117,9 +122,9 @@ export const dashboardService = {
       supabase.from('notas_venta').select('fecha_preparacion, fecha_despacho, created_at')
         .eq('estado', 'despachada')
         .gte('fecha_despacho', mes30Inicio.toISOString()),
-      supabase.from('notas_venta').select('estado').gte('created_at', hoyInicio.toISOString()),
-      supabase.from('notas_venta').select('estado').gte('created_at', semanaInicio.toISOString()),
-      supabase.from('notas_venta').select('estado').gte('created_at', mesInicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('updated_at', hoyInicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('updated_at', semanaInicio.toISOString()),
+      supabase.from('notas_venta').select('estado').gte('updated_at', mesInicio.toISOString()),
       supabase.from('movimientos')
         .select('tipo, fecha, detalle, usuarios(nombre), productos(sku), notas_venta(numero_nota)')
         .in('tipo', ['despacho', 'picking', 'ingreso', 'ingreso_parcial', 'cambio_estado_nota', 'traslado_reubicacion'])
