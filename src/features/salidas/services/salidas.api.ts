@@ -13,6 +13,7 @@ export type NotaParaRevision = {
   productosCompletos:  number
   creadoEn:            string
   actualizadoEn:       string
+  fechaDespacho:       string | null
   nombreChofer:        string | null
   comentarioDespacho:  string | null
 }

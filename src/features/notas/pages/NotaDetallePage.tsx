@@ -305,22 +305,6 @@ export function NotaDetallePage() {
         key={item.notaProductoId}
         className={`nd-prod-row ${terminado ? 'nd-prod-row--terminado' : 'nd-prod-row--pendiente'}`}
       >
-        {/* ── Columna estado dot ── */}
-        <div className="nd-prod-dot">
-          {terminado && item.estado === 'completo' && (
-            <span className="nd-dot nd-dot--ok"><IcoCheck size={11} /></span>
-          )}
-          {terminado && item.estado === 'sin_stock' && (
-            <span className="nd-dot nd-dot--err"><IcoX size={11} /></span>
-          )}
-          {parcialCerrado && (
-            <span className="nd-dot nd-dot--warn"><IcoCheck size={11} /></span>
-          )}
-          {!terminado && (
-            <span className="nd-dot nd-dot--pending" />
-          )}
-        </div>
-
         {/* ── Columna ubicación ── */}
         <div className="nd-prod-loc">
           {ubicPrincipal ? (
@@ -564,24 +548,6 @@ export function NotaDetallePage() {
         </div>
       </div>
 
-      {/* ── SCANNER BAR ── */}
-      {!notaCerrada && (
-        <div className={`nd-scanner-bar ${scanError ? 'nd-scanner-bar--error' : ''}`}>
-          <span className="nd-scanner-icon"><IcoScan size={16} /></span>
-          <input
-            ref={scanRef}
-            type="text"
-            className="nd-scanner-input"
-            placeholder="ESCÁNER ACTIVO — Pistolear EAN / UPC / SKU aquí y presionar Enter..."
-            value={scanInput}
-            onChange={(e) => setScanInput(e.target.value)}
-            onKeyDown={handleScan}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {scanError && <span className="nd-scanner-error">{scanError}</span>}
-        </div>
-      )}
 
       {/* ── BÚSQUEDA DE PRODUCTO ── */}
       <div className="ing-busqueda" style={{ marginBottom: '12px' }}>

@@ -338,7 +338,7 @@ export function RevisionFlow({
         {/* Info del producto */}
         <div
           className="nd-prod-info"
-          style={{ gridColumn: 'span 2', cursor: 'pointer' }}
+          style={{ cursor: 'pointer' }}
           onClick={() => toggleExpandido(item.notaProductoId)}
         >
           <div className="nd-prod-nombre-row">
@@ -503,7 +503,7 @@ export function RevisionFlow({
 
           {/* Header tabla */}
           <div className="nd-tabla-header rv-tabla-header">
-            <div style={{ gridColumn: 'span 2' }}>Producto</div>
+            <div>Producto</div>
             <div className="nd-col-qty">Cantidades</div>
             <div className="nd-col-acc">Estado</div>
           </div>

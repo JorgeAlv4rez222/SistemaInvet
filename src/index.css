@@ -5990,7 +5990,7 @@ label {
 /* Cabecera de tabla */
 .nd-tabla-header {
   display: grid;
-  grid-template-columns: 18px 100px 1fr 160px 140px;
+  grid-template-columns: 100px 1fr 160px 140px;
   gap: 8px 12px;
   padding: 6px 12px;
   font-size: 10px;
@@ -6009,7 +6009,7 @@ label {
 /* Fila de producto */
 .nd-prod-row {
   display: grid;
-  grid-template-columns: 18px 100px 1fr 160px 140px;
+  grid-template-columns: 100px 1fr 160px 140px;
   gap: 8px 12px;
   align-items: start;
   padding: 10px 12px;
@@ -6236,10 +6236,12 @@ label {
    los elementos propios del flujo de auditoría.
    ══════════════════════════════════════════════════════════ */
 
-/* Tabla header: sin columna de ubicación (dot | info x2 | qty | acc) */
+/* Tabla header: sin columna de ubicación (info x2 | qty | acc) */
 .rv-tabla-header {
   grid-template-columns: 1fr 1fr 160px 130px;
 }
+.rv-tabla-header > div:first-child { grid-column: span 2; }
+.rv-prod-row .nd-prod-info { grid-column: span 2; }
 
 /* Fila de producto: misma base que nd-prod-row pero sin loc */
 .rv-prod-row {
@@ -6350,8 +6352,9 @@ label {
 
 /* ── Notas detalle + lista — tablet (481px–900px) ── */
 @media (min-width: 481px) and (max-width: 900px) {
-  .nd-tabla-header { grid-template-columns: 18px 80px 1fr 100px 110px; font-size: 12px; gap: 6px; }
-  .nd-prod-row     { grid-template-columns: 18px 80px 1fr 100px 110px; gap: 6px; }
+  /* NV Preparacion */
+  .nd-tabla-header { grid-template-columns: 80px 1fr 100px 110px; font-size: 12px; gap: 6px; }
+  .nd-prod-row     { grid-template-columns: 80px 1fr 100px 110px; gap: 6px; }
   .nd-prod-nombre  { font-size: 13px; }
   .nd-prod-sku-inline { font-size: 11px; }
   .nd-qty-label    { font-size: 10px; }
@@ -6359,6 +6362,12 @@ label {
   .nd-prod-qty     { gap: 6px; flex-wrap: nowrap; }
   .nd-prod-badge   { font-size: 11px; padding: 3px 6px; }
   .nd-prod-nombre-row { gap: 4px; }
+  /* NV Despacho: 3 columnas — producto | cantidad | acción */
+  .rv-tabla-header { grid-template-columns: 1fr 120px 110px; }
+  .rv-tabla-header > div:first-child { grid-column: 1; }
+  .rv-prod-row     { grid-template-columns: 1fr 120px 110px; }
+  .rv-prod-row .nd-prod-info { grid-column: 1; }
+  .rv-prod-row .nd-prod-sku-inline { font-size: 13px; }
 }
 
 /* ── Notas detalle + lista — pistola Zebra (≤480px) ── */
@@ -6372,12 +6381,11 @@ label {
 
   /* Tabla de productos — apilar columnas en mobile */
   .nd-tabla-header      { display: none; }
-  .nd-prod-row          { grid-template-columns: 18px 1fr; grid-template-rows: auto auto auto auto; gap: 6px 8px; }
-  .nd-prod-dot          { grid-column: 1; grid-row: 1 / 5; align-self: center; }
-  .nd-prod-loc          { grid-column: 2; grid-row: 1; }
-  .nd-prod-info         { grid-column: 2; grid-row: 2; }
-  .nd-prod-qty          { grid-column: 2; grid-row: 3; gap: 12px; flex-wrap: nowrap; }
-  .nd-prod-acciones     { grid-column: 2; grid-row: 4; align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .nd-prod-row          { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto; gap: 6px 8px; }
+  .nd-prod-loc          { grid-column: 1; grid-row: 1; }
+  .nd-prod-info         { grid-column: 1; grid-row: 2; }
+  .nd-prod-qty          { grid-column: 1; grid-row: 3; gap: 12px; flex-wrap: nowrap; }
+  .nd-prod-acciones     { grid-column: 1; grid-row: 4; align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 6px; }
   /* RevisionFlow: colapsar columnas igual que nd-prod-row */
   .rv-prod-row          { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
   .rv-prod-row .nd-prod-info   { grid-column: 1; grid-row: 1; }

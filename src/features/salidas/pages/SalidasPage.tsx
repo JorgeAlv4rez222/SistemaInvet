@@ -375,7 +375,7 @@ export function SalidasPage() {
                     {/* Tiempo */}
                     <span className="nota-expand-item">
                       <IcoClock size={14} />
-                      {tiempoRelativo(nota.actualizadoEn ?? nota.creadoEn)}
+                      {tiempoRelativo(nota.fechaDespacho ?? nota.actualizadoEn ?? nota.creadoEn)}
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
                     {/* Chofer */}

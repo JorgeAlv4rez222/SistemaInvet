@@ -25,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       productosCompletos: n.totalRevisados,
       creadoEn:           n.created_at,
       actualizadoEn:      n.updated_at,
+      fechaDespacho:      n.fecha_despacho ?? null,
       nombreChofer:       n.nombre_chofer ?? null,
       comentarioDespacho: n.comentario_despacho ?? null,
     }))
