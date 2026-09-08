@@ -42,6 +42,7 @@ function SubtareaCard({
   onTomar: (sub: SubtareaResumen) => void
 }) {
   const navigate = useNavigate()
+  const [expandido, setExpandido] = useState(false)
 
   const esMia          = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
   const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
@@ -53,10 +54,7 @@ function SubtareaCard({
   const sku  = item?.codigo ?? '—'
   const ean  = item?.codigo_barra ?? null
   const rack = sub.posicion_codigo && sub.posicion_codigo !== '—' ? sub.posicion_codigo : 'S/U'
-
-  const despachada = sub.cantidad_despachada ?? 0
-  const total      = sub.cantidad_asignada
-  const pct        = total > 0 ? Math.round((despachada / total) * 100) : 0
+  const total = sub.cantidad_asignada
 
   let badgeLabel = 'Libre'
   let badgeCls   = 'sd-badge--libre'
@@ -73,7 +71,9 @@ function SubtareaCard({
 
   return (
     <div className={`sd-item-card ${cardMod}`}>
-      <div className="sd-item-row">
+
+      {/* ── Fila principal (clickeable para expandir LPN) ── */}
+      <div className="oc-card-row" onClick={() => item?.lpn && setExpandido(v => !v)}>
 
         {/* Rack */}
         <div className="sd-item-rack">
@@ -91,18 +91,10 @@ function SubtareaCard({
           </div>
         </div>
 
-        {/* LPN — columna fija alineada */}
-        <div className="oc-item-lpn">
-          {item?.lpn
-            ? <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
-            : <span className="oc-item-lpn--vacio">—</span>
-          }
-        </div>
-
         {/* Cantidad */}
         <div className="oc-item-cant">
           <strong>{total}</strong>
-          <span className="sd-item-cant-unit"> Uds</span>
+          <span className="oc-item-cant-unit"> Uds</span>
         </div>
 
         {/* Estado */}
@@ -114,8 +106,8 @@ function SubtareaCard({
           </span>
         </div>
 
-        {/* Acción */}
-        <div className="sd-item-acciones">
+        {/* Acción — detiene propagación para no toggle expandido */}
+        <div className="sd-item-acciones" onClick={e => e.stopPropagation()}>
           {esCompleta ? (
             <div className="sd-accion-btn sd-accion-btn--disabled">
               <IcoCheck /> Completado
@@ -142,6 +134,14 @@ function SubtareaCard({
           )}
         </div>
       </div>
+
+      {/* ── LPN expandible ── */}
+      {expandido && item?.lpn && (
+        <div className="oc-lpn-expand">
+          <span className="oc-lpn-expand-label">LPN Destino</span>
+          <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -153,7 +153,6 @@ export function OperadorColaPage() {
   const navigate    = useNavigate()
   const sesionId    = id ?? null
   const operadorId  = localStorage.getItem('user_id')  ?? ''
-  const rol         = localStorage.getItem('user_rol')  ?? ''
 
   const { data, isLoading, isError } = useColaSubtareas(sesionId)
   const { data: sesion }             = useSesionPicking(sesionId)

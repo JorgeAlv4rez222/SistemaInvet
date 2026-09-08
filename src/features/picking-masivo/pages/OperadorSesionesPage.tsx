@@ -75,6 +75,7 @@ function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
   const [open, setOpen] = useState(false)
   const pct        = s.total_items > 0 ? Math.round((s.items_completados / s.total_items) * 100) : 0
   const enProceso  = s.items_completados > 0
+  const esImperial = (s.nombre_cliente ?? '').trim().toLowerCase().includes('imperial')
   const oc         = s.numero_oc_pedido ?? s.numero_oc
   const fechaEnt   = s.numero_oc
   const fillColor  = enProceso ? '#22c55e' : '#f59e0b'
@@ -89,9 +90,21 @@ function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
         <div className="ops-card-main">
           <span className="ops-card-cliente">{s.nombre_cliente ?? oc}</span>
           <div className="ops-card-meta">
-            <span className="ops-meta-item ops-meta-item--lg">OC: <strong>{oc}</strong></span>
-            <span className="ops-meta-sep">·</span>
-            <span className="ops-meta-item ops-meta-item--lg">Entrega: <strong>{fmtFecha(fechaEnt)}</strong></span>
+            {esImperial ? (
+              <span className="ops-meta-item ops-meta-item--lg">
+                Entrega: <strong>{(() => {
+                  const d = new Date(fechaEnt)
+                  return isNaN(d.getTime()) ? fechaEnt
+                    : d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                })()}</strong>
+              </span>
+            ) : (
+              <>
+                <span className="ops-meta-item ops-meta-item--lg">OC: <strong>{oc}</strong></span>
+                <span className="ops-meta-sep">·</span>
+                <span className="ops-meta-item ops-meta-item--lg">Entrega: <strong>{fmtFecha(fechaEnt)}</strong></span>
+              </>
+            )}
           </div>
           <div className="ops-progreso-inline">
             <div className="ops-barra-bg">
@@ -107,7 +120,7 @@ function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
           <div className="ops-meta-pills-v">
             <div className={`ops-badge ${enProceso ? 'ops-badge--proceso' : 'ops-badge--libre'}`}>
               <span className="ops-badge-dot" />
-              {enProceso ? 'EN PROCESO' : 'LIBRE EN COLA'}
+              EN PROCESO
             </div>
             <span className="ops-meta-pill"><IcoUsers /> {enProceso ? '1 Op. en zona' : 'Sin operador'}</span>
           </div>

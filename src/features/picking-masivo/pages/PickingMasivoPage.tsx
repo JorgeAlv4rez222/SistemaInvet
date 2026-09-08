@@ -14,12 +14,12 @@ function derivarEstado(s: SesionResumen): EstadoAdmin {
   if (s.estado === 'despachado') return 'despachada'
   if (s.estado === 'completada') return 'completada'
   if (s.estado === 'validando')  return 'validando'
-  if (s.estado === 'activa')     return s.items_completados > 0 ? 'en_proceso' : 'libre'
-  return 'libre'
+  if (s.estado === 'activa')     return 'en_proceso'
+  return 'en_proceso'
 }
 
 const ESTADO_CFG: Record<EstadoAdmin, { label: string; cls: string; dot: string }> = {
-  libre:      { label: 'LIBRE EN COLA', cls: 'pm-badge--libre',      dot: '#f59e0b' },
+  libre:      { label: 'EN PROCESO',    cls: 'pm-badge--proceso',    dot: '#22c55e' },
   en_proceso: { label: 'EN PROCESO',    cls: 'pm-badge--proceso',    dot: '#22c55e' },
   completada: { label: 'COMPLETADA',    cls: 'pm-badge--completada', dot: '#38bdf8' },
   despachada: { label: 'DESPACHADA',    cls: 'pm-badge--despachada', dot: '#a78bfa' },
@@ -199,8 +199,7 @@ export function PickingMasivoPage() {
   const sesiones = data ?? []
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
-  const enProceso   = sesiones.filter(s => s.estado === 'activa' && s.items_completados > 0)
-  const libres      = sesiones.filter(s => (s.estado === 'activa' && s.items_completados === 0) || s.estado === 'validando')
+  const enProceso   = sesiones.filter(s => s.estado === 'activa' || s.estado === 'validando')
   const completadas = sesiones.filter(s => s.estado === 'completada' || s.estado === 'despachado')
 
   // ── Filtros ───────────────────────────────────────────────────────────────
@@ -259,43 +258,27 @@ export function PickingMasivoPage() {
       {/* ── KPIs ── */}
       <div className="pm-admin-kpis">
         <button
+          className={`pm-admin-kpi ${filtroEstado === 'todas' ? 'pm-admin-kpi--activo' : ''}`}
+          onClick={() => setFiltroEstado('todas')}
+        >
+          <span className="pm-admin-kpi-val">{sesiones.length}</span>
+          <span className="pm-admin-kpi-label">TODAS</span>
+        </button>
+
+        <button
           className={`pm-admin-kpi pm-admin-kpi--proceso ${filtroEstado === 'en_proceso' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => toggleFiltro('en_proceso')}
         >
-          <span className="pm-admin-kpi-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          </span>
-          <div>
-            <span className="pm-admin-kpi-val">{enProceso.length}</span>
-            <span className="pm-admin-kpi-label">🔵 En Proceso</span>
-          </div>
+          <span className="pm-admin-kpi-val">{enProceso.length}</span>
+          <span className="pm-admin-kpi-label">EN PROCESO</span>
         </button>
-
 
         <button
           className={`pm-admin-kpi pm-admin-kpi--completadas ${filtroEstado === 'completada' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => toggleFiltro('completada')}
         >
-          <span className="pm-admin-kpi-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          </span>
-          <div>
-            <span className="pm-admin-kpi-val">{completadas.length}</span>
-            <span className="pm-admin-kpi-label">🟣 Completadas</span>
-          </div>
-        </button>
-
-        <button
-          className={`pm-admin-kpi ${filtroEstado === 'todas' ? 'pm-admin-kpi--activo' : ''}`}
-          onClick={() => setFiltroEstado('todas')}
-        >
-          <span className="pm-admin-kpi-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          </span>
-          <div>
-            <span className="pm-admin-kpi-val">{sesiones.length}</span>
-            <span className="pm-admin-kpi-label">⚪ Todas</span>
-          </div>
+          <span className="pm-admin-kpi-val">{completadas.length}</span>
+          <span className="pm-admin-kpi-label">COMPLETADAS</span>
         </button>
       </div>
 

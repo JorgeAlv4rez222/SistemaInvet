@@ -299,16 +299,20 @@ export function SesionDetallePage() {
     { key: 'en_progreso', label: 'En Proceso', count: sesion.items.filter(i => i.estado === 'en_progreso').length },
     { key: 'completado',  label: 'Completas',  count: sesion.items.filter(i => i.estado === 'completado').length },
     { key: 'parcial',     label: 'Parcial',    count: sesion.items.filter(i => i.estado === 'parcial').length },
-    { key: 'sin_stock',   label: 'Sin Stock',  count: sesion.items.filter(i => i.estado === 'sin_stock').length },
   ] as const
 
-  const itemsFiltrados = sesion.items.filter(item => {
-    const q = busqueda.trim().toLowerCase()
-    const matchQ = !q || item.codigo.toLowerCase().includes(q) || (item.descripcion ?? '').toLowerCase().includes(q) ||
-      (item.codigo_barra ?? '').toLowerCase().includes(q)
-    const matchF = filtroEstado === 'todos' || item.estado === filtroEstado
-    return matchQ && matchF
-  })
+  const itemsFiltrados = sesion.items
+    .filter(item => {
+      const q = busqueda.trim().toLowerCase()
+      const matchQ = !q || item.codigo.toLowerCase().includes(q) || (item.descripcion ?? '').toLowerCase().includes(q) ||
+        (item.codigo_barra ?? '').toLowerCase().includes(q)
+      const matchF = filtroEstado === 'todos' || item.estado === filtroEstado
+      return matchQ && matchF
+    })
+    .sort((a, b) => {
+      if (a.lpn && b.lpn) return a.lpn.localeCompare(b.lpn)
+      return 0
+    })
 
   const lpnSesion  = sesion.items[0]?.lpn ?? null
   const esImperial = (sesion.nombre_cliente ?? '').toLowerCase() === 'imperial'
@@ -322,7 +326,19 @@ export function SesionDetallePage() {
           <IcoBack /> Volver
         </button>
         <div className="sd-header-title">
-          <span className="sd-header-nombre">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+          <div className="sd-header-nombre-row">
+            <span className="sd-header-nombre">{sesion.nombre_cliente ?? sesion.numero_oc}</span>
+            {esImperial && sesion.numero_oc && (
+              <span className="sd-header-entrega">
+                Entrega: {(() => {
+                  const d = new Date(sesion.numero_oc)
+                  return isNaN(d.getTime())
+                    ? sesion.numero_oc
+                    : d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                })()}
+              </span>
+            )}
+          </div>
           <div className="sd-header-meta">
             {sesion.numero_oc_pedido && (
               <span className="sd-header-oc">OC: {sesion.numero_oc_pedido}</span>
