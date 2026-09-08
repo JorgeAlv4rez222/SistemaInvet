@@ -527,7 +527,7 @@ export function SesionDetallePage() {
                   </span>
                 </div>
 
-                {/* SKU / Descripción */}
+                {/* Info: nombre + SKU / EAN / LPN */}
                 <div className="sd-item-sku">
                   <span className="sd-item-nombre">
                     {item.descripcion && item.descripcion !== item.codigo ? item.descripcion : item.codigo}
@@ -536,65 +536,47 @@ export function SesionDetallePage() {
                     <span className="sd-sku-tag">SKU: {item.codigo}</span>
                     {item.codigo_barra && <span className="sd-ean-tag">EAN: {item.codigo_barra}</span>}
                     {item.tienda && <span className="sd-tienda-tag">{item.tienda}</span>}
-                    {esImperial && item.lpn && (
-                      <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
+                    {item.lpn && <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>}
+                  </div>
+                </div>
+
+                {/* UDS — sin barra de progreso */}
+                <div className="sd-item-uds">
+                  <strong>{item.cantidad_despachada}</strong> / {item.cantidad_pedida}
+                  <span className="sd-item-cant-unit"> Uds</span>
+                </div>
+
+                {/* Derecha: estado arriba + acciones abajo */}
+                <div className="sd-item-right">
+                  <span className={`sd-badge ${badge.cls}`}>{badge.label}</span>
+                  <div className="sd-item-acciones">
+                    <button
+                      className="sd-accion-btn"
+                      title="Ver trazabilidad"
+                      onClick={() => toggleExpandido(item.id)}
+                    >
+                      <IcoEye /> {abierto ? 'Ocultar' : 'Detalle'}
+                    </button>
+                    {esAdmin && subActiva && (
+                      <button
+                        className="sd-accion-btn sd-accion-btn--warn"
+                        title="Liberar ítem bloqueado"
+                        onClick={() => alert(`Liberar ítem ${item.codigo} — disponible próximamente`)}
+                      >
+                        <IcoUnlock /> Liberar
+                      </button>
+                    )}
+                    {esAdmin && item.estado === 'sin_stock' && (
+                      <button
+                        className="sd-accion-btn sd-accion-btn--tool"
+                        title="Asignar reposición"
+                        onClick={() => alert(`Reposición para ${item.codigo} — disponible próximamente`)}
+                      >
+                        <IcoTool /> Reponer
+                      </button>
                     )}
                   </div>
                 </div>
-
-                {/* Progreso del ítem */}
-                <div className="sd-item-progreso">
-                  <span className="sd-item-cant">
-                    <strong>{item.cantidad_despachada}</strong> / {item.cantidad_pedida}
-                    <span className="sd-item-cant-unit"> Uds</span>
-                  </span>
-                  <div className="sd-mini-barra-bg">
-                    <div className="sd-mini-barra-fill" style={{ width: `${itemPct}%` }} />
-                  </div>
-                  <span className="sd-item-pct">{itemPct}%</span>
-                </div>
-
-                {/* Estado */}
-                <div className="sd-item-estado">
-                  <span className={`sd-badge ${badge.cls}`}>{badge.label}</span>
-                </div>
-
-                {/* Acciones */}
-                <div className="sd-item-acciones">
-                  <button
-                    className="sd-accion-btn"
-                    title="Ver trazabilidad"
-                    onClick={() => toggleExpandido(item.id)}
-                  >
-                    <IcoEye /> {abierto ? 'Ocultar' : 'Detalle'}
-                  </button>
-                  {esAdmin && subActiva && (
-                    <button
-                      className="sd-accion-btn sd-accion-btn--warn"
-                      title="Liberar ítem bloqueado"
-                      onClick={() => alert(`Liberar ítem ${item.codigo} — disponible próximamente`)}
-                    >
-                      <IcoUnlock /> Liberar
-                    </button>
-                  )}
-                  {esAdmin && item.estado === 'sin_stock' && (
-                    <button
-                      className="sd-accion-btn sd-accion-btn--tool"
-                      title="Asignar reposición"
-                      onClick={() => alert(`Reposición para ${item.codigo} — disponible próximamente`)}
-                    >
-                      <IcoTool /> Reponer
-                    </button>
-                  )}
-                </div>
-
-                {/* Chevron */}
-                <button
-                  className="sd-chevron-btn"
-                  onClick={() => toggleExpandido(item.id)}
-                >
-                  <IcoChevron open={abierto} />
-                </button>
               </div>
 
               {/* ── Panel expandido: trazabilidad ── */}
