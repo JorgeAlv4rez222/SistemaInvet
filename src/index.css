@@ -11800,15 +11800,7 @@ input[type="radio"] {
 
   .sd-items-lista { padding: 8px 10px; gap: 8px; }
 
-  /* Admin: grid de 3 col, scopeado a sd-item-row */
-  .sd-item-row {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 6px 8px;
-    padding: 10px 10px;
-  }
-  .sd-item-row .sd-item-rack { align-self: center; }
+  .sd-item-row { flex-wrap: nowrap; gap: 8px; padding: 10px 10px; }
   .sd-item-row .sd-item-sku  { flex: 1; min-width: 0; }
   .sd-fase-btns { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
   .sd-fase-btns .sd-btn { flex: 1; justify-content: center; }
@@ -11865,19 +11857,8 @@ input[type="radio"] {
   .sd-kpi-titulo { font-size: 0.62rem; }
   .sd-ops-lista { max-height: 90px; }
 
-  /* Items admin: dos filas, scopeado a sd-item-row */
-  .sd-item-row {
-    display: grid;
-    grid-template-columns: auto 1fr auto auto auto;
-    grid-template-rows: auto auto;
-    gap: 6px 10px;
-    align-items: center;
-    padding: 10px 12px;
-  }
-  .sd-item-row .sd-item-rack { align-self: center; }
+  .sd-item-row { flex-wrap: nowrap; gap: 8px; padding: 10px 12px; }
   .sd-item-row .sd-item-sku  { flex: 1; min-width: 0; }
-
-  /* Operador: oc-card-row es flex, sin override de grid */
 
   /* Toolbar */
   .sd-toolbar { gap: 8px; padding: 10px 14px; }
