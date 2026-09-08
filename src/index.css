@@ -10357,7 +10357,9 @@ input[type="radio"] {
   .pm-admin-kpis      { grid-template-columns: repeat(3, 1fr); }
   .pm-admin-top       { flex-direction: column; align-items: stretch; gap: 10px; }
   .pm-admin-nueva-btn { width: 100%; justify-content: center; }
-  .pm-admin-search-row{ flex-direction: column; gap: 8px; }
+  .pm-admin-search-row{ flex-direction: row; flex-wrap: nowrap; gap: 8px; }
+  .pm-admin-search-wrap { flex: 1; min-width: 0; }
+  .pm-t-fecha-wrap { flex-shrink: 0; }
   .pm-admin-kpi       { min-height: 80px; padding: 14px 16px; }
   .pm-admin-kpi-val   { font-size: 1.6rem; }
   .pm-t-th--creacion, .pm-t-td--creacion { display: none; }
