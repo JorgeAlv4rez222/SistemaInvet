@@ -90,11 +90,6 @@ const NAV_ITEMS: NavItem[] = [
     ruta: '/historial', label: 'Historial', labelCorto: 'Historial', roles: ['admin', 'supervisor'],
     icono: IcoHistoria,
   },
-  // ── Supervisor: Reporte de Discrepancias (usa /historial con filtro) ─────
-  {
-    ruta: '/historial?tipo=discrepancia', label: 'Discrepancias', labelCorto: 'Discrepancias', roles: ['supervisor'],
-    icono: IcoReporte,
-  },
   // ── Admin + Supervisor + Operador ────────────────────────────────────────
   {
     ruta: '/inventario-inicial', label: 'Ubicacion Inicial', labelCorto: 'Ubicación', roles: ['admin', 'supervisor', 'operador'],

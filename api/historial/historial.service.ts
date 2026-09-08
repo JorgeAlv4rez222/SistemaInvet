@@ -62,7 +62,7 @@ export type MovimientosPorNotaResult = {
   cliente:           string
   estado:            string
   movimientos:       MovimientoHistorial[]
-  despacho:          { nombreChofer: string; fechaDespacho: string } | null
+  despacho:          { nombreChofer: string; fechaDespacho: string; despachadorNombre: string | null } | null
   comentariosPorSku: Record<string, string>
 }
 
@@ -303,7 +303,7 @@ export const historialService = {
     // Obtener despacho si existe
     const { data: despacho } = await supabase
       .from('despachos')
-      .select('nombre_chofer, fecha_despacho')
+      .select('nombre_chofer, fecha_despacho, validado_por, usuarios:validado_por(nombre)')
       .eq('nota_venta_id', notaId)
       .single()
 
@@ -337,7 +337,11 @@ export const historialService = {
         estado:            nota.estado,
         movimientos:       (data as RawMovimiento[] ?? []).map(mapearMovimiento),
         despacho:          despacho
-          ? { nombreChofer: despacho.nombre_chofer, fechaDespacho: despacho.fecha_despacho }
+          ? {
+              nombreChofer:    despacho.nombre_chofer,
+              fechaDespacho:   despacho.fecha_despacho,
+              despachadorNombre: (despacho.usuarios as any)?.nombre ?? null,
+            }
           : null,
         comentariosPorSku,
       },

@@ -119,7 +119,7 @@ type ModalChoferProps = {
   onCerrar: () => void
 }
 
-const CHOFERES = ['Darhyng Olea', 'Javier Arancibia', 'Jorge Alvarez', 'Gustavo Bunster']
+const CHOFERES = ['Darhyng Olea', 'Javier Arancibia', 'Jorge Alvarez', 'Gustavo Bunster', 'Cliente Retira']
 
 function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
   const [nombreChofer, setNombreChofer] = useState('')
@@ -292,8 +292,9 @@ export function RevisionFlow({
     try {
       const resultado = await validar.mutateAsync({
         adminId,
-        notaProductoId: paso.item.notaProductoId,
-        codigoProducto: paso.codigoEscaneado,
+        notaProductoId:    paso.item.notaProductoId,
+        codigoProducto:    paso.codigoEscaneado,
+        cantidadIngresada: cant,
       })
       if (resultado.todosRevisados) setRevisadoEnSesion(true)
       setPaso({ tipo: 'resultado', mensaje: resultado.mensaje, todosRevisados: resultado.todosRevisados })
@@ -536,12 +537,16 @@ export function RevisionFlow({
       {paso.tipo === 'escanear_producto' && (
         <div className="rv-scan-paso">
           <div className="rv-scan-producto-info">
-            <span className="nd-prod-nombre" style={{ fontSize: 'var(--font-size-base)' }}>{paso.item.nombre}</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+              <code className="nd-prod-sku-inline" style={{ flexShrink: 0 }}>{paso.item.skuEquivalente ?? paso.item.sku}</code>
+              <span className="nd-prod-nombre" style={{ fontSize: 'var(--font-size-base)' }}>{paso.item.nombre}</span>
+            </div>
             <div className="nd-prod-codes">
-              <code className="nd-prod-sku">{paso.item.skuEquivalente ?? paso.item.sku}</code>
-              {paso.item.codigoBarra && <code className="nd-prod-ean">{paso.item.codigoBarra}</code>}
               {paso.item.skuEquivalente && (
                 <span className="nd-prod-equiv">↔ equiv. de {paso.item.sku}</span>
+              )}
+              {paso.item.codigoBarra && (
+                <code className="nd-prod-ean">{paso.item.codigoBarra}</code>
               )}
             </div>
           </div>
@@ -582,8 +587,8 @@ export function RevisionFlow({
       {/* ══ CÓDIGO VALIDADO ════════════════════════════════════════════════ */}
       {paso.tipo === 'codigo_validado' && (
         <div className="rv-scan-paso">
-          <div className="nd-aviso" style={{ borderColor: 'var(--color-green-500)', background: 'color-mix(in srgb, var(--color-green-500) 10%, transparent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <IcoCheck size={16} /> Código de barra validado correctamente
+          <div style={{ borderLeft: '4px solid #22c55e', borderTop: '1px solid rgba(34,197,94,0.4)', borderRight: '1px solid rgba(34,197,94,0.4)', borderBottom: '1px solid rgba(34,197,94,0.4)', background: 'rgba(34,197,94,0.15)', borderRadius: '8px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#4ade80', fontWeight: 700, fontSize: '1rem' }}>
+            <IcoCheck size={20} /> Producto validado correctamente
           </div>
           <div className="rv-scan-producto-info">
             <span className="nd-prod-nombre">{paso.item.nombre}</span>

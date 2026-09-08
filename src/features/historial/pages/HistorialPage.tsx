@@ -507,49 +507,53 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
 
       {data && (
         <>
-          {/* Datos generales */}
-          <div className="hnv-detalle-meta">
-            <div className="hnv-meta-grid">
-              <div className="hnv-meta-item">
-                <span className="hnv-meta-label">Cliente</span>
-                <span className="hnv-meta-val">{data.cliente}</span>
-              </div>
-              <div className="hnv-meta-item">
-                <span className="hnv-meta-label">Estado</span>
-                <span className="hnv-meta-val">{estadoCfg?.label ?? data.estado}</span>
-              </div>
-              {data.despacho && (
-                <div className="hnv-meta-item">
-                  <span className="hnv-meta-label">Despachado por</span>
-                  <span className="hnv-meta-val">
-                    {data.despacho.nombreChofer} · {isoADMY(data.despacho.fechaDespacho)}
-                  </span>
-                </div>
-              )}
+          {/* ── Banner de info ── */}
+          <div className="hnv-info-banner">
+            <div className="hnv-info-bloque">
+              <span className="hnv-info-label">Cliente</span>
+              <span className="hnv-info-val hnv-info-val--grande">{data.cliente}</span>
             </div>
-            <div className="hnv-progreso-wrap">
-              <div className="hnv-progreso-label">
-                <span>Progreso Total</span>
-                <span>{totalPicked} / {totalSolicitado} Uds ({pct}%)</span>
+
+            {data.despacho && (
+              <div className="hnv-info-bloque">
+                <span className="hnv-info-label">Revisado por</span>
+                <span className="hnv-info-val">{data.despacho.despachadorNombre ?? '—'}</span>
               </div>
-              <div className="hnv-progreso-bar">
-                <div className="hnv-progreso-fill" style={{ width: `${Math.min(pct, 100)}%` }} />
+            )}
+
+            {data.despacho?.nombreChofer && (
+              <div className="hnv-info-bloque">
+                <span className="hnv-info-label">Chofer</span>
+                <span className="hnv-info-val">{data.despacho.nombreChofer}</span>
+              </div>
+            )}
+
+            <div className="hnv-info-progreso">
+              <div className="hnv-pct-badge" style={{ color: pct === 100 ? '#4ade80' : '#38bdf8' }}>
+                {pct}%
+              </div>
+              <div className="hnv-pct-detalle">
+                <span className="hnv-info-label">Progreso</span>
+                <span className="hnv-info-val">{totalPicked} / {totalSolicitado} Uds</span>
+                <div className="hnv-progreso-bar">
+                  <div className="hnv-progreso-fill" style={{ width: `${Math.min(pct, 100)}%`, background: pct === 100 ? '#4ade80' : '#38bdf8' }} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Tabla de trazabilidad */}
+          {/* ── Tabla de trazabilidad ── */}
           <div className="hnv-traz-wrap">
-            <div className="hnv-traz-titulo">DETALLE DE TRAZABILIDAD Y PRODUCTOS</div>
+            <div className="hnv-traz-titulo">Trazabilidad de productos · {filas.length} registro{filas.length !== 1 ? 's' : ''}</div>
             <div className="hnv-tabla-scroll">
               <table className="hnv-traz-tabla">
                 <thead>
                   <tr className="hnv-traz-thead-tr">
-                    <th className="hnv-traz-th">UBICACIÓN RACK</th>
-                    <th className="hnv-traz-th">PRODUCTO Y DESCRIPCIÓN</th>
-                    <th className="hnv-traz-th">SOLICITADO / PICKED</th>
-                    <th className="hnv-traz-th">OPERADOR RESPONSABLE</th>
-                    <th className="hnv-traz-th">FECHA / HORA REGISTRO</th>
+                    <th className="hnv-traz-th">Rack</th>
+                    <th className="hnv-traz-th">Producto</th>
+                    <th className="hnv-traz-th hnv-traz-th--center">Solicitado / Picked</th>
+                    <th className="hnv-traz-th hnv-traz-th--op">Operador</th>
+                    <th className="hnv-traz-th hnv-traz-th--fecha">Registro</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -557,36 +561,60 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
                     <tr>
                       <td colSpan={5} className="hnv-vacio">Sin movimientos registrados para esta nota</td>
                     </tr>
-                  ) : filas.map(m => (
-                    <tr key={m.movimientoId} className="hnv-traz-fila">
-                      <td className="hnv-traz-td hnv-traz-td--rack">
-                        <code className="hnv-rack-code">{m.ubicacion ?? '—'}</code>
-                      </td>
-                      <td className="hnv-traz-td hnv-traz-td--prod">
-                        <span className="hnv-prod-nombre">{m.nombreProducto ?? '—'}</span>
-                        <span className="hnv-prod-sku">SKU: {m.producto}</span>
-                      </td>
-                      <td className="hnv-traz-td hnv-traz-td--cant">
-                        <span className="hnv-cant-sol">{m.cantidadSolicitada ?? '—'}</span>
-                        <span className="hnv-cant-sep"> / </span>
-                        <span className="hnv-cant-pick">{m.cantidad ?? 0}</span>
-                      </td>
-                      <td className="hnv-traz-td hnv-traz-td--op">{m.usuario}</td>
-                      <td className="hnv-traz-td hnv-traz-td--fecha">
-                        {(() => {
-                          const d = new Date(m.fecha)
-                          const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
-                          const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
-                          return (
-                            <>
-                              <span className="hnv-fecha-dia">{dia}</span>
-                              <span className="hnv-fecha-hora">{hora} hrs</span>
-                            </>
-                          )
-                        })()}
-                      </td>
-                    </tr>
-                  ))}
+                  ) : (() => {
+                    const SEP_LABELS = ['Pickeada por', 'Revisión de salida']
+                    let grupoIdx = -1
+                    return filas.reduce<React.ReactNode[]>((acc, m, idx) => {
+                    const prevUsuario = idx > 0 ? filas[idx - 1].usuario : null
+                    if (m.usuario !== prevUsuario) {
+                      grupoIdx++
+                      const label = SEP_LABELS[grupoIdx] ?? 'Revisión por'
+                      acc.push(
+                        <tr key={`sep-${idx}`} className="hnv-traz-sep">
+                          <td colSpan={5} className="hnv-traz-sep-td">
+                            <span className="hnv-traz-sep-label">{label}</span>
+                            <span className="hnv-traz-sep-nombre">
+                              <span className="hnv-op-chip">{m.usuario?.charAt(0)?.toUpperCase()}</span>
+                              {m.usuario}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    }
+                    const d    = new Date(m.fecha)
+                    const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                    const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    const sol  = m.cantidadSolicitada ?? 0
+                    const pick = m.cantidad ?? 0
+                    const ok   = pick >= sol
+                    acc.push(
+                      <tr key={m.movimientoId} className="hnv-traz-fila">
+                        <td className="hnv-traz-td hnv-traz-td--rack">
+                          <code className="hnv-rack-code">{m.ubicacion ?? '—'}</code>
+                        </td>
+                        <td className="hnv-traz-td hnv-traz-td--prod">
+                          <span className="hnv-prod-nombre">{m.nombreProducto ?? '—'}</span>
+                          <span className="hnv-prod-sku">SKU: {m.producto}</span>
+                        </td>
+                        <td className="hnv-traz-td hnv-traz-td--cant">
+                          <span className="hnv-cant-row">
+                            <span className="hnv-cant-sol">{sol}</span>
+                            <span className="hnv-cant-sep">/</span>
+                            <span className={`hnv-cant-pick ${ok ? 'hnv-cant-pick--ok' : 'hnv-cant-pick--parcial'}`}>{pick}</span>
+                          </span>
+                        </td>
+                        <td className="hnv-traz-td hnv-traz-td--op">
+                          <span className="hnv-op-nombre">{m.usuario}</span>
+                        </td>
+                        <td className="hnv-traz-td hnv-traz-td--fecha">
+                          <span className="hnv-fecha-dia">{dia}</span>
+                          <span className="hnv-fecha-hora">{hora} hrs</span>
+                        </td>
+                      </tr>
+                    )
+                    return acc
+                  }, [])
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -625,15 +653,11 @@ function NotaHistorialRow({
   })
 
   return (
-    <tr
-      className="hnv-fila"
-      onClick={() => onDetalle(nota.notaId)}
-    >
+    <tr className={`hnv-fila hnv-fila--${nota.estado}`} onClick={() => onDetalle(nota.notaId)}>
       <td className="hnv-td hnv-td--numero">{nota.numeroNota}</td>
       <td className="hnv-td hnv-td--cliente">{nota.nombreCliente}</td>
       <td className="hnv-td hnv-td--fecha">{fecha}</td>
       <td className="hnv-td hnv-td--items">{nota.totalProductos} SKUs</td>
-      <td className="hnv-td hnv-td--origen">—</td>
       <td className="hnv-td hnv-td--estado">
         <span className="hnv-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.color + '40' }}>
           {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
@@ -644,10 +668,38 @@ function NotaHistorialRow({
           className="hnv-btn-ver"
           onClick={(e) => { e.stopPropagation(); onDetalle(nota.notaId) }}
         >
-          Ver detalle
+          Ver →
         </button>
       </td>
     </tr>
+  )
+}
+
+function NotaHistorialCard({
+  nota,
+  onDetalle,
+}: {
+  nota: NotaResumen
+  onDetalle: (notaId: string) => void
+}) {
+  const cfg = ESTADO_NOTA_COLORS[nota.estado] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }
+  const fecha = new Date(nota.creadoEn).toLocaleDateString('es-CL', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  })
+  return (
+    <div className={`hnv-card hnv-card--${nota.estado}`} onClick={() => onDetalle(nota.notaId)}>
+      <div className="hnv-card-top">
+        <span className="hnv-card-num">{nota.numeroNota}</span>
+        <span className="hnv-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.color + '40' }}>
+          {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
+        </span>
+      </div>
+      <div className="hnv-card-cliente">{nota.nombreCliente}</div>
+      <div className="hnv-card-bottom">
+        <span className="hnv-card-meta">{fecha}</span>
+        <span className="hnv-card-meta">{nota.totalProductos} SKUs</span>
+      </div>
+    </div>
   )
 }
 
@@ -680,7 +732,7 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
           />
         </div>
         <div className="hnv-estado-tabs">
-          {(['', 'pendiente', 'preparacion', 'completa', 'despachada'] as const).map((e) => (
+          {(['', 'completa', 'despachada'] as const).map((e) => (
             <button
               key={e}
               className={`hnv-tab${filtroEstado === e ? ' activo' : ''}`}
@@ -696,8 +748,9 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
       {isError   && <p className="error">Error al cargar notas</p>}
 
       {!isLoading && !isError && (
-        <div className="hnv-tabla-wrap">
-          <div className="hnv-tabla-scroll">
+        <div className="hnv-lista-wrap">
+          {/* Tabla desktop */}
+          <div className="hnv-tabla-scroll hnv-tabla-desktop">
             <table className="hnv-tabla">
               <thead>
                 <tr className="hnv-thead-tr">
@@ -705,21 +758,28 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
                   <th className="hnv-th">CLIENTE</th>
                   <th className="hnv-th">FECHA</th>
                   <th className="hnv-th">SKUs</th>
-                  <th className="hnv-th">ORIGEN PICKING</th>
                   <th className="hnv-th">ESTADO</th>
-                  <th className="hnv-th">ACCIONES</th>
+                  <th className="hnv-th"></th>
                 </tr>
               </thead>
               <tbody>
                 {notas.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="hnv-vacio">No hay notas con este criterio</td>
-                  </tr>
+                  <tr><td colSpan={6} className="hnv-vacio">No hay notas con este criterio</td></tr>
                 ) : notas.map(n => (
                   <NotaHistorialRow key={n.notaId} nota={n} onDetalle={onDetalle} />
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Cards tablet/mobile */}
+          <div className="hnv-cards-mobile">
+            {notas.length === 0
+              ? <div className="hnv-vacio">No hay notas con este criterio</div>
+              : notas.map(n => (
+                  <NotaHistorialCard key={`c-${n.notaId}`} nota={n} onDetalle={onDetalle} />
+                ))
+            }
           </div>
         </div>
       )}

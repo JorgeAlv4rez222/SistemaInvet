@@ -52,6 +52,14 @@ function fmtFecha(iso: string | null | undefined) {
   return iso.slice(0, 10).split('-').reverse().join('-')
 }
 
+function fmtFechaHora(iso: string | null | undefined) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  const fecha = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+  const hora  = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return `${fecha} ${hora} hrs`
+}
+
 function tiempoRelativo(iso: string | null | undefined) {
   if (!iso) return '—'
   const diff = Date.now() - new Date(iso).getTime()
@@ -224,7 +232,8 @@ export function SesionDetallePage() {
           ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
         filas.push({
           'UPC / EAN': item.codigo_barra ?? '—', 'Descripción': item.descripcion ?? item.codigo,
-          'Código': item.codigo, 'Cant. Solicitada': sub.cantidad_asignada,
+          'Código': item.codigo, 'LPN': item.lpn ?? '—',
+          'Cant. Solicitada': sub.cantidad_asignada,
           'Cant. Despachada': sub.cantidad_despachada ?? 0,
           'Diferencia': (sub.cantidad_despachada ?? 0) - sub.cantidad_asignada,
           'Estado': LABEL[sub.estado] ?? sub.estado, 'Motivo': sub.motivo_diferencia ?? '',
@@ -233,7 +242,7 @@ export function SesionDetallePage() {
       }
     }
     const ws = XLSX.utils.json_to_sheet(filas)
-    ws['!cols'] = [{ wch: 18 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 45 }]
+    ws['!cols'] = [{ wch: 18 }, { wch: 40 }, { wch: 16 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 45 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
     XLSX.writeFile(wb, `picking-${sesion.nombre_cliente ?? sesion.numero_oc}-${sesion.numero_oc}.xlsx`.replace(/[^a-zA-Z0-9\-_.]/g, '_'))
@@ -246,7 +255,26 @@ export function SesionDetallePage() {
   const sesion          = data as SesionDetalle
   const pct             = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const rolUsuario      = localStorage.getItem('user_rol') ?? ''
-  const puedeCancelar   = (sesion.estado === 'validando' || sesion.estado === 'activa') && rolUsuario === 'admin'
+  const esAdmin         = rolUsuario === 'admin' || rolUsuario === 'supervisor'
+  const puedeCancelar   = (sesion.estado === 'validando' || sesion.estado === 'activa') && esAdmin
+
+  // Operador solo puede ver sesiones activas
+  if (!esAdmin && sesion.estado !== 'activa' && sesion.estado !== 'validando') {
+    return (
+      <div className="sd-page">
+        <div className="sd-bloqueado">
+          <span className="sd-bloqueado-ico">🔒</span>
+          <h2 className="sd-bloqueado-titulo">Sesión no disponible</h2>
+          <p className="sd-bloqueado-desc">
+            Esta sesión ya fue <strong>{sesion.estado === 'completada' ? 'completada' : sesion.estado === 'despachado' ? 'despachada' : 'cerrada'}</strong> y no está abierta para preparación.
+          </p>
+          <button className="sd-btn sd-btn--secondary" onClick={() => navigate('/picking-masivo/operador')}>
+            ← Volver a sesiones disponibles
+          </button>
+        </div>
+      </div>
+    )
+  }
   const sesionTieneLpn  = sesion.items.some((i) => !!i.lpn)
   const todosProductosValidados = !sesionTieneLpn && sesion.items.length > 0 && (
     sesion.items.every((i) => i.lpn_validado === true) || productosConfirmados
@@ -282,7 +310,8 @@ export function SesionDetallePage() {
     return matchQ && matchF
   })
 
-  const lpnSesion = sesion.items[0]?.lpn ?? null
+  const lpnSesion  = sesion.items[0]?.lpn ?? null
+  const esImperial = (sesion.nombre_cliente ?? '').toLowerCase() === 'imperial'
 
   return (
     <div className="sd-page">
@@ -298,19 +327,15 @@ export function SesionDetallePage() {
             {sesion.numero_oc_pedido && (
               <span className="sd-header-oc">OC: {sesion.numero_oc_pedido}</span>
             )}
-            {sesion.numero_oc && (
-              <span className="sd-header-fecha">📅 Entrega: {fmtFecha(sesion.numero_oc)}</span>
-            )}
           </div>
         </div>
-        {lpnSesion && (
-          <span className="sd-lpn-badge">LPN: {lpnSesion}</span>
-        )}
         <div className="sd-header-actions">
-          <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
-            <IcoDownload /> Excel
-          </button>
-          {!sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
+          {esAdmin && (
+            <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
+              <IcoDownload /> Excel
+            </button>
+          )}
+          {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
             <>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoLpn(f) }} />
@@ -329,6 +354,39 @@ export function SesionDetallePage() {
           {ESTADO_SESION_LABELS[sesion.estado] ?? sesion.estado}
         </span>
       </div>
+
+      {/* ── Bloque de trazabilidad de salida (solo admin, solo cuando despachado) ── */}
+      {esAdmin && sesion.estado === 'despachado' && (
+        <div className="sd-despacho-traz">
+          <span className="sd-despacho-traz-ico">🚚</span>
+
+          <div className="sd-despacho-traz-info">
+            <span className="sd-despacho-traz-label">Fecha despacho</span>
+            <span className="sd-despacho-traz-fecha-val">{fmtFechaHora(sesion.despachado_en)}</span>
+          </div>
+
+          {(sesion.despachado_por_usuario?.nombre || sesion.nombre_chofer) && (
+            <span className="sd-despacho-traz-sep">|</span>
+          )}
+
+          {sesion.despachado_por_usuario?.nombre && (
+            <div className="sd-despacho-traz-info">
+              <span className="sd-despacho-traz-label">Confirmado por</span>
+              <span className="sd-despacho-traz-nombre">{sesion.despachado_por_usuario.nombre}</span>
+            </div>
+          )}
+
+          {sesion.nombre_chofer && (
+            <>
+              <span className="sd-despacho-traz-sep">|</span>
+              <div className="sd-despacho-traz-chofer-bloque">
+                <span className="sd-despacho-traz-label">🚛 Chofer asignado</span>
+                <span className="sd-despacho-traz-chofer-nombre">{sesion.nombre_chofer}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {error && <div className="sd-error-banner">{error}</div>}
       {lpnError && <div className="sd-error-banner">{lpnError}</div>}
@@ -381,8 +439,8 @@ export function SesionDetallePage() {
 
       </div>
 
-      {/* Botones de fase (completada/despachado) */}
-      {(sesion.estado === 'completada' || sesion.estado === 'despachado') && (
+      {/* Botones de fase (completada/despachado) — solo admin */}
+      {esAdmin && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
         <div className="sd-fase-btns">
           {sesion.estado === 'completada' && (
             <button className="sd-btn sd-btn--primary" onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}>
@@ -462,6 +520,9 @@ export function SesionDetallePage() {
                     <span className="sd-sku-tag">SKU: {item.codigo}</span>
                     {item.codigo_barra && <span className="sd-ean-tag">EAN: {item.codigo_barra}</span>}
                     {item.tienda && <span className="sd-tienda-tag">{item.tienda}</span>}
+                    {esImperial && item.lpn && (
+                      <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
+                    )}
                   </div>
                 </div>
 
@@ -482,7 +543,7 @@ export function SesionDetallePage() {
                   <span className={`sd-badge ${badge.cls}`}>{badge.label}</span>
                 </div>
 
-                {/* Acciones admin */}
+                {/* Acciones */}
                 <div className="sd-item-acciones">
                   <button
                     className="sd-accion-btn"
@@ -491,7 +552,7 @@ export function SesionDetallePage() {
                   >
                     <IcoEye /> {abierto ? 'Ocultar' : 'Detalle'}
                   </button>
-                  {subActiva && (
+                  {esAdmin && subActiva && (
                     <button
                       className="sd-accion-btn sd-accion-btn--warn"
                       title="Liberar ítem bloqueado"
@@ -500,7 +561,7 @@ export function SesionDetallePage() {
                       <IcoUnlock /> Liberar
                     </button>
                   )}
-                  {item.estado === 'sin_stock' && (
+                  {esAdmin && item.estado === 'sin_stock' && (
                     <button
                       className="sd-accion-btn sd-accion-btn--tool"
                       title="Asignar reposición"
@@ -523,36 +584,81 @@ export function SesionDetallePage() {
               {/* ── Panel expandido: trazabilidad ── */}
               {abierto && (
                 <div className="sd-item-trazabilidad">
-                  <span className="sd-traz-titulo">Trazabilidad de subtareas</span>
-                  <div className="sd-traz-tabla">
-                    {item.subtareas_picking_masivo.map((sub, idx) => (
-                      <div key={sub.id} className="sd-traz-fila">
-                        <span className="sd-traz-rack"><IcoPin /> {sub.posicion_codigo}</span>
-                        <span className="sd-traz-cant">{sub.cantidad_despachada ?? 0} / {sub.cantidad_asignada} uds</span>
-                        <span className={`sd-badge sd-badge--sm ${(ESTADO_ITEM_BADGE[sub.estado] ?? {cls:''}).cls}`}>
-                          {(ESTADO_ITEM_BADGE[sub.estado] ?? {label: sub.estado}).label}
-                        </span>
-                        {sub.completado_por && (
-                          <span className="sd-traz-op sd-traz-op--completado">
-                            <IcoUser /> {opNombre(sub.completado_por_nombre, sub.completado_por)}
-                            <span className="sd-traz-tiempo">{tiempoRelativo(sub.completado_en)}</span>
-                          </span>
-                        )}
-                        {!sub.completado_por && sub.bloqueado_por && (
-                          <span className="sd-traz-op">
-                            <IcoUser /> {opNombre(sub.bloqueado_por_nombre, sub.bloqueado_por)}
-                            <span className="sd-traz-tiempo">{tiempoRelativo(sub.bloqueado_en)}</span>
-                          </span>
-                        )}
-                        {sub.motivo_diferencia && (
-                          <span className="sd-traz-motivo">⚠ {sub.motivo_diferencia}</span>
-                        )}
-                        {sub.es_equivalente && sub.producto_equivalente && (
-                          <span className="sd-traz-equiv">↪ Equiv: {sub.producto_equivalente.codigo}</span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="sd-traz-header">
+                    <span className="sd-traz-titulo">Auditoría de picking</span>
+                    {esImperial && item.lpn && (
+                      <span className="sd-traz-lpn-badge">LPN: {item.lpn}</span>
+                    )}
                   </div>
+
+                  <div className={`sd-traz-grid-header${esAdmin ? '' : ' sd-traz-grid--operador'}`}>
+                    <span>Rack / Ubicación</span>
+                    <span>Operador Picking</span>
+                    <span>Cantidad</span>
+                    <span>Escaneo</span>
+                    {esAdmin && <span>Despachador</span>}
+                    <span>Estado</span>
+                  </div>
+
+                  {item.subtareas_picking_masivo.map((sub) => (
+                    <div key={sub.id} className={`sd-traz-grid-fila${esAdmin ? '' : ' sd-traz-grid--operador'}`}>
+
+                      {/* Rack */}
+                      <span className="sd-traz-rack">
+                        <IcoPin /> {sub.posicion_codigo}
+                      </span>
+
+                      {/* Operador de picking */}
+                      <span className="sd-traz-op-cell">
+                        <IcoUser />
+                        <span>
+                          {sub.completado_por
+                            ? opNombre(sub.completado_por_nombre, sub.completado_por)
+                            : sub.bloqueado_por
+                              ? opNombre(sub.bloqueado_por_nombre, sub.bloqueado_por)
+                              : '—'}
+                        </span>
+                      </span>
+
+                      {/* Cantidad */}
+                      <span className="sd-traz-cant">
+                        {sub.cantidad_despachada ?? 0} / {sub.cantidad_asignada} uds
+                      </span>
+
+                      {/* Hora de escaneo */}
+                      <span className="sd-traz-hora">
+                        {sub.completado_en
+                          ? fmtFechaHora(sub.completado_en)
+                          : sub.bloqueado_en
+                            ? fmtFechaHora(sub.bloqueado_en)
+                            : '—'}
+                      </span>
+
+                      {/* Despachador — solo admin */}
+                      {esAdmin && (
+                        <span className="sd-traz-despachador">
+                          {sesion.despachado_por_usuario?.nombre ?? sesion.nombre_chofer ?? '—'}
+                        </span>
+                      )}
+
+                      {/* Estado */}
+                      <span className={`sd-badge sd-badge--sm ${(ESTADO_ITEM_BADGE[sub.estado] ?? { cls: '' }).cls}`}>
+                        {(ESTADO_ITEM_BADGE[sub.estado] ?? { label: sub.estado }).label}
+                      </span>
+
+                      {/* Motivo y equivalente (fila extra si existen) */}
+                      {(sub.motivo_diferencia || (sub.es_equivalente && sub.producto_equivalente)) && (
+                        <div className="sd-traz-extras">
+                          {sub.motivo_diferencia && (
+                            <span className="sd-traz-motivo">⚠ {sub.motivo_diferencia}</span>
+                          )}
+                          {sub.es_equivalente && sub.producto_equivalente && (
+                            <span className="sd-traz-equiv">↪ Equiv: {sub.producto_equivalente.codigo}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

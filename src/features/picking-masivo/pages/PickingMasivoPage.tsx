@@ -61,7 +61,7 @@ function fmtFecha(iso: string | null) {
 // ── Barra de progreso ─────────────────────────────────────────────────────────
 
 function ProgressBar({ pct, alerta }: { pct: number; alerta: boolean }) {
-  const color = alerta ? '#f59e0b' : pct === 100 ? '#38bdf8' : '#22c55e'
+  const color = alerta ? '#f59e0b' : '#00A0DF'
   return (
     <div className="pm-t-barra-bg">
       <div className="pm-t-barra-fill" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
@@ -149,9 +149,6 @@ function OlaFila({
       {/* Entrega */}
       <td className="pm-t-td pm-t-td--entrega">
         <span className="pm-t-fecha-entrega">{s.numero_oc}</span>
-        {badge && (
-          <span className={`pm-t-urgencia ${badge.cls}`}>{badge.label}</span>
-        )}
       </td>
 
       {/* Creación */}
@@ -274,18 +271,6 @@ export function PickingMasivoPage() {
           </div>
         </button>
 
-        <button
-          className={`pm-admin-kpi pm-admin-kpi--libre ${filtroEstado === 'libre' ? 'pm-admin-kpi--activo' : ''}`}
-          onClick={() => toggleFiltro('libre')}
-        >
-          <span className="pm-admin-kpi-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </span>
-          <div>
-            <span className="pm-admin-kpi-val">{libres.length}</span>
-            <span className="pm-admin-kpi-label">🟡 Pendientes / Libres</span>
-          </div>
-        </button>
 
         <button
           className={`pm-admin-kpi pm-admin-kpi--completadas ${filtroEstado === 'completada' ? 'pm-admin-kpi--activo' : ''}`}

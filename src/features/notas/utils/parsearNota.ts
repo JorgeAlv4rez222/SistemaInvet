@@ -146,6 +146,8 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
     // Cantidad: puede ser "100." → quitar punto final
     const cantStr = cantItems.map((it) => it.str).join('').replace(/\.$/, '').trim()
+    // Si contiene coma es un monto (ej: "25,935") no una cantidad → ignorar
+    if (/[,]/.test(cantStr)) continue
     const cantidad = parseInt(cantStr, 10)
     if (!Number.isFinite(cantidad) || cantidad <= 0) continue
 
