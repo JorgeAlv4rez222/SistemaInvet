@@ -5,7 +5,9 @@ import { productosApi } from '../../productos/services/productos.api'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
-import type { ProductoConUbicacion } from '../../productos/services/productos.api'
+import type { ProductoConEquivalentes } from '../../../shared/types/servicios'
+
+type ProductoBase = ProductoConEquivalentes['equivalentes'][number]
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 
@@ -97,10 +99,9 @@ export function ConfirmarSubtareaPage() {
   const [cantidad, setCantidad]                   = useState('')
   const [motivo, setMotivo]                       = useState('')
   const [equivalenteActivo, setEquivalenteActivo] = useState(false)
-  const [busquedaEq, setBusquedaEq]               = useState('')
-  const [opcionesEq, setOpcionesEq]               = useState<ProductoConUbicacion[]>([])
-  const [equivalenteSel, setEquivalenteSel]       = useState<ProductoConUbicacion | null>(null)
-  const [buscandoEq, setBuscandoEq]               = useState(false)
+  const [opcionesEq, setOpcionesEq]               = useState<ProductoBase[]>([])
+  const [equivalenteSel, setEquivalenteSel]       = useState<ProductoBase | null>(null)
+  const [loadingEq, setLoadingEq]                 = useState(false)
   const [error, setError]                         = useState<string | null>(null)
   const [validandoBarcode, setValidandoBarcode]   = useState(false)
 
@@ -124,22 +125,22 @@ export function ConfirmarSubtareaPage() {
   }, [subtarea?.id])
 
   useEffect(() => {
-    if (!equivalenteActivo || !busquedaEq.trim()) { setOpcionesEq([]); return }
+    if (!equivalenteActivo || !item?.codigo) { setOpcionesEq([]); return }
     let vigente = true
-    setBuscandoEq(true)
-    productosApi.buscar(busquedaEq.trim())
-      .then(res => { if (vigente) setOpcionesEq(res) })
+    setLoadingEq(true)
+    productosApi.getBySku(item.codigo)
+      .then(res => { if (vigente) setOpcionesEq(res.equivalentes) })
       .catch(() => { if (vigente) setOpcionesEq([]) })
-      .finally(() => { if (vigente) setBuscandoEq(false) })
+      .finally(() => { if (vigente) setLoadingEq(false) })
     return () => { vigente = false }
-  }, [busquedaEq, equivalenteActivo])
+  }, [equivalenteActivo, item?.codigo])
 
   async function handleValidarBarcode(val: string) {
     if (!val.trim()) return
-    if (!item || !item.codigo_barra) { setBarcodeOk(true); setError(null); return }
-    const normalizar = (s: string) => s.replace(/^0+/, '')
-    const ok = normalizar(val.trim()) === normalizar(item.codigo_barra)
-    if (ok) { setBarcodeOk(true); setError(null) }
+    const targetEan = equivalenteSel?.codigo_barra ?? item?.codigo_barra ?? null
+    if (!targetEan) { setBarcodeOk(true); setError(null); return }
+    const norm = (s: string) => s.replace(/^0+/, '')
+    if (norm(val.trim()) === norm(targetEan)) { setBarcodeOk(true); setError(null) }
     else setError('Código incorrecto. Escanea el producto correcto.')
   }
 
@@ -224,7 +225,7 @@ export function ConfirmarSubtareaPage() {
     ? `${equivalenteSel.sku}${equivalenteSel.nombre && equivalenteSel.nombre !== equivalenteSel.sku ? ` — ${equivalenteSel.nombre}` : ''}`
     : `${item?.descripcion ?? item?.codigo ?? ''}`
   const sku     = equivalenteSel ? equivalenteSel.sku : (item?.codigo ?? '')
-  const ean     = codigoBarra
+  const ean     = equivalenteSel?.codigo_barra ?? codigoBarra
 
   return (
     <div className="cf-page">
@@ -367,38 +368,52 @@ export function ConfirmarSubtareaPage() {
             </label>
           )}
 
-          {!esParcialEditable && item?.codigo?.includes('-') && (
-            <button
-              className={`cf-toggle-btn ${equivalenteActivo ? 'cf-toggle-btn--activo' : ''}`}
-              onClick={() => { setEquivalenteActivo(v => !v); setEquivalenteSel(null); setBusquedaEq('') }}
-            >
-              Producto equivalente
-            </button>
-          )}
+        </div>
+      )}
 
-          {equivalenteActivo && (
-            <div className="cf-equivalente-wrap">
-              <input
-                type="search"
-                className="cf-scanner-input"
-                placeholder="Buscar producto equivalente…"
-                value={equivalenteSel ? `${equivalenteSel.sku} — ${equivalenteSel.nombre}` : busquedaEq}
-                onChange={e => { setBusquedaEq(e.target.value); setEquivalenteSel(null) }}
-                autoComplete="off"
-              />
-              {!equivalenteSel && busquedaEq.trim() && (
-                <div className="cf-equivalente-lista">
-                  {buscandoEq && <p className="cargando">Buscando…</p>}
-                  {!buscandoEq && opcionesEq.length === 0 && <p style={{ padding: 12, color: 'var(--text-muted)', fontSize: 13 }}>Sin resultados</p>}
-                  {!buscandoEq && opcionesEq.map(p => (
-                    <button key={p.id} className="cf-equivalente-opcion" onClick={() => setEquivalenteSel(p)}>
-                      {p.sku} — {p.nombre}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* ── Panel de equivalentes ── */}
+      {equivalenteActivo && !sinStockMode && (
+        <div className="cf-equivalente-panel">
+          <div className="cf-equivalente-panel-header">
+            <span className="cf-equivalente-panel-titulo">Selecciona el equivalente</span>
+            <button className="cf-equivalente-panel-cerrar" onClick={() => setEquivalenteActivo(false)}>✕</button>
+          </div>
+          {loadingEq && <p className="cargando" style={{ padding: '12px 0' }}>Buscando equivalentes…</p>}
+          {!loadingEq && opcionesEq.length === 0 && (
+            <p className="cf-equivalente-vacio">Sin equivalentes registrados para este SKU</p>
           )}
+          {!loadingEq && opcionesEq.map(p => (
+            <button
+              key={p.id}
+              className={`cf-eq-card ${equivalenteSel?.id === p.id ? 'cf-eq-card--sel' : ''}`}
+              onClick={() => {
+                setEquivalenteSel(p)
+                setEquivalenteActivo(false)
+                setBarcodeOk(false)
+                setBarcode('')
+                setError(null)
+                setTimeout(() => barcodeRef.current?.focus(), 100)
+              }}
+            >
+              <span className="cf-eq-sku">{p.sku}</span>
+              {p.nombre && p.nombre !== p.sku && <span className="cf-eq-nombre">{p.nombre}</span>}
+              {p.codigo_barra && <span className="cf-eq-ean">EAN: {p.codigo_barra}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Banner: equivalente activo */}
+      {equivalenteSel && !sinStockMode && (
+        <div className="cf-equivalente-activo-banner">
+          <IcoTool />
+          <span>Equivalente: <strong>{equivalenteSel.sku}</strong></span>
+          <button
+            className="cf-equivalente-quitar"
+            onClick={() => { setEquivalenteSel(null); setBarcodeOk(false); setBarcode(''); setTimeout(() => barcodeRef.current?.focus(), 100) }}
+          >
+            Quitar
+          </button>
         </div>
       )}
 
@@ -426,6 +441,21 @@ export function ConfirmarSubtareaPage() {
           </>
         )}
 
+        {/* Equivalente — siempre visible en modo normal */}
+        {!sinStockMode && !esParcialEditable && (
+          <button
+            className={`cf-btn cf-btn--equivalente ${equivalenteActivo ? 'cf-btn--equivalente-activo' : ''}`}
+            onClick={() => {
+              setEquivalenteActivo(v => !v)
+              if (equivalenteActivo) return
+              setEquivalenteSel(null)
+              setOpcionesEq([])
+            }}
+          >
+            <IcoTool /> {equivalenteActivo ? 'Cerrar equivalente' : 'Equivalente'}
+          </button>
+        )}
+
         {/* Reportar sin stock (desde modo normal) */}
         {!sinStockMode && (
           <button
@@ -433,16 +463,6 @@ export function ConfirmarSubtareaPage() {
             onClick={() => { setSinStockMode(true); setError(null) }}
           >
             <IcoWarn /> Reportar Sin Stock / Incompleto
-          </button>
-        )}
-
-        {/* Solo supervisor */}
-        {(rol === 'supervisor' || rol === 'admin') && barcodeOk && !sinStockMode && (
-          <button
-            className="cf-btn cf-btn--supervisor"
-            onClick={() => { setEquivalenteActivo(v => !v) }}
-          >
-            <IcoTool /> Autorizar Ajuste de Inventario
           </button>
         )}
       </div>
