@@ -934,7 +934,13 @@ label {
   box-shadow: 0 1px 4px rgba(0,0,0,.2);
 }
 
-/* Barras turno */
+/* Contadores turno */
+.bi-turno-contadores { display: flex; gap: 24px; margin-bottom: 4px; flex-wrap: wrap; }
+.bi-turno-contador { display: flex; align-items: center; gap: 8px; }
+.bi-turno-contador-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.bi-turno-contador-num { font-size: 22px; font-weight: 800; line-height: 1; }
+
+/* Barras turno (legacy — ya no se usan) */
 .bi-turno-barras { display: flex; flex-direction: column; gap: 14px; margin-bottom: 4px; }
 .bi-turno-fila { display: grid; grid-template-columns: 1fr 2fr 36px; align-items: center; gap: 10px; }
 .bi-turno-fila-label {

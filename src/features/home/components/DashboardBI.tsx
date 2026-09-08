@@ -217,10 +217,6 @@ export function DashboardBI() {
   const periodoLabel = PERIODOS.find(p => p.key === periodo)?.label ?? ''
 
   const turnoReal = biData?.turno[turnoTab]
-  const turnoTotal = turnoReal ? turnoReal.completadas + turnoReal.enProceso + turnoReal.pendientes : 0
-  const pctComp = turnoTotal > 0 ? Math.round((turnoReal!.completadas / turnoTotal) * 100) : 0
-  const pctProc = turnoTotal > 0 ? Math.round((turnoReal!.enProceso   / turnoTotal) * 100) : 0
-  const pctPend = turnoTotal > 0 ? Math.round((turnoReal!.pendientes  / turnoTotal) * 100) : 0
 
   return (
     <div className="bi-wrap">
@@ -315,37 +311,22 @@ export function DashboardBI() {
               </div>
             </div>
 
-            {/* Barras horizontales */}
-            <div className="bi-turno-barras">
-              <div className="bi-turno-fila">
-                <div className="bi-turno-fila-label">
-                  <span className="bi-turno-dot" style={{ background: '#34d399' }}/>
-                  <span>Completadas ({turnoReal?.completadas ?? '—'})</span>
-                </div>
-                <div className="bi-turno-barra-bg">
-                  <div className="bi-turno-barra-fill" style={{ width: `${pctComp}%`, background: '#34d399' }}/>
-                </div>
-                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctComp}%` : '—'}</span>
+            {/* Contadores por estado */}
+            <div className="bi-turno-contadores">
+              <div className="bi-turno-contador">
+                <span className="bi-turno-dot" style={{ background: '#34d399' }}/>
+                <span className="bi-turno-contador-label">Completadas</span>
+                <span className="bi-turno-contador-num" style={{ color: '#34d399' }}>{turnoReal?.completadas ?? '—'}</span>
               </div>
-              <div className="bi-turno-fila">
-                <div className="bi-turno-fila-label">
-                  <span className="bi-turno-dot" style={{ background: '#38bdf8' }}/>
-                  <span>En Proceso ({turnoReal?.enProceso ?? '—'})</span>
-                </div>
-                <div className="bi-turno-barra-bg">
-                  <div className="bi-turno-barra-fill" style={{ width: `${pctProc}%`, background: '#38bdf8' }}/>
-                </div>
-                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctProc}%` : '—'}</span>
+              <div className="bi-turno-contador">
+                <span className="bi-turno-dot" style={{ background: '#38bdf8' }}/>
+                <span className="bi-turno-contador-label">En Proceso</span>
+                <span className="bi-turno-contador-num" style={{ color: '#38bdf8' }}>{turnoReal?.enProceso ?? '—'}</span>
               </div>
-              <div className="bi-turno-fila">
-                <div className="bi-turno-fila-label">
-                  <span className="bi-turno-dot" style={{ background: '#fbbf24' }}/>
-                  <span>Pendientes ({turnoReal?.pendientes ?? '—'})</span>
-                </div>
-                <div className="bi-turno-barra-bg">
-                  <div className="bi-turno-barra-fill" style={{ width: `${pctPend}%`, background: '#fbbf24' }}/>
-                </div>
-                <span className="bi-turno-pct">{turnoTotal > 0 ? `${pctPend}%` : '—'}</span>
+              <div className="bi-turno-contador">
+                <span className="bi-turno-dot" style={{ background: '#fbbf24' }}/>
+                <span className="bi-turno-contador-label">Pendientes</span>
+                <span className="bi-turno-contador-num" style={{ color: '#fbbf24' }}>{turnoReal?.pendientes ?? '—'}</span>
               </div>
             </div>
 
