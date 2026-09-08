@@ -6077,6 +6077,7 @@ label {
 
 /* ── Salidas / Despacho card variants ── */
 .sal-card { border-left: 3px solid var(--border); }
+.sal-card-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .sal-btn-auditar {
   background: var(--primary);
   display: inline-flex;
@@ -6093,6 +6094,54 @@ label {
   gap: 6px;
 }
 .sal-btn-revisar:hover { background: var(--surface-alt); }
+.sal-btn-devolucion {
+  background: transparent;
+  border: 1px solid rgba(251,191,36,0.4);
+  color: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sal-btn-devolucion:hover { background: rgba(251,191,36,0.08); }
+
+/* ── Devolución flow ── */
+.dev-wrap { max-width: 700px; margin: 0 auto; padding: 20px 16px 80px; display: flex; flex-direction: column; gap: 16px; }
+.dev-header { display: flex; align-items: flex-start; gap: 14px; }
+.dev-titulo { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+.dev-sub { font-size: 0.82rem; color: var(--text-muted); margin: 2px 0 0; }
+.dev-instruccion { font-size: 0.82rem; color: var(--text-secondary); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 0; }
+.dev-lista { display: flex; flex-direction: column; gap: 8px; }
+.dev-vacio { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 24px 0; }
+.dev-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px;
+}
+.dev-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dev-item-nombre { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+.dev-item-sku { font-size: 0.74rem; color: var(--text-muted); }
+.dev-item-cant { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.dev-item-max { font-size: 0.72rem; color: var(--text-muted); }
+.dev-item-input-wrap { display: flex; align-items: center; gap: 4px; }
+.dev-qty-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface-alt); color: var(--text-primary); font-size: 1rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.dev-qty-btn:hover:not(:disabled) { background: var(--border); }
+.dev-qty-btn:disabled { opacity: 0.3; cursor: default; }
+.dev-qty-input {
+  width: 48px; text-align: center; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-base); color: var(--text-primary); font-size: 0.9rem; font-weight: 700;
+  padding: 4px 2px;
+}
+.dev-qty-input::-webkit-inner-spin-button, .dev-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.dev-footer { padding-top: 8px; }
+.dev-confirmar-btn { display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; }
+.dev-exito { text-align: center; padding: 48px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.dev-exito-ico { font-size: 2.5rem; color: #34d399; }
+.dev-exito-titulo { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+.dev-exito-sub { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
 .sal-comentario {
   font-style: italic;
   max-width: 180px;

@@ -171,7 +171,7 @@ export const dashboardService = {
       traslado_reubicacion: 'label',
     }
     const actividadReciente: ActividadItem[] = ((movR.data ?? []) as any[]).map((m) => {
-      const hora    = new Date(m.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      const hora    = new Date(m.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' })
       const usuario = (m.usuarios as { nombre: string } | null)?.nombre ?? 'Sistema'
       const d       = (m.detalle ?? {}) as Record<string, unknown>
       const sku     = (m.productos as { sku: string } | null)?.sku ?? (d.sku as string) ?? ''

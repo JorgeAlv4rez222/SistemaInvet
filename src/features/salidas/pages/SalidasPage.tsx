@@ -3,6 +3,7 @@ import { useNotasParaRevision } from '../hooks/useSalidas'
 import { useDetalleNota } from '../../notas/hooks/useNotas'
 import { RevisionFlow } from '../components/RevisionFlow'
 import { ImportarNotaRevisionFlow } from '../components/ImportarNotaRevisionFlow'
+import { DevolucionFlow } from '../components/DevolucionFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import type { NotaParaRevision } from '../services/salidas.api'
 import type { ItemRevision } from '../components/RevisionFlow'
@@ -10,7 +11,8 @@ import type { ItemRevision } from '../components/RevisionFlow'
 type Vista =
   | { tipo: 'lista' }
   | { tipo: 'importar' }
-  | { tipo: 'revision'; notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null }
+  | { tipo: 'revision';   notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null }
+  | { tipo: 'devolucion'; notaId: string }
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -219,6 +221,16 @@ export function SalidasPage() {
     )
   }
 
+  if (vista.tipo === 'devolucion') {
+    return (
+      <DevolucionFlow
+        notaId={vista.notaId}
+        adminId={adminId}
+        onCerrar={() => setVista({ tipo: 'lista' })}
+      />
+    )
+  }
+
   return (
     <div className="notas-page">
       <h1 className="notas-titulo">NV Despacho</h1>
@@ -394,17 +406,28 @@ export function SalidasPage() {
                     )}
                   </div>
 
-                  {/* Botón de acción */}
-                  <button
-                    className={`btn-primario nota-card-btn ${esDespachada ? 'sal-btn-revisar' : 'sal-btn-auditar'}`}
-                    disabled={offline}
-                    onClick={() => abrirRevision(nota)}
-                  >
-                    {esDespachada
-                      ? <><IcoDoc size={14} /> Ver despacho</>
-                      : <><IcoScan size={14} /> Auditar NV</>
-                    }
-                  </button>
+                  {/* Botones de acción */}
+                  <div className="sal-card-acciones">
+                    <button
+                      className={`btn-primario nota-card-btn ${esDespachada ? 'sal-btn-revisar' : 'sal-btn-auditar'}`}
+                      disabled={offline}
+                      onClick={() => abrirRevision(nota)}
+                    >
+                      {esDespachada
+                        ? <><IcoDoc size={14} /> Ver despacho</>
+                        : <><IcoScan size={14} /> Auditar NV</>
+                      }
+                    </button>
+                    {esDespachada && esAdmin && (
+                      <button
+                        className="btn-primario nota-card-btn sal-btn-devolucion"
+                        disabled={offline}
+                        onClick={() => setVista({ tipo: 'devolucion', notaId: nota.notaId })}
+                      >
+                        Devolución
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
