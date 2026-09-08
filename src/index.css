@@ -6119,7 +6119,7 @@ label {
 }
 .dev-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .dev-item-nombre { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
-.dev-item-sku { font-size: 0.74rem; color: var(--text-muted); }
+.dev-item-sku { font-size: 0.75rem; font-weight: 600; color: var(--accent); letter-spacing: 0.03em; }
 .dev-item-cant { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 .dev-item-max { font-size: 0.72rem; color: var(--text-muted); }
 .dev-item-input-wrap { display: flex; align-items: center; gap: 4px; }
