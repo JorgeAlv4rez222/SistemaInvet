@@ -11377,14 +11377,6 @@ input[type="radio"] {
 }
 .sd-item-uds strong { color: #38bdf8; }
 .sd-item-uds .sd-item-cant-unit { font-size: 0.7rem; color: #64748b; font-weight: 400; }
-.sd-item-right {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-.sd-item-right .sd-item-acciones { flex-wrap: wrap; justify-content: flex-end; }
 
 /* Rack badge */
 .sd-item-rack { flex-shrink: 0; }
@@ -11477,7 +11469,6 @@ input[type="radio"] {
 /* Estado + operador */
 .sd-item-estado {
   flex-shrink: 0;
-  min-width: 110px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -11516,7 +11507,7 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex-shrink: 0;
 }
 

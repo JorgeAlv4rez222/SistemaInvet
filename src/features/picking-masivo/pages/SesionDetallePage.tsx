@@ -540,42 +540,44 @@ export function SesionDetallePage() {
                   </div>
                 </div>
 
-                {/* UDS — sin barra de progreso */}
+                {/* UDS */}
                 <div className="sd-item-uds">
                   <strong>{item.cantidad_despachada}</strong> / {item.cantidad_pedida}
                   <span className="sd-item-cant-unit"> Uds</span>
                 </div>
 
-                {/* Derecha: estado arriba + acciones abajo */}
-                <div className="sd-item-right">
+                {/* Estado */}
+                <div className="sd-item-estado">
                   <span className={`sd-badge ${badge.cls}`}>{badge.label}</span>
-                  <div className="sd-item-acciones">
+                </div>
+
+                {/* Acciones */}
+                <div className="sd-item-acciones">
+                  <button
+                    className="sd-accion-btn"
+                    title="Ver trazabilidad"
+                    onClick={() => toggleExpandido(item.id)}
+                  >
+                    <IcoEye /> {abierto ? 'Ocultar' : 'Detalle'}
+                  </button>
+                  {esAdmin && subActiva && (
                     <button
-                      className="sd-accion-btn"
-                      title="Ver trazabilidad"
-                      onClick={() => toggleExpandido(item.id)}
+                      className="sd-accion-btn sd-accion-btn--warn"
+                      title="Liberar ítem bloqueado"
+                      onClick={() => alert(`Liberar ítem ${item.codigo} — disponible próximamente`)}
                     >
-                      <IcoEye /> {abierto ? 'Ocultar' : 'Detalle'}
+                      <IcoUnlock /> Liberar
                     </button>
-                    {esAdmin && subActiva && (
-                      <button
-                        className="sd-accion-btn sd-accion-btn--warn"
-                        title="Liberar ítem bloqueado"
-                        onClick={() => alert(`Liberar ítem ${item.codigo} — disponible próximamente`)}
-                      >
-                        <IcoUnlock /> Liberar
-                      </button>
-                    )}
-                    {esAdmin && item.estado === 'sin_stock' && (
-                      <button
-                        className="sd-accion-btn sd-accion-btn--tool"
-                        title="Asignar reposición"
-                        onClick={() => alert(`Reposición para ${item.codigo} — disponible próximamente`)}
-                      >
-                        <IcoTool /> Reponer
-                      </button>
-                    )}
-                  </div>
+                  )}
+                  {esAdmin && item.estado === 'sin_stock' && (
+                    <button
+                      className="sd-accion-btn sd-accion-btn--tool"
+                      title="Asignar reposición"
+                      onClick={() => alert(`Reposición para ${item.codigo} — disponible próximamente`)}
+                    >
+                      <IcoTool /> Reponer
+                    </button>
+                  )}
                 </div>
               </div>
 
