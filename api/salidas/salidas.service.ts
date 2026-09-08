@@ -21,9 +21,10 @@ export type NotaResumen = NotaVenta & {
 }
 
 export type ValidarProductoInput = {
-  adminId:        string
-  notaProductoId: string
-  codigoProducto: string
+  adminId:           string
+  notaProductoId:    string
+  codigoProducto:    string
+  cantidadIngresada: number
 }
 
 export type ValidarProductoResult = {
