@@ -493,7 +493,7 @@ export function SesionDetallePage() {
               className={`sd-filtro-btn sd-filtro-btn--${f.key.replace('_', '-')} ${filtroEstado === f.key ? 'sd-filtro-btn--activo' : ''}`}
               onClick={() => setFiltroEstado(f.key as typeof filtroEstado)}
             >
-              {f.key === 'sin_stock' && '⚠️ '}{f.label}
+              {f.label}
               <span className="sd-filtro-count">{f.count}</span>
             </button>
           ))}
