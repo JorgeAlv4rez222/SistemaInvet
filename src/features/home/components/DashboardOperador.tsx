@@ -9,7 +9,6 @@ import { useDashboard, useEquipoBodega } from '../hooks/useDashboard'
 function IcoBox()    { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> }
 function IcoClock()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> }
 function IcoTruck()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> }
-function IcoAlert()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> }
 function IcoFlow()   { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="6" height="4" rx="1"/><rect x="9" y="3" width="6" height="4" rx="1"/><rect x="16" y="3" width="6" height="4" rx="1"/><path d="M5 7v4"/><path d="M12 7v4"/><path d="M19 7v4"/><rect x="2" y="11" width="6" height="4" rx="1"/><rect x="9" y="11" width="6" height="4" rx="1"/><rect x="16" y="11" width="6" height="4" rx="1"/></svg> }
 function IcoFactory(){ return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 20v-8l4-4 4 8 4-8 4 4v8H2z"/><line x1="2" y1="20" x2="22" y2="20"/></svg> }
 function IcoUsers()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> }
@@ -92,53 +91,22 @@ export function DashboardOperador() {
       </div>
 
       {/* ── KPIs producción ─────────────────────────────────────────────────── */}
-      <div className="tc-kpi-row">
-
-        <div className="tc-kpi-card tc-kpi-pending">
-          <div className="tc-kpi-ico"><IcoClock /></div>
-          <div className="tc-kpi-body">
-            <p className="tc-kpi-label">NV Pendientes</p>
-            <p className="tc-kpi-valor">
-              {isLoading ? '—' : pendientes}
-              <span className="tc-kpi-unit">por preparar</span>
-            </p>
-            {!isLoading && pendientes > 0 && (
-              <p className="tc-kpi-delta tc-delta-amber">⚠️ Requieren atención</p>
-            )}
-            {!isLoading && pendientes === 0 && (
-              <p className="tc-kpi-delta tc-delta-muted">Todo al día</p>
-            )}
-          </div>
+      <div className="tc-kpi-inline">
+        <div className="tc-kpi-inline-item">
+          <IcoClock />
+          <span className="tc-kpi-inline-label">NV Pendiente:</span>
+          <span className="tc-kpi-inline-val tc-kpi-inline-val--pending">
+            {isLoading ? '—' : pendientes}
+          </span>
         </div>
-
-        <div className="tc-kpi-card tc-kpi-neutral">
-          <div className="tc-kpi-ico"><IcoTruck /></div>
-          <div className="tc-kpi-body">
-            <p className="tc-kpi-label">Listas para Despacho</p>
-            <p className="tc-kpi-valor">
-              {isLoading ? '—' : listasAudit}
-              <span className="tc-kpi-unit">NVs completas</span>
-            </p>
-            {!isLoading && listasAudit > 0 && (
-              <p className="tc-kpi-delta tc-delta-muted">📦 Esperando camión</p>
-            )}
-          </div>
+        <div className="tc-kpi-inline-sep" />
+        <div className="tc-kpi-inline-item">
+          <IcoTruck />
+          <span className="tc-kpi-inline-label">NV Completas:</span>
+          <span className="tc-kpi-inline-val tc-kpi-inline-val--done">
+            {isLoading ? '—' : listasAudit}
+          </span>
         </div>
-
-        <div className={`tc-kpi-card ${!isLoading && (kpis?.stockTotal ?? 0) < 100 ? 'tc-kpi-alerta' : 'tc-kpi-neutral'}`}>
-          <div className="tc-kpi-ico"><IcoAlert /></div>
-          <div className="tc-kpi-body">
-            <p className="tc-kpi-label">Ocupación Bodega</p>
-            <p className="tc-kpi-valor">
-              {isLoading ? '—' : `${kpis?.ocupacionPct ?? 0}%`}
-              <span className="tc-kpi-unit">de capacidad</span>
-            </p>
-            <p className="tc-kpi-delta tc-delta-muted">
-              {isLoading ? '' : `${kpis?.posicionesLibres ?? 0} posiciones libres`}
-            </p>
-          </div>
-        </div>
-
       </div>
 
       {/* ── Cuerpo ──────────────────────────────────────────────────────────── */}

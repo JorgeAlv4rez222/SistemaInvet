@@ -1139,6 +1139,30 @@ label {
 .tc-delta-red    { color: #f87171; }
 .tc-delta-muted  { color: var(--text-muted); }
 
+/* KPI inline (fila compacta NV Pendiente / NV Completas) */
+.tc-kpi-inline {
+  display: flex; align-items: center; gap: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px; padding: 12px 20px;
+}
+.tc-kpi-inline-item {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+}
+.tc-kpi-inline-item svg { width: 16px; height: 16px; color: var(--text-muted); flex-shrink: 0; }
+.tc-kpi-inline-label {
+  font-size: 0.82rem; font-weight: 600; color: var(--text-muted);
+}
+.tc-kpi-inline-val {
+  font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.tc-kpi-inline-val--pending { color: #f59e0b; }
+.tc-kpi-inline-val--done    { color: #34d399; }
+.tc-kpi-inline-sep {
+  width: 1px; height: 32px; background: var(--border-light); margin: 0 20px; flex-shrink: 0;
+}
+
 /* Cuerpo 55/45 */
 .tc-body { display: grid; grid-template-columns: 11fr 9fr; gap: 14px; align-items: start; }
 .tc-col-left, .tc-col-right { display: flex; flex-direction: column; gap: 14px; }
