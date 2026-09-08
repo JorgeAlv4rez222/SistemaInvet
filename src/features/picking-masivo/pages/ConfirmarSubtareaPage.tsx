@@ -288,7 +288,7 @@ export function ConfirmarSubtareaPage() {
         <div className="cf-scanner-section">
           <div className="cf-scanner-header">
             <div className="cf-scanner-dot" />
-            <span className="cf-scanner-label">ESCÁNER ACTIVO</span>
+            <span className="cf-scanner-label">Escanea el código de barra del producto</span>
           </div>
           <div className="cf-scanner-input-row">
             <input
@@ -347,27 +347,13 @@ export function ConfirmarSubtareaPage() {
       {/* ── Control de cantidad ── */}
       {barcodeOk && !sinStockMode && (
         <div className="cf-cantidad-section">
-          <span className="cf-label-titulo">CANTIDAD PICKEDA</span>
-          <div className="cf-cantidad-row">
-            <input
-              type="number"
-              className="cf-cantidad-input"
-              min={0}
-              max={cantAsignada}
-              value={cantidad}
-              onChange={e => setCantidad(e.target.value)}
-              onKeyDown={onlyNumbersKeyDown}
-              onPaste={onlyNumbersPaste}
-              autoFocus
-            />
-            <button
-              className="cf-carga-total-btn cf-carga-total-btn--confirm"
-              disabled={isPending}
-              onClick={handleConfirmarDespacho}
-            >
-              {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar cantidad'}
-            </button>
-          </div>
+          <button
+            className="cf-carga-total-btn cf-carga-total-btn--confirm"
+            disabled={isPending}
+            onClick={handleConfirmarDespacho}
+          >
+            {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar cantidad'}
+          </button>
 
           {requiereMotivo && (
             <label className="cf-label">

@@ -9885,13 +9885,14 @@ input[type="radio"] {
 /* KPIs */
 .pm-admin-kpis {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-md);
 }
 .pm-admin-kpi {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   background: var(--bg-surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
@@ -9902,14 +9903,8 @@ input[type="radio"] {
 }
 .pm-admin-kpi:hover { border-color: var(--accent); }
 .pm-admin-kpi--activo { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg-surface)); }
-.pm-admin-kpi > div { display: flex; flex-direction: column; gap: 2px; }
-.pm-admin-kpi-ico { font-size: 1.5rem; flex-shrink: 0; }
 .pm-admin-kpi-val  { font-size: var(--font-size-2xl); font-weight: 700; color: var(--text-primary); line-height: 1.1; }
 .pm-admin-kpi-label { font-size: var(--font-size-xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.pm-admin-kpi--proceso   { }
-.pm-admin-kpi--uds       { }
-.pm-admin-kpi--libre     { }
-.pm-admin-kpi--completadas { }
 
 /* Búsqueda */
 .pm-admin-search-row {
@@ -10304,7 +10299,7 @@ input[type="radio"] {
 /* Responsive */
 @media (max-width: 900px) {
   .pm-admin-wrap      { padding: 12px; max-width: 100%; }
-  .pm-admin-kpis      { grid-template-columns: repeat(2, 1fr); }
+  .pm-admin-kpis      { grid-template-columns: repeat(3, 1fr); }
   .pm-admin-top       { flex-direction: column; align-items: stretch; gap: 10px; }
   .pm-admin-nueva-btn { width: 100%; justify-content: center; }
   .pm-admin-search-row{ flex-direction: column; gap: 8px; }
@@ -10313,7 +10308,7 @@ input[type="radio"] {
   .pm-t-th--creacion, .pm-t-td--creacion { display: none; }
 }
 @media (max-width: 520px) {
-  .pm-admin-kpis { grid-template-columns: 1fr 1fr; }
+  .pm-admin-kpis { grid-template-columns: repeat(3, 1fr); }
   .pm-admin-wrap { padding: var(--spacing-md); }
 }
 
@@ -10791,6 +10786,31 @@ input[type="radio"] {
   gap: 0;
   font-family: system-ui, -apple-system, sans-serif;
 }
+.sd-page .cola-progreso-wrap {
+  padding: 10px 20px 6px;
+  border-bottom: 1px solid #1e293b;
+}
+.sd-page .sd-error-banner {
+  margin: 8px 20px 0;
+}
+
+/* Vista operador: grid de una fila (desktop >1100px) */
+.sd-page--operador .sd-item-row {
+  display: grid;
+  grid-template-columns: auto 1fr 140px auto auto auto;
+  grid-template-rows: auto;
+  gap: 0 12px;
+  align-items: center;
+  flex-wrap: unset;
+}
+.sd-page--operador .sd-item-rack    { grid-column: 1; }
+.sd-page--operador .sd-item-sku     { grid-column: 2; }
+.sd-page--operador .oc-item-lpn     { grid-column: 3; }
+.sd-page--operador .oc-item-cant    { grid-column: 4; }
+.sd-page--operador .sd-item-estado  { grid-column: 5; }
+.sd-page--operador .sd-item-acciones { grid-column: 6; justify-content: flex-end; }
+.sd-page--operador .sd-item-progreso { display: none; }
+.sd-page--operador .sd-chevron-btn  { display: none; }
 
 /* ── Header ── */
 .sd-header {
@@ -10830,6 +10850,12 @@ input[type="radio"] {
   min-width: 0;
 }
 
+.sd-header-nombre-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .sd-header-nombre {
   font-size: 1.25rem;
   font-weight: 800;
@@ -10839,6 +10865,16 @@ input[type="radio"] {
   text-overflow: ellipsis;
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+.sd-header-entrega {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  padding: 2px 10px;
+  white-space: nowrap;
 }
 
 .sd-header-meta {
@@ -11213,6 +11249,12 @@ input[type="radio"] {
   flex-direction: column;
   gap: 3px;
 }
+.sd-item-nombre-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .sd-item-nombre {
   font-size: 0.82rem;
   font-weight: 600;
@@ -11314,6 +11356,30 @@ input[type="radio"] {
   flex-wrap: wrap;
   flex-shrink: 0;
 }
+
+/* Columna LPN alineada — vista operador cola */
+.oc-item-lpn {
+  flex-shrink: 0;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.oc-item-lpn--vacio {
+  font-size: 0.7rem;
+  color: #334155;
+}
+/* Cantidad — vista operador cola */
+.oc-item-cant {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+.oc-item-cant .sd-item-cant-unit {
+  color: #e2e8f0;
+}
 .sd-accion-btn {
   display: inline-flex;
   align-items: center;
@@ -11339,6 +11405,16 @@ input[type="radio"] {
   color: #f87171;
 }
 .sd-accion-btn--tool:hover { background: rgba(239,68,68,0.1); }
+.sd-accion-btn--picking {
+  border-color: rgba(0,160,223,0.5);
+  color: #00A0DF;
+}
+.sd-accion-btn--picking:hover { background: rgba(0,160,223,0.1); }
+.sd-accion-btn--disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
 
 /* Chevron */
 .sd-chevron-btn {
@@ -11597,7 +11673,6 @@ input[type="radio"] {
   .sd-item-progreso{ grid-column: 2; grid-row: 2; align-items: flex-start; }
   .sd-item-estado  { grid-column: 3; grid-row: 1; align-items: flex-end; }
   .sd-item-acciones{ grid-column: 3; grid-row: 2; justify-content: flex-end; }
-
   .sd-fase-btns { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
   .sd-fase-btns .sd-btn { flex: 1; justify-content: center; }
 }
@@ -11653,7 +11728,7 @@ input[type="radio"] {
   .sd-kpi-titulo { font-size: 0.62rem; }
   .sd-ops-lista { max-height: 90px; }
 
-  /* Items: dos líneas por card */
+  /* Items admin: dos filas */
   .sd-item-row {
     display: grid;
     grid-template-columns: auto 1fr auto auto auto;
@@ -11662,18 +11737,25 @@ input[type="radio"] {
     align-items: center;
     padding: 10px 12px;
   }
-  /* rack: col 1, row 1 */
-  .sd-item-rack { grid-column: 1; grid-row: 1; }
-  /* sku: col 2, row 1 */
-  .sd-item-sku  { grid-column: 2; grid-row: 1; }
-  /* progreso: col 3, row 1 */
+  .sd-item-rack    { grid-column: 1; grid-row: 1; }
+  .sd-item-sku     { grid-column: 2; grid-row: 1; }
   .sd-item-progreso { grid-column: 3; grid-row: 1; min-width: 90px; align-items: flex-end; }
-  /* estado: col 4, row 1 */
-  .sd-item-estado { grid-column: 4; grid-row: 1; }
-  /* chevron: col 5, row 1 */
-  .sd-chevron-btn { grid-column: 5; grid-row: 1; }
-  /* acciones: segunda fila, ocupa desde col 2 al final */
+  .sd-item-estado  { grid-column: 4; grid-row: 1; }
+  .sd-chevron-btn  { grid-column: 5; grid-row: 1; }
   .sd-item-acciones { grid-column: 2 / -1; grid-row: 2; justify-content: flex-start; }
+
+  /* Items operador: una sola fila, columna LPN fija */
+  .sd-page--operador .sd-item-row {
+    grid-template-columns: auto 1fr 140px auto auto auto;
+    grid-template-rows: auto;
+    gap: 0 10px;
+  }
+  .sd-page--operador .sd-item-rack    { grid-column: 1; grid-row: 1; }
+  .sd-page--operador .sd-item-sku     { grid-column: 2; grid-row: 1; }
+  .sd-page--operador .oc-item-lpn     { grid-column: 3; grid-row: 1; min-width: 0; }
+  .sd-page--operador .oc-item-cant    { grid-column: 4; grid-row: 1; }
+  .sd-page--operador .sd-item-estado  { grid-column: 5; grid-row: 1; }
+  .sd-page--operador .sd-item-acciones { grid-column: 6; grid-row: 1; justify-content: flex-end; }
 
   /* Toolbar */
   .sd-toolbar { gap: 8px; padding: 10px 14px; }
@@ -11700,7 +11782,6 @@ input[type="radio"] {
   .sd-item-sku  { min-width: 200px; flex: 1 1 200px; }
   .sd-item-progreso { align-items: flex-start; }
   .sd-item-acciones { width: 100%; justify-content: flex-start; }
-
   /* Toolbar */
   .sd-toolbar { flex-direction: column; align-items: stretch; }
   .sd-busqueda-wrap { max-width: 100%; }
@@ -11708,6 +11789,18 @@ input[type="radio"] {
   .sd-filtro-btn { flex-shrink: 0; }
 
   .sd-items-lista { padding: 8px 10px 80px; }
+
+  /* Operador cola — progreso y filtros en móvil */
+  .sd-page .cola-progreso-wrap { padding: 8px 12px 4px; }
+  .sd-item-nombre-row { gap: 5px; }
+  .sd-lpn-item-tag { font-size: 9px; }
+}
+
+/* ── Responsive: tablet Zebra (701–1100px) — vista operador ── */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .sd-page .cola-progreso-wrap { padding: 10px 14px 6px; }
+  .sd-page .sd-items-lista { padding: 10px 14px 80px; gap: 6px; }
+  /* El grid de sd-item-row ya está definido en el bloque 701-1100; heredamos eso */
 }
 
 @layer base {

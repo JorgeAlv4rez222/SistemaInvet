@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useColaSubtareas, useLiberarPropias, useSesionPicking, useTomarSubtarea } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
@@ -13,42 +13,32 @@ function IcoBack() {
 function IcoUnlock() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
 }
-function IcoScan() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
-}
 function IcoPin() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={12} height={12}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
 }
-function IcoLock() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+function IcoScan() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
 }
 function IcoCheck() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><polyline points="20 6 9 17 4 12"/></svg>
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="20 6 9 17 4 12"/></svg>
+}
+function IcoLock() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function parsePosicion(cod: string) {
-  if (!cod || cod === '—') return { codigo: cod, detalle: null }
-  const parts = cod.split(/[-/]/)
-  return { codigo: cod, detalle: parts.length > 2 ? `Pasillo ${parts[1] ?? ''}` : null }
-}
-
-// ── Tarjeta de producto / subtarea ────────────────────────────────────────────
+// ── Tarjeta de subtarea (formato admin) ───────────────────────────────────────
 
 function SubtareaCard({
   sub,
   operadorId,
   sesionId,
   tomandoId,
-  rol,
   onTomar,
 }: {
   sub: SubtareaResumen
   operadorId: string
   sesionId: string
   tomandoId: string | null
-  rol: string
   onTomar: (sub: SubtareaResumen) => void
 }) {
   const navigate = useNavigate()
@@ -62,94 +52,92 @@ function SubtareaCard({
   const desc = item?.descripcion ?? item?.codigo ?? '—'
   const sku  = item?.codigo ?? '—'
   const ean  = item?.codigo_barra ?? null
-  const pos  = parsePosicion(sub.posicion_codigo)
+  const rack = sub.posicion_codigo && sub.posicion_codigo !== '—' ? sub.posicion_codigo : 'S/U'
 
-  let estadoBadgeClass = 'cola-badge--libre'
-  let estadoLabel      = 'LIBRE'
-  if (esMia)          { estadoBadgeClass = 'cola-badge--mia';      estadoLabel = 'EN PROCESO (Tú)' }
-  if (bloqueadaXOtro) { estadoBadgeClass = 'cola-badge--ocupada';  estadoLabel = 'OCUPADA' }
-  if (esParcial)      { estadoBadgeClass = 'cola-badge--parcial';   estadoLabel = 'PARCIAL' }
-  if (esCompleta)     { estadoBadgeClass = 'cola-badge--completa';  estadoLabel = 'COMPLETO' }
+  const despachada = sub.cantidad_despachada ?? 0
+  const total      = sub.cantidad_asignada
+  const pct        = total > 0 ? Math.round((despachada / total) * 100) : 0
 
-  let cardMod = ''
-  if (bloqueadaXOtro) cardMod = 'cola-card--ocupada'
-  if (esCompleta)     cardMod = 'cola-card--completa'
-  if (esMia)          cardMod = 'cola-card--mia'
-  if (esParcial)      cardMod = 'cola-card--parcial'
+  let badgeLabel = 'Libre'
+  let badgeCls   = 'sd-badge--libre'
+  if (esMia)          { badgeLabel = 'En Proceso (Tú)'; badgeCls = 'sd-badge--proceso' }
+  if (bloqueadaXOtro) { badgeLabel = 'Ocupada';         badgeCls = 'sd-badge--proceso' }
+  if (esParcial)      { badgeLabel = 'Parcial';          badgeCls = 'sd-badge--parcial' }
+  if (esCompleta)     { badgeLabel = 'Completado';       badgeCls = 'sd-badge--ok' }
+
+  const cardMod = esCompleta ? 'sd-item-card--completado'
+    : esMia          ? 'sd-item-card--en-progreso'
+    : bloqueadaXOtro ? 'sd-item-card--bloqueado'
+    : esParcial      ? 'sd-item-card--parcial'
+    : 'sd-item-card--libre'
 
   return (
-    <div className={`cola-card ${cardMod}`}>
+    <div className={`sd-item-card ${cardMod}`}>
+      <div className="sd-item-row">
 
-      {/* ── Fila superior: ubicación + badge ── */}
-      <div className="cola-card-top">
-        <div className="cola-rack-badge">
-          <IcoPin />
-          <span className="cola-rack-codigo">{pos.codigo !== '—' ? pos.codigo : 'Sin ubicación'}</span>
-          {pos.detalle && <span className="cola-rack-detalle">· {pos.detalle}</span>}
-        </div>
-        <div className={`cola-badge ${estadoBadgeClass}`}>
-          {esCompleta && <IcoCheck />}
-          {bloqueadaXOtro && <IcoLock />}
-          {estadoLabel}
-        </div>
-      </div>
-
-      {/* ── Descripción + SKU + EAN ── */}
-      <div className="cola-card-sku">
-        <span className="cola-sku-desc">{desc}</span>
-        <div className="cola-sku-codes">
-          <span className="cola-sku-tag">SKU: {sku}</span>
-          {ean && <span className="cola-ean-tag">{ean}</span>}
-        </div>
-      </div>
-
-      {/* ── Cantidad + acción ── */}
-      <div className="cola-card-bottom">
-        <div className="cola-cant-block">
-          <span className="cola-cant-label">Cantidad</span>
-          <span className="cola-cant-val">
-            {esParcial
-              ? `${sub.cantidad_despachada ?? 0} / ${sub.cantidad_asignada}`
-              : sub.cantidad_asignada}
-            <span className="cola-cant-unit"> Uds</span>
+        {/* Rack */}
+        <div className="sd-item-rack">
+          <span className="sd-rack-badge">
+            <IcoPin /> {rack}
           </span>
         </div>
 
-        <div className="cola-acciones">
+        {/* SKU / Descripción */}
+        <div className="sd-item-sku">
+          <span className="sd-item-nombre">{desc}</span>
+          <div className="sd-item-codes">
+            <span className="sd-sku-tag">SKU: {sku}</span>
+            {ean && <span className="sd-ean-tag">EAN: {ean}</span>}
+          </div>
+        </div>
+
+        {/* LPN — columna fija alineada */}
+        <div className="oc-item-lpn">
+          {item?.lpn
+            ? <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
+            : <span className="oc-item-lpn--vacio">—</span>
+          }
+        </div>
+
+        {/* Cantidad */}
+        <div className="oc-item-cant">
+          <strong>{total}</strong>
+          <span className="sd-item-cant-unit"> Uds</span>
+        </div>
+
+        {/* Estado */}
+        <div className="sd-item-estado">
+          <span className={`sd-badge ${badgeCls}`}>
+            {esCompleta && <IcoCheck />}
+            {bloqueadaXOtro && <IcoLock />}
+            {badgeLabel}
+          </span>
+        </div>
+
+        {/* Acción */}
+        <div className="sd-item-acciones">
           {esCompleta ? (
-            <div className="cola-btn cola-btn--completa">
-              <IcoCheck /> COMPLETADO
+            <div className="sd-accion-btn sd-accion-btn--disabled">
+              <IcoCheck /> Completado
+            </div>
+          ) : bloqueadaXOtro ? (
+            <div className="sd-accion-btn sd-accion-btn--disabled">
+              <IcoLock /> Bloqueado
             </div>
           ) : esMia ? (
             <button
-              className="cola-btn cola-btn--escanear"
+              className="sd-accion-btn sd-accion-btn--picking"
               onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}
             >
-              <IcoScan /> ESCANEAR
-            </button>
-          ) : bloqueadaXOtro ? (
-            <div className="cola-ocupada-info">
-              <div className="cola-btn cola-btn--bloqueado" aria-disabled="true">
-                <IcoLock /> BLOQUEADO
-              </div>
-              {(rol === 'supervisor' || rol === 'admin') && (
-                <span className="cola-ocupada-hint">Supervisor puede liberar</span>
-              )}
-            </div>
-          ) : esParcial ? (
-            <button
-              className="cola-btn cola-btn--escanear"
-              onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}
-            >
-              <IcoScan /> EDITAR PARCIAL
+              <IcoScan /> Picking
             </button>
           ) : (
             <button
-              className="cola-btn cola-btn--tomar"
+              className="sd-accion-btn sd-accion-btn--picking"
               disabled={tomandoId === sub.id}
               onClick={() => onTomar(sub)}
             >
-              {tomandoId === sub.id ? 'Tomando…' : 'TOMAR TAREA'}
+              <IcoScan /> {tomandoId === sub.id ? 'Tomando…' : 'Picking'}
             </button>
           )}
         </div>
@@ -166,7 +154,6 @@ export function OperadorColaPage() {
   const sesionId    = id ?? null
   const operadorId  = localStorage.getItem('user_id')  ?? ''
   const rol         = localStorage.getItem('user_rol')  ?? ''
-  const scannerRef  = useRef<HTMLInputElement>(null)
 
   const { data, isLoading, isError } = useColaSubtareas(sesionId)
   const { data: sesion }             = useSesionPicking(sesionId)
@@ -174,23 +161,12 @@ export function OperadorColaPage() {
   const tomarSubtarea  = useTomarSubtarea(sesionId ?? '')
   const liberarPropias = useLiberarPropias(sesionId ?? '')
 
-  const [tomandoId, setTomandoId]   = useState<string | null>(null)
-  const [error, setError]           = useState<string | null>(null)
-  const [filtro, setFiltro]         = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
-  const [scanner, setScanner]       = useState('')
+  const [tomandoId, setTomandoId] = useState<string | null>(null)
+  const [error, setError]         = useState<string | null>(null)
+  const [filtro, setFiltro]       = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
 
-  const subtareas = data ?? []
+  const subtareas    = data ?? []
   const tengoPropias = subtareas.some(s => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
-
-  // Foco permanente en el campo escáner
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.activeElement !== scannerRef.current) {
-        scannerRef.current?.focus()
-      }
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [])
 
   const cntTodas    = subtareas.filter(s => s.estado !== 'completado').length
   const cntMias     = subtareas.filter(s => s.estado === 'bloqueado' && s.bloqueado_por === operadorId).length
@@ -198,24 +174,17 @@ export function OperadorColaPage() {
   const cntParcial  = subtareas.filter(s => s.estado === 'parcial' || s.estado === 'sin_stock').length
   const cntCompletas= subtareas.filter(s => s.estado === 'completado').length
 
-  const subtareasFiltradas = subtareas.filter(s => {
-    if (filtro === 'todas')     return s.estado !== 'completado'
-    if (filtro === 'mias')      return s.estado === 'bloqueado' && s.bloqueado_por === operadorId
-    if (filtro === 'tomadas')   return s.estado === 'bloqueado' && s.bloqueado_por !== operadorId
-    if (filtro === 'parcial')   return s.estado === 'parcial' || s.estado === 'sin_stock'
-    if (filtro === 'completas') return s.estado === 'completado'
-    return true
-  })
-
-  const termino = scanner.trim().toLowerCase()
-  const visibles = (termino
-    ? subtareasFiltradas.filter(s =>
-        s.items_picking_masivo?.codigo?.toLowerCase().includes(termino) ||
-        s.items_picking_masivo?.descripcion?.toLowerCase().includes(termino) ||
-        s.items_picking_masivo?.codigo_barra?.toLowerCase().includes(termino)
-      )
-    : subtareasFiltradas
-  ).slice().sort((a, b) => (a.items_picking_masivo?.lpn ?? '').localeCompare(b.items_picking_masivo?.lpn ?? '', undefined, { numeric: true }))
+  const visibles = subtareas
+    .filter(s => {
+      if (filtro === 'todas')     return s.estado !== 'completado'
+      if (filtro === 'mias')      return s.estado === 'bloqueado' && s.bloqueado_por === operadorId
+      if (filtro === 'tomadas')   return s.estado === 'bloqueado' && s.bloqueado_por !== operadorId
+      if (filtro === 'parcial')   return s.estado === 'parcial' || s.estado === 'sin_stock'
+      if (filtro === 'completas') return s.estado === 'completado'
+      return true
+    })
+    .slice()
+    .sort((a, b) => (a.items_picking_masivo?.lpn ?? '').localeCompare(b.items_picking_masivo?.lpn ?? '', undefined, { numeric: true }))
 
   async function handleTomar(sub: SubtareaResumen) {
     if (!sesionId) return
@@ -237,30 +206,33 @@ export function OperadorColaPage() {
     await liberarPropias.mutateAsync({ sesionId, usuarioId: operadorId })
   }
 
-  const pct = sesion && sesion.total_items > 0
+  const pct      = sesion && sesion.total_items > 0
     ? Math.round((sesion.items_completados / sesion.total_items) * 100)
     : 0
-
-  const oc      = sesion?.numero_oc_pedido ?? sesion?.numero_oc ?? ''
-  const cliente = sesion?.nombre_cliente ?? oc
+  const oc       = sesion?.numero_oc_pedido ?? sesion?.numero_oc ?? ''
+  const cliente  = sesion?.nombre_cliente ?? oc
 
   return (
-    <div className="cola-wrap">
+    <div className="sd-page sd-page--operador">
 
       {/* ── Cabecera ── */}
-      <div className="cola-header">
-        <div className="cola-header-left">
-          <button className="cola-volver-btn" onClick={() => navigate('/picking-masivo/operador')}>
-            <IcoBack /> Volver
-          </button>
-          <div className="cola-header-info">
-            <span className="cola-header-titulo">{cliente}</span>
-            {oc && <span className="cola-header-oc">OC: <strong>{oc}</strong></span>}
+      <div className="sd-header">
+        <button className="sd-volver-btn" onClick={() => navigate('/picking-masivo/operador')}>
+          <IcoBack /> Volver
+        </button>
+        <div className="sd-header-title">
+          <div className="sd-header-nombre-row">
+            <span className="sd-header-nombre">{cliente}</span>
           </div>
+          {oc && sesion?.nombre_cliente && (
+            <div className="sd-header-meta">
+              <span className="sd-header-oc">OC: {oc}</span>
+            </div>
+          )}
         </div>
-        <div className="cola-header-right">
+        <div className="sd-header-actions">
           <button
-            className="cola-liberar-btn"
+            className="sd-btn sd-btn--secondary"
             disabled={!tengoPropias || liberarPropias.isPending}
             onClick={handleLiberar}
           >
@@ -285,56 +257,38 @@ export function OperadorColaPage() {
         </div>
       )}
 
-      {/* ── Campo escáner láser ── */}
-      <div className="cola-scanner-wrap">
-        <div className="cola-scanner-dot" />
-        <span className="cola-scanner-label">ESCÁNER ACTIVO</span>
-        <input
-          ref={scannerRef}
-          className="cola-scanner-input"
-          placeholder="Pistolear EAN / Código de Barra aquí…"
-          value={scanner}
-          onChange={e => setScanner(e.target.value)}
-          autoComplete="off"
-          autoFocus
-        />
-        {scanner && (
-          <button className="cola-scanner-clear" onClick={() => { setScanner(''); scannerRef.current?.focus() }}>✕</button>
-        )}
-      </div>
-
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="sd-error-banner">{error}</div>}
 
       {/* ── Filtros ── */}
-      <div className="cola-filtros">
-        {([
-          ['todas',     `Todas (${cntTodas})`],
-          ['mias',      `Mis Tareas (${cntMias})`],
-          ['tomadas',   `Ocupadas (${cntTomadas})`],
-          ['parcial',   `Parcial (${cntParcial})`],
-          ['completas', `Completas (${cntCompletas})`],
-        ] as const).map(([key, label]) => (
-          <button
-            key={key}
-            className={`cola-filtro-btn ${filtro === key ? 'cola-filtro-btn--activo' : ''}`}
-            onClick={() => setFiltro(key)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="sd-toolbar">
+        <div className="sd-filtros">
+          {([
+            ['todas',     `Todas (${cntTodas})`],
+            ['mias',      `Mis Tareas (${cntMias})`],
+            ['tomadas',   `Ocupadas (${cntTomadas})`],
+            ['parcial',   `Parcial (${cntParcial})`],
+            ['completas', `Completas (${cntCompletas})`],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              className={`sd-filtro-btn ${filtro === key ? 'sd-filtro-btn--activo' : ''}`}
+              onClick={() => setFiltro(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Lista ── */}
       {isLoading && <p className="cargando">Cargando cola…</p>}
       {isError   && <p className="error-msg">Error al cargar la cola</p>}
       {!isLoading && !isError && visibles.length === 0 && (
-        <div className="notas-vacio">
-          <p>{scanner ? 'Sin resultados para ese código' : 'Sin tareas para este filtro'}</p>
-        </div>
+        <div className="sd-vacio">Sin tareas para este filtro</div>
       )}
 
       {!isLoading && !isError && visibles.length > 0 && (
-        <div className="cola-lista">
+        <div className="sd-items-lista">
           {visibles.map(sub => (
             <SubtareaCard
               key={sub.id}
@@ -342,7 +296,6 @@ export function OperadorColaPage() {
               operadorId={operadorId}
               sesionId={sesionId ?? ''}
               tomandoId={tomandoId}
-              rol={rol}
               onTomar={handleTomar}
             />
           ))}
