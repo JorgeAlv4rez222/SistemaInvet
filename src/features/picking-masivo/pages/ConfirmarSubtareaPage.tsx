@@ -288,7 +288,6 @@ export function ConfirmarSubtareaPage() {
       {!barcodeOk && !sinStockMode && (
         <div className="cf-scanner-section">
           <div className="cf-scanner-header">
-            <div className="cf-scanner-dot" />
             <span className="cf-scanner-label">Escanea el código de barra del producto</span>
           </div>
           <div className="cf-scanner-input-row">
@@ -487,7 +486,7 @@ export function ConfirmarSubtareaPage() {
               setOpcionesEq([])
             }}
           >
-            <IcoTool /> {equivalenteActivo ? 'Cerrar equivalente' : 'Equivalente'}
+            <IcoScan /> {equivalenteActivo ? 'Cerrar equivalente' : 'Ver equivalente'}
           </button>
         )}
 
@@ -497,7 +496,7 @@ export function ConfirmarSubtareaPage() {
             className="cf-btn cf-btn--warn"
             onClick={() => { setSinStockMode(true); setError(null) }}
           >
-            <IcoWarn /> Reportar Sin Stock / Incompleto
+            <IcoWarn /> Reportar sin stock
           </button>
         )}
       </div>
