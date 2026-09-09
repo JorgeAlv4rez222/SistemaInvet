@@ -8516,6 +8516,58 @@ input[type="radio"] {
   gap: 12px;
 }
 
+/* Control de cantidad con +/− */
+.cf-qty-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.cf-qty-btn {
+  min-width: 48px;
+  height: 48px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+.cf-qty-btn:hover:not(:disabled) { background: rgba(0,160,223,0.12); border-color: var(--accent); color: var(--accent); }
+.cf-qty-btn:active:not(:disabled) { transform: scale(0.92); }
+.cf-qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.cf-qty-btn--max { font-size: 0.8rem; font-weight: 700; min-width: 52px; }
+.cf-qty-input {
+  flex: 1;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 800;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+  padding: 4px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.cf-qty-input::-webkit-inner-spin-button,
+.cf-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+@media (min-width: 701px) {
+  .cf-qty-control { padding: 12px 20px; gap: 12px; }
+  .cf-qty-btn { min-width: 56px; height: 56px; font-size: 1.5rem; }
+  .cf-qty-btn--max { min-width: 64px; font-size: 0.85rem; }
+  .cf-qty-input { font-size: 2.4rem; }
+}
+
 .cf-label-titulo {
   font-size: 10px;
   font-weight: 800;

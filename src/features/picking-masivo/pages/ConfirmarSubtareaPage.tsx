@@ -348,13 +348,40 @@ export function ConfirmarSubtareaPage() {
       {/* ── Control de cantidad ── */}
       {barcodeOk && !sinStockMode && (
         <div className="cf-cantidad-section">
-          <button
-            className="cf-carga-total-btn cf-carga-total-btn--confirm"
-            disabled={isPending}
-            onClick={handleConfirmarDespacho}
-          >
-            {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar cantidad'}
-          </button>
+
+          {/* Selector de cantidad */}
+          <div className="cf-qty-control">
+            <button
+              className="cf-qty-btn"
+              disabled={cantNum <= 0}
+              onClick={() => setCantidad(String(Math.max(0, cantNum - 1)))}
+            >−</button>
+            <input
+              type="number"
+              className="cf-qty-input"
+              inputMode="numeric"
+              min={0}
+              max={cantAsignada}
+              value={cantidad}
+              onChange={e => {
+                const v = e.target.value.replace(/\D/g, '')
+                setCantidad(v)
+                setError(null)
+              }}
+              onKeyDown={onlyNumbersKeyDown}
+              onPaste={onlyNumbersPaste}
+            />
+            <button
+              className="cf-qty-btn"
+              disabled={cantNum >= cantAsignada}
+              onClick={() => setCantidad(String(Math.min(cantAsignada, cantNum + 1)))}
+            >+</button>
+            <button
+              className="cf-qty-btn cf-qty-btn--max"
+              disabled={cantNum === cantAsignada}
+              onClick={() => setCantidad(String(cantAsignada))}
+            >Max</button>
+          </div>
 
           {requiereMotivo && (
             <label className="cf-label">
@@ -367,6 +394,14 @@ export function ConfirmarSubtareaPage() {
               />
             </label>
           )}
+
+          <button
+            className="cf-carga-total-btn cf-carga-total-btn--confirm"
+            disabled={isPending}
+            onClick={handleConfirmarDespacho}
+          >
+            {isPending ? 'Confirmando…' : esParcialEditable ? 'Guardar cambio' : 'Confirmar cantidad'}
+          </button>
 
         </div>
       )}
