@@ -10799,6 +10799,7 @@ input[type="radio"] {
 .desp-detalle-val { font-weight: 700; font-size: 1.1rem; color: #fff; }
 .desp-detalle-val--warn { color: #f59e0b; }
 .desp-detalle-val--ok   { color: #22c55e; }
+.desp-detalle-val--mono { font-family: monospace; font-size: 0.95rem; color: #38bdf8; }
 
 /* ── Completado ── */
 .desp-completado {
@@ -10810,6 +10811,18 @@ input[type="radio"] {
   text-align: center;
   font-weight: 700;
   color: #22c55e;
+}
+
+/* ── Overlay modal global ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
 
 /* ── Modales ── */

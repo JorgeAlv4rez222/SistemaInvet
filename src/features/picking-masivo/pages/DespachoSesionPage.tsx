@@ -82,6 +82,8 @@ export function DespachoSesionPage() {
     try { return localStorage.getItem(`pm_productos_ok_${sesionId}`) === '1' } catch { return false }
   })
   const [filtroLpns, setFiltroLpns]                 = useState<'pendientes' | 'validados'>('pendientes')
+  const [filtroImperial, setFiltroImperial]         = useState<'pendientes' | 'validados'>('pendientes')
+  const [imperialExpandido, setImperialExpandido]   = useState<string | null>(null)
   const [filtroPendientes, setFiltroPendientes]     = useState(false)
   const [filtroEstadoDespacho, setFiltroEstadoDespacho] = useState<'todos' | 'parcial' | 'sin_stock'>('todos')
   const [productoExpandido, setProductoExpandido]  = useState<string | null>(null)
@@ -530,24 +532,87 @@ export function DespachoSesionPage() {
             </>
           )}
 
-          <p className="desp-lista-titulo">
-            {filtroPendientes ? 'Pendientes de validar' : `Productos Validados (${validados.length})`}
-          </p>
+          {!sesionTieneLpn && (
+            <p className="desp-lista-titulo">
+              {filtroPendientes ? 'Pendientes de validar' : `Productos Validados (${validados.length})`}
+            </p>
+          )}
+
+          {/* Filtro pendientes/validados — solo Imperial */}
+          {sesionTieneLpn && (
+            <div className="desp-filtros-row">
+              <div className="desp-filtros">
+                <button
+                  className={`desp-filtro-btn ${filtroImperial === 'pendientes' ? 'desp-filtro-btn--pendiente' : ''}`}
+                  onClick={() => setFiltroImperial('pendientes')}
+                >
+                  Pendientes ({(items ?? []).filter(i => !validadosLpn.some(v => v.itemId === i.id)).length})
+                </button>
+                <button
+                  className={`desp-filtro-btn ${filtroImperial === 'validados' ? 'desp-filtro-btn--activo' : ''}`}
+                  onClick={() => setFiltroImperial('validados')}
+                >
+                  Validados ({validadosLpn.length})
+                </button>
+              </div>
+              <span className="desp-ratio">{validadosLpn.length}/{totalItems}</span>
+            </div>
+          )}
 
           <div className="desp-items">
             {sesionTieneLpn
-              ? validadosLpn.map((v) => (
-                  <div key={v.itemId} className="desp-item desp-item--validado" onClick={() => setDetalleLpn(v)}>
-                    <div className="desp-item-info">
-                      <span className="desp-item-codigo">{v.codigo}</span>
-                      {v.tienda && <span className="desp-item-meta">{v.tienda}</span>}
-                    </div>
-                    <div className="desp-item-right">
-                      <span className="desp-item-cant">{v.cantidadPedida} uds</span>
-                      <span className="desp-item-check">✓</span>
-                    </div>
-                  </div>
-                ))
+              ? filtroImperial === 'validados'
+                ? validadosLpn.map((v) => {
+                    const abierto = imperialExpandido === v.itemId
+                    return (
+                      <div key={v.itemId} className="desp-item desp-item--validado">
+                        <div
+                          className="desp-item-fila"
+                          role="button" tabIndex={0}
+                          onClick={() => setImperialExpandido(abierto ? null : v.itemId)}
+                          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setImperialExpandido(abierto ? null : v.itemId)}
+                        >
+                          <div className="desp-item-info">
+                            <span className="desp-item-nombre">{v.descripcion || v.codigo}</span>
+                            <span className="desp-item-codigo">{v.codigo}</span>
+                          </div>
+                          <div className="desp-item-right">
+                            <span className="desp-item-cant">{v.cantidadPedida} uds</span>
+                            <span className="desp-item-check">✓</span>
+                          </div>
+                        </div>
+                        {abierto && (
+                          <div className="desp-item-detalle">
+                            {v.tienda && (
+                              <div className="desp-detalle-col">
+                                <span className="desp-detalle-label">Tienda</span>
+                                <span className="desp-detalle-val">{v.tienda}</span>
+                              </div>
+                            )}
+                            <div className="desp-detalle-col">
+                              <span className="desp-detalle-label">LPN</span>
+                              <span className="desp-detalle-val desp-detalle-val--mono">{v.lpn}</span>
+                            </div>
+                            <div className="desp-detalle-col">
+                              <span className="desp-detalle-label">Cantidad</span>
+                              <span className="desp-detalle-val desp-detalle-val--ok">{v.cantidadPedida}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                : (items ?? [])
+                    .filter(i => !validadosLpn.some(v => v.itemId === i.id))
+                    .map(i => (
+                      <div key={i.id} className="desp-item desp-item--pendiente">
+                        <div className="desp-item-info">
+                          <span className="desp-item-nombre">{i.descripcion || i.codigo}</span>
+                          <span className="desp-item-codigo">{i.codigo}{i.lpn ? ` · LPN ${i.lpn}` : ''}</span>
+                        </div>
+                        <span className="desp-item-pending">○</span>
+                      </div>
+                    ))
               : filtroPendientes
               ? (items ?? [])
                   .filter((i) => !validadosSodimac.some((v) => v.itemId === i.id))
