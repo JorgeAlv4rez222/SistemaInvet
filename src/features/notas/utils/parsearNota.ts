@@ -145,9 +145,11 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
     if (cantItems.length === 0 || codItems.length === 0) continue
 
     // Cantidad: puede ser "100." → quitar punto final
-    const cantStr = cantItems.map((it) => it.str).join('').replace(/\.$/, '').trim()
-    // Si contiene coma es un monto (ej: "25,935") no una cantidad → ignorar
-    if (/[,]/.test(cantStr)) continue
+    let cantStr = cantItems.map((it) => it.str).join('').replace(/\.$/, '').trim()
+    // Coma con exactamente 3 dígitos después → separador de miles (ej: "1,000" → 1000)
+    // Coma con 1–2 dígitos → decimales de precio (ej: "25,95") → ignorar
+    if (/,\d{2}$/.test(cantStr)) continue
+    cantStr = cantStr.replace(/,/g, '')
     const cantidad = parseInt(cantStr, 10)
     if (!Number.isFinite(cantidad) || cantidad <= 0) continue
 
