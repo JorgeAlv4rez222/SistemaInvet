@@ -841,6 +841,10 @@ export function DespachoSesionPage() {
           <div className="desp-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="desp-modal-titulo">Confirmar bulto</h3>
             <div className="desp-modal-fila">
+              <span className="desp-modal-label">LPN</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--accent">{itemPendienteLpn.lpn}</span>
+            </div>
+            <div className="desp-modal-fila">
               <span className="desp-modal-label">Código</span>
               <span className="desp-modal-valor">{itemPendienteLpn.codigo}</span>
             </div>
