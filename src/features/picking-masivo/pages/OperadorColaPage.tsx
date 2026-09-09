@@ -163,6 +163,7 @@ export function OperadorColaPage() {
   const [tomandoId, setTomandoId] = useState<string | null>(null)
   const [error, setError]         = useState<string | null>(null)
   const [filtro, setFiltro]       = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
+  const [busqueda, setBusqueda]   = useState('')
 
   const subtareas    = data ?? []
   const tengoPropias = subtareas.some(s => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
@@ -181,6 +182,12 @@ export function OperadorColaPage() {
       if (filtro === 'parcial')   return s.estado === 'parcial' || s.estado === 'sin_stock'
       if (filtro === 'completas') return s.estado === 'completado'
       return true
+    })
+    .filter(s => {
+      const q = busqueda.trim().toLowerCase()
+      if (!q) return true
+      const item = s.items_picking_masivo
+      return (item?.codigo ?? '').toLowerCase().includes(q) || (item?.descripcion ?? '').toLowerCase().includes(q)
     })
     .slice()
     .sort((a, b) => (a.items_picking_masivo?.lpn ?? '').localeCompare(b.items_picking_masivo?.lpn ?? '', undefined, { numeric: true }))
@@ -258,8 +265,17 @@ export function OperadorColaPage() {
 
       {error && <div className="sd-error-banner">{error}</div>}
 
-      {/* ── Filtros ── */}
-      <div className="sd-toolbar">
+      {/* ── Búsqueda + Filtros ── */}
+      <div className="sd-toolbar oc-toolbar">
+        <div className="oc-busqueda-wrap">
+          <input
+            type="search"
+            className="sd-busqueda"
+            placeholder="🔍 Buscar por SKU o nombre…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
         <div className="sd-filtros">
           {([
             ['todas',     `Todas (${cntTodas})`],

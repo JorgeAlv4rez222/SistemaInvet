@@ -10962,6 +10962,37 @@ input[type="radio"] {
   margin: 8px 20px 0;
 }
 
+/* Toolbar operador cola: búsqueda + filtros */
+.oc-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.oc-busqueda-wrap {
+  width: 100%;
+}
+.oc-busqueda-wrap .sd-busqueda {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 701px) {
+  .oc-toolbar {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .oc-busqueda-wrap {
+    flex: 0 0 260px;
+  }
+  .oc-toolbar .sd-filtros {
+    flex: 1;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+}
+
 /* Vista operador: fila simple rack | sku | cant | badge | accion */
 .oc-card-row {
   display: flex;
