@@ -110,7 +110,7 @@ function EquivalenteCard({ eq, seleccionado, onSeleccionar }: { eq: ProductoConS
 }
 
 export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) {
-  const [paso, setPaso]                   = useState<Paso>({ tipo: 'inicio' })
+  const [paso, setPaso]                   = useState<Paso>({ tipo: 'escanear_producto', paradaIdx: 0 })
   const [cantidad, setCantidad]           = useState('')
   const [error, setError]                 = useState<string | null>(null)
   const [equivalenteId, setEquivalenteId] = useState<string | null>(null)
@@ -185,18 +185,11 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
   }
 
   function handleIniciarConEquivalente(eqId: string) {
-    const eq = item.equivalentes.find((e) => e.productoId === eqId)
-    if (!eq) return
-    const ubis = eq.ubicaciones
-    const planCalculado = calcularPlan(ubis, cantidadPendiente)
     setEquivalenteId(eqId)
-    setPlan(planCalculado)
+    setPlan([])
     setPickedSoFar(0)
-    setCantidad(planCalculado[0]?.cantidadATomar?.toString() ?? '')
-    const primerPaso = planCalculado[0]?.posicionCodigo
-      ? { tipo: 'escanear_rack' as const, paradaIdx: 0, equivalenteId: eqId }
-      : { tipo: 'escanear_producto' as const, paradaIdx: 0, equivalenteId: eqId }
-    setPaso(primerPaso)
+    setCantidad(cantidadPendiente.toString())
+    setPaso({ tipo: 'escanear_producto', paradaIdx: 0, equivalenteId: eqId })
     setError(null)
   }
 
@@ -561,10 +554,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
           <div className="paso-acciones">
             <button
               className="btn-secundario"
-              onClick={() => {
-                setPaso({ tipo: 'escanear_rack', paradaIdx: paso.paradaIdx, equivalenteId: paso.equivalenteId })
-                setError(null)
-              }}
+              onClick={() => { setError(null); onCerrar() }}
             >
               ← Volver
             </button>
@@ -574,9 +564,11 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
           </div>
           {item.equivalentes.length > 0 && (
             <button className="btn-equivalente" style={{ marginTop: '12px', width: '100%' }} onClick={handleClickEquivalente}>
-              {item.equivalentes.length === 1
-                ? `Equivalente: ${item.equivalentes[0].sku}`
-                : 'Usar producto equivalente'}
+              {equivalenteId
+                ? `Equivalente: ${item.equivalentes.find(e => e.productoId === equivalenteId)?.sku ?? '…'}`
+                : item.equivalentes.length === 1
+                  ? `Equivalente: ${item.equivalentes[0].sku}`
+                  : 'Usar producto equivalente'}
             </button>
           )}
         </div>
@@ -607,6 +599,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <button
               className="btn-secundario"
               onClick={() => {
+                if (productoInputRef.current) productoInputRef.current.value = ''
                 setPaso({ tipo: 'escanear_producto', paradaIdx: paso.paradaIdx, equivalenteId: paso.equivalenteId })
                 setError(null)
               }}
