@@ -276,8 +276,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (accion === 'parchar-sku-proveedor') {
-      const { sesionId, items } = req.body as { sesionId: string; items: { codigo: string; skuProveedor: string }[] }
-      if (!sesionId || !Array.isArray(items)) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId e items requeridos' } })
+      const body = req.body ?? {}
+      const sesionId = typeof body.sesionId === 'string' ? body.sesionId : null
+      const items    = Array.isArray(body.items) ? body.items as { codigo: string; skuProveedor: string }[] : null
+      if (!sesionId) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId requerido' } })
+      if (!items)    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'items debe ser un array' } })
+      if (items.length === 0) return res.status(200).json({ actualizados: 0 })
       const result = await pickingMasivoService.parcharSkuProveedor(sesionId, items)
       return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
     }
