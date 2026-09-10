@@ -200,10 +200,9 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
 
   const { data: productos } = await supabase
     .from('productos')
-    .select('id, sku, nombre, codigo_barra, codigo_barra_alternativo, stock_total')
+    .select('id, sku, nombre, codigo_barra, codigo_barra_alternativo')
     .in('sku', skusEquivalentes)
     .eq('activo', true)
-    .gt('stock_total', 0)
 
   if (!productos?.length) return []
 
@@ -214,7 +213,7 @@ async function obtenerEquivalentesConStock(sku: string): Promise<ProductoConStoc
     nombre:               p.nombre,
     codigoBarra:          p.codigo_barra,
     codigoBaRalternativo: p.codigo_barra_alternativo,
-    stockDisponible:      p.stock_total,
+    stockDisponible:      ubicacionesPorProducto[i].reduce((s, u) => s + u.cantidad, 0),
     ubicaciones:          ubicacionesPorProducto[i],
   }))
 }
