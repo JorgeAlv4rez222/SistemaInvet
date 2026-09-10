@@ -182,6 +182,7 @@ export function NotasPage() {
 
   function labelBoton(nota: NotaResumen): string {
     if (nota.estado === 'completa') return 'Ver nota'
+    if (ROL === 'admin' || ROL === 'supervisor') return 'Ver detalle →'
     if (nota.estado === 'preparacion') return 'Continuar Picking →'
     return 'Iniciar Picking →'
   }
