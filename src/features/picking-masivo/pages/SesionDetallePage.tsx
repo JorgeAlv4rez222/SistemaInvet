@@ -143,6 +143,8 @@ export function SesionDetallePage() {
 
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
+  const [skuMap, setSkuMap]             = useState<Map<string, string>>(new Map())
+  const [skuMapLabel, setSkuMapLabel]   = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'libre' | 'en_progreso' | 'parcial' | 'sin_stock' | 'completado'>('todos')
@@ -228,17 +230,18 @@ export function SesionDetallePage() {
 
   async function handleSkuFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (!file || !sesionId) return
+    if (!file) return
     e.target.value = ''
-    const sid = sesionId
     try {
       const { parsearExcelSkuProveedor } = await import('../utils/parsearExcelSkuProveedor')
       const { items, error: parseError } = await parsearExcelSkuProveedor(file)
       if (parseError || items.length === 0) { setError(parseError ?? 'No se encontraron items'); return }
-      const res = await parcharSku.mutateAsync({ sesionId: sid, items })
-      setError(res.actualizados > 0 ? null : 'No se actualizó ningún item — verifica que el Excel corresponda a esta sesión')
+      const mapa = new Map(items.map(i => [i.codigo, i.skuProveedor]))
+      setSkuMap(mapa)
+      setSkuMapLabel(`SKU cargado: ${mapa.size} productos — ahora descarga el Excel`)
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar SKU proveedor')
+      setError(err instanceof Error ? err.message : 'Error al leer el archivo')
     }
   }
 
@@ -250,7 +253,7 @@ export function SesionDetallePage() {
         const eq = sub.es_equivalente && sub.producto_equivalente
           ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
         filas.push({
-          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.sku_proveedor ?? item.codigo,
+          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': skuMap.get(item.codigo) ?? item.sku_proveedor ?? item.codigo,
           'Descripción': item.descripcion ?? item.codigo,
           'Código': item.codigo, 'LPN': item.lpn ?? '—',
           'Cant. Solicitada': sub.cantidad_asignada,
@@ -371,11 +374,12 @@ export function SesionDetallePage() {
               <IcoDownload /> Excel
             </button>
           )}
-          {esAdmin && sesion.items.some(i => !i.sku_proveedor) && (
+          {esAdmin && (
             <>
               <input ref={skuFileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleSkuFile} />
-              <button className="sd-btn sd-btn--secondary" disabled={parcharSku.isPending} onClick={() => skuFileInputRef.current?.click()}>
-                {parcharSku.isPending ? 'Actualizando…' : 'Actualizar SKU'}
+              <button className="sd-btn sd-btn--secondary" onClick={() => skuFileInputRef.current?.click()}
+                title={skuMapLabel ?? 'Sube un Excel con columnas SKU y Código para incluirlo en la descarga'}>
+                {skuMap.size > 0 ? `SKU cargado (${skuMap.size})` : 'Cargar SKU'}
               </button>
             </>
           )}
