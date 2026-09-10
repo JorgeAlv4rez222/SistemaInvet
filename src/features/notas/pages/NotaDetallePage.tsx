@@ -298,7 +298,6 @@ export function NotaDetallePage() {
     const puedePickear   = !terminado && !offline && !notaCerrada
     const ubicPrincipal  = item.ubicaciones[0] ?? null
     const abierto        = expandidos.has(item.notaProductoId)
-    const nombreCorto    = item.nombre.length > 12 ? item.nombre.slice(0, 12) + '…' : item.nombre
 
     return (
       <div
@@ -313,30 +312,27 @@ export function NotaDetallePage() {
         >
           <div className="nd-prod-nombre-row">
             <code className="nd-prod-sku-inline">{item.sku}</code>
-            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
           </div>
-          {item.codigoBarra && (
-            <code className="nd-prod-ean">{item.codigoBarra}</code>
-          )}
+          <span className="nd-prod-descripcion">{item.nombre}</span>
           {abierto && (
-            <>
-              <span className="nd-prod-nombre-completo">{item.nombre}</span>
-              <div className="nd-prod-loc nd-prod-loc--expandido">
-                {ubicPrincipal ? (
-                  <span className="nd-loc-badge">
-                    <IcoRack size={11} />
-                    {ubicPrincipal.posicionCodigo ?? '—'}
-                  </span>
-                ) : (
-                  <span className="nd-loc-badge nd-loc-badge--sin">Sin ubicación</span>
-                )}
-                {ubicPrincipal && (
-                  <span className="nd-loc-lote" title={`Lote: ${ubicPrincipal.loteId}`}>
-                    {formatearFecha(ubicPrincipal.fechaIngreso)}
-                  </span>
-                )}
-              </div>
-            </>
+            <div className="nd-prod-loc nd-prod-loc--expandido">
+              {ubicPrincipal ? (
+                <span className="nd-loc-badge">
+                  <IcoRack size={11} />
+                  {ubicPrincipal.posicionCodigo ?? '—'}
+                </span>
+              ) : (
+                <span className="nd-loc-badge nd-loc-badge--sin">Sin ubicación</span>
+              )}
+              {item.codigoBarra && (
+                <code className="nd-prod-ean">{item.codigoBarra}</code>
+              )}
+              {ubicPrincipal && (
+                <span className="nd-loc-lote" title={`Lote: ${ubicPrincipal.loteId}`}>
+                  {formatearFecha(ubicPrincipal.fechaIngreso)}
+                </span>
+              )}
+            </div>
           )}
           {item.skuEquivalente && (
             <span className="nd-prod-equiv">↔ {item.skuEquivalente}</span>

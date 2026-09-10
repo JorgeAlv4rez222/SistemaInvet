@@ -322,7 +322,6 @@ export function RevisionFlow({
     const esSinStock   = item.estado === 'sin_stock'
     const puedeRevisar = !revisado && !offline && !yaDespachada
     const abierto      = expandidos.has(item.notaProductoId)
-    const nombreCorto  = item.nombre.length > 12 ? item.nombre.slice(0, 12) + '…' : item.nombre
 
     const dotClass = revisado
       ? 'nd-dot nd-dot--ok'
@@ -347,13 +346,10 @@ export function RevisionFlow({
         >
           <div className="nd-prod-nombre-row">
             <code className="nd-prod-sku-inline">{item.skuEquivalente ?? item.sku}</code>
-            <span className="nd-prod-nombre" title={item.nombre}>{nombreCorto}</span>
           </div>
-          {item.codigoBarra && (
-            <code className="nd-prod-ean">{item.codigoBarra}</code>
-          )}
-          {abierto && (
-            <span className="nd-prod-nombre-completo">{item.nombre}</span>
+          <span className="nd-prod-descripcion">{item.nombre}</span>
+          {abierto && item.codigoBarra && (
+            <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{item.codigoBarra}</code>
           )}
           {item.skuEquivalente && (
             <div className="rv-equiv-info">
