@@ -295,7 +295,7 @@ export function NotaDetallePage() {
   function renderFila(item: NotaProductoResumen) {
     const terminado      = esTerminado(item)
     const parcialCerrado = terminado && item.estado === 'parcial'
-    const puedePickear   = !terminado && !offline && !notaCerrada
+    const puedePickear   = !terminado && !offline && !notaCerrada && !esAdmin
     const ubicPrincipal  = item.ubicaciones[0] ?? null
     const abierto        = expandidos.has(item.notaProductoId)
 
