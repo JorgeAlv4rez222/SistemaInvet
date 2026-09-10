@@ -62,7 +62,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
     setError(null)
     try {
       const res = await validarExcel.mutateAsync({
-        items: filas.map((f) => ({ codigo: f.codigo, descripcion: f.descripcion, cantidadPedida: f.cantidadPedida, codigoBarra: f.codigoBarra, lpn: f.lpn, tienda: f.tienda })),
+        items: filas.map((f) => ({ codigo: f.codigo, descripcion: f.descripcion, cantidadPedida: f.cantidadPedida, codigoBarra: f.codigoBarra, lpn: f.lpn, tienda: f.tienda, skuProveedor: f.skuProveedor })),
       })
       setResultado(res)
       setPaso('validado')

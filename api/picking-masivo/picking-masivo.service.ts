@@ -36,6 +36,7 @@ export type ValidarExcelInput = {
     cantidadPedida: number
     codigoBarra?:  string
     lpn?:          string
+    skuProveedor?: string
   }[]
 }
 
@@ -57,10 +58,11 @@ export type ValidarExcelResult = {
     cantidadPedida: number
     productoId?:   string
     stockTotal?:   number
-    codigoBarra?:  string
-    lpn?:          string
-    tienda?:       string
-    ok:            boolean
+    codigoBarra?:   string
+    lpn?:           string
+    tienda?:        string
+    skuProveedor?:  string
+    ok:             boolean
   }[]
 }
 
