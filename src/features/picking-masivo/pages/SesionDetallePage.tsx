@@ -232,13 +232,11 @@ export function SesionDetallePage() {
     e.target.value = ''
     const sid = sesionId
     try {
-      const { parsearExcelPicking } = await import('../utils/parsearExcelPicking')
-      const { filas, errores } = await parsearExcelPicking(file)
-      if (filas.length === 0) { setError(errores[0] ?? 'No se encontraron filas en el archivo'); return }
-      const items = filas.filter(f => f.skuProveedor).map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! }))
-      if (items.length === 0) { setError('El archivo no contiene columna SKU separada del código interno'); return }
-      await parcharSku.mutateAsync({ sesionId: sid, items })
-      setError(null)
+      const { parsearExcelSkuProveedor } = await import('../utils/parsearExcelSkuProveedor')
+      const { items, error: parseError } = await parsearExcelSkuProveedor(file)
+      if (parseError || items.length === 0) { setError(parseError ?? 'No se encontraron items'); return }
+      const res = await parcharSku.mutateAsync({ sesionId: sid, items })
+      setError(res.actualizados > 0 ? null : 'No se actualizó ningún item — verifica que el Excel corresponda a esta sesión')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar SKU proveedor')
     }
