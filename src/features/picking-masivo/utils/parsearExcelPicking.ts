@@ -7,6 +7,7 @@ export type FilaExcelPicking = {
   codigoBarra?:   string
   lpn?:           string
   tienda?:        string
+  skuProveedor?:  string
 }
 
 export type ResultadoParseoPicking = {
@@ -20,12 +21,13 @@ type Celda = string | number | boolean | null
 // Sodimac: VIN = nuestro SKU (columna "VIN (codigo producto)")
 // Imperial: "Codigo producto" = nuestro SKU
 // Genérico: "sku", "codigo", "cod"
-const ALIAS_CODIGO       = ['vin', 'codigo producto', 'codigo', 'cod', 'sku']
-const ALIAS_DESCRIPCION  = ['descripcion', 'description', 'producto', 'nombre', 'detalle']
-const ALIAS_CANTIDAD     = ['unidades', 'cantidad pedida', 'cantidad', 'cant', 'qty']
-const ALIAS_CODIGO_BARRA = ['upc', 'ean13', 'ean', 'codigo barra', 'codigo de barra', 'barcode']
-const ALIAS_LPN          = ['lpn']
-const ALIAS_TIENDA       = ['tienda', 'store', 'sucursal']
+const ALIAS_CODIGO        = ['vin', 'codigo producto', 'codigo', 'cod', 'sku']
+const ALIAS_DESCRIPCION   = ['descripcion', 'description', 'producto', 'nombre', 'detalle']
+const ALIAS_CANTIDAD      = ['unidades', 'cantidad pedida', 'cantidad', 'cant', 'qty']
+const ALIAS_CODIGO_BARRA  = ['upc', 'ean13', 'ean', 'codigo barra', 'codigo de barra', 'barcode']
+const ALIAS_LPN           = ['lpn']
+const ALIAS_TIENDA        = ['tienda', 'store', 'sucursal']
+const ALIAS_SKU_PROVEEDOR = ['sku']
 
 function normalizar(s: string): string {
   return s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -61,12 +63,17 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
     .slice(data.indexOf(primeraFila) + 1)
     .filter((f) => f.some((c) => c !== null && c !== ''))
 
-  const idxCodigo      = encontrarColumna(encabezados, ALIAS_CODIGO)
-  const idxDescripcion = encontrarColumna(encabezados, ALIAS_DESCRIPCION)
-  const idxCantidad    = encontrarColumna(encabezados, ALIAS_CANTIDAD)
-  const idxCodigoBarra = encontrarColumna(encabezados, ALIAS_CODIGO_BARRA)
-  const idxLpn         = encontrarColumna(encabezados, ALIAS_LPN)
-  const idxTienda      = encontrarColumna(encabezados, ALIAS_TIENDA)
+  const idxCodigo       = encontrarColumna(encabezados, ALIAS_CODIGO)
+  const idxDescripcion  = encontrarColumna(encabezados, ALIAS_DESCRIPCION)
+  const idxCantidad     = encontrarColumna(encabezados, ALIAS_CANTIDAD)
+  const idxCodigoBarra  = encontrarColumna(encabezados, ALIAS_CODIGO_BARRA)
+  const idxLpn          = encontrarColumna(encabezados, ALIAS_LPN)
+  const idxTienda       = encontrarColumna(encabezados, ALIAS_TIENDA)
+  // SKU proveedor: solo cuando existe columna "SKU" separada de la columna de código interno
+  const idxSkuProveedor = (() => {
+    const idx = encontrarColumna(encabezados, ALIAS_SKU_PROVEEDOR)
+    return idx !== -1 && idx !== idxCodigo ? idx : -1
+  })()
 
   if (idxCodigo === -1 || idxCantidad === -1) {
     errores.push('No se encontraron las columnas código / cantidad en el archivo')
@@ -86,10 +93,11 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
     const cantidadStr = String(fila[idxCantidad] ?? '').replace(/[.,](?=\d{3}(?:[.,]|$))/g, '').replace(',', '.')
     const cantidad    = parseFloat(cantidadStr)
     if (!codigo || !Number.isFinite(cantidad) || cantidad <= 0) continue
-    const codigoBarra = idxCodigoBarra !== -1 ? String(fila[idxCodigoBarra] ?? '').trim() || undefined : undefined
-    const lpn         = idxLpn !== -1         ? String(fila[idxLpn] ?? '').trim() || undefined : undefined
-    const tienda      = idxTienda !== -1      ? String(fila[idxTienda] ?? '').trim() || undefined : undefined
-    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad), codigoBarra, lpn, tienda })
+    const codigoBarra  = idxCodigoBarra  !== -1 ? String(fila[idxCodigoBarra]  ?? '').trim() || undefined : undefined
+    const lpn          = idxLpn          !== -1 ? String(fila[idxLpn]          ?? '').trim() || undefined : undefined
+    const tienda       = idxTienda       !== -1 ? String(fila[idxTienda]       ?? '').trim() || undefined : undefined
+    const skuProveedor = idxSkuProveedor !== -1 ? String(fila[idxSkuProveedor] ?? '').trim() || undefined : undefined
+    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad), codigoBarra, lpn, tienda, skuProveedor })
   }
 
   if (filas.length === 0) errores.push('No se encontraron filas válidas en el archivo')

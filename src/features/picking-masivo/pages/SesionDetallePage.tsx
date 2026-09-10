@@ -40,6 +40,7 @@ type ItemDetalle = {
   lpn_validado:        boolean | null
   tienda:              string | null
   codigo_barra:        string | null
+  sku_proveedor:       string | null
   subtareas_picking_masivo: SubtareaDetalle[]
 }
 
@@ -231,7 +232,7 @@ export function SesionDetallePage() {
         const eq = sub.es_equivalente && sub.producto_equivalente
           ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
         filas.push({
-          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.codigo,
+          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.sku_proveedor ?? item.codigo,
           'Descripción': item.descripcion ?? item.codigo,
           'Código': item.codigo, 'LPN': item.lpn ?? '—',
           'Cant. Solicitada': sub.cantidad_asignada,

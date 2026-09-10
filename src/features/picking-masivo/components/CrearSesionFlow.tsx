@@ -90,6 +90,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           codigoBarra:    i.codigoBarra,
           lpn:            i.lpn,
           tienda:         i.tienda,
+          skuProveedor:   i.skuProveedor,
         })),
       })
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })

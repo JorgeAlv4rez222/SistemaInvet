@@ -18,6 +18,7 @@ export type CrearSesionInput = {
     codigoBarra?:  string
     lpn?:          string
     tienda?:       string
+    skuProveedor?: string
   }[]
 }
 
@@ -207,6 +208,7 @@ export const pickingMasivoService = {
       codigo_barra:       item.codigoBarra ?? null,
       lpn:                item.lpn ?? null,
       tienda:             item.tienda ?? null,
+      sku_proveedor:      item.skuProveedor ?? null,
     }))
 
     const { error: itemsErr } = await supabase
