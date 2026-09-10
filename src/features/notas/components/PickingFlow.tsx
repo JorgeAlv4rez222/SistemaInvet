@@ -515,6 +515,13 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
               Saltar esta parada
             </button>
           )}
+          {!equivalenteId && item.equivalentes.length > 0 && paso.paradaIdx === 0 && (
+            <button className="btn-equivalente" style={{ marginTop: '8px', width: '100%' }} onClick={handleClickEquivalente}>
+              {item.equivalentes.length === 1
+                ? `Equivalente: ${item.equivalentes[0].sku}`
+                : 'Usar producto equivalente'}
+            </button>
+          )}
         </div>
       )}
 
@@ -565,6 +572,13 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
               Confirmar
             </button>
           </div>
+          {item.equivalentes.length > 0 && (
+            <button className="btn-equivalente" style={{ marginTop: '12px', width: '100%' }} onClick={handleClickEquivalente}>
+              {item.equivalentes.length === 1
+                ? `Equivalente: ${item.equivalentes[0].sku}`
+                : 'Usar producto equivalente'}
+            </button>
+          )}
         </div>
       )}
 
