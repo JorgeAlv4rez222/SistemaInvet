@@ -27,6 +27,11 @@ const crearSesionSchema = z.object({
   items:         z.array(itemExcelSchema).min(1),
 })
 
+const parcharSkuSchema = z.object({
+  sesionId: z.string().min(1),
+  items:    z.array(z.object({ codigo: z.string().min(1), skuProveedor: z.string().min(1) })).min(1),
+})
+
 const activarSesionSchema = z.object({
   sesionId:  z.string().uuid(),
   usuarioId: z.string().uuid(),
@@ -276,13 +281,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (accion === 'parchar-sku-proveedor') {
-      const body = req.body ?? {}
-      const sesionId = typeof body.sesionId === 'string' ? body.sesionId : null
-      const items    = Array.isArray(body.items) ? body.items as { codigo: string; skuProveedor: string }[] : null
-      if (!sesionId) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId requerido' } })
-      if (!items)    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'items debe ser un array' } })
-      if (items.length === 0) return res.status(200).json({ actualizados: 0 })
-      const result = await pickingMasivoService.parcharSkuProveedor(sesionId, items)
+      const parsed = parcharSkuSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await pickingMasivoService.parcharSkuProveedor(parsed.data.sesionId, parsed.data.items)
       return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
     }
 
