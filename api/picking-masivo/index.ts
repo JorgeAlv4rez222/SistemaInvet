@@ -275,6 +275,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
     }
 
+    if (accion === 'parchar-sku-proveedor') {
+      const { sesionId, items } = req.body as { sesionId: string; items: { codigo: string; skuProveedor: string }[] }
+      if (!sesionId || !Array.isArray(items)) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId e items requeridos' } })
+      const result = await pickingMasivoService.parcharSkuProveedor(sesionId, items)
+      return result.ok ? res.status(200).json(result.data) : res.status(500).json({ error: result.error })
+    }
+
     if (accion === 'guardar-lpns-escaneados') {
       const { sesionId, lpnsEscaneados } = req.body as { sesionId: string; lpnsEscaneados: string[] }
       if (!sesionId || !Array.isArray(lpnsEscaneados)) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'sesionId y lpnsEscaneados requeridos' } })

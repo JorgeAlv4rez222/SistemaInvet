@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCancelarSesion, useSesionPicking, useGuardarLpns } from '../hooks/usePickingMasivo'
+import { useCancelarSesion, useSesionPicking, useGuardarLpns, useParcharSkuProveedor } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { SesionResumen } from '../services/picking-masivo.api'
@@ -134,10 +134,12 @@ export function SesionDetallePage() {
 
   const { data, isLoading, isError } = useSesionPicking(sesionId)
   useRealtimeSesion(sesionId)
-  const cancelarSesion = useCancelarSesion()
-  const guardarLpns    = useGuardarLpns()
-  const qc             = useQueryClient()
-  const fileInputRef   = useRef<HTMLInputElement>(null)
+  const cancelarSesion    = useCancelarSesion()
+  const guardarLpns       = useGuardarLpns()
+  const parcharSku        = useParcharSkuProveedor(sesionId ?? '')
+  const qc                = useQueryClient()
+  const fileInputRef      = useRef<HTMLInputElement>(null)
+  const skuFileInputRef   = useRef<HTMLInputElement>(null)
 
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
@@ -222,6 +224,22 @@ export function SesionDetallePage() {
       }
     }
     reader.readAsArrayBuffer(file)
+  }
+
+  async function handleSkuFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !sesionId) return
+    e.target.value = ''
+    try {
+      const { parsearExcelPicking } = await import('../utils/parsearExcelPicking')
+      const { filas } = await parsearExcelPicking(file)
+      const items = filas.filter(f => f.skuProveedor).map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! }))
+      if (items.length === 0) { setError('El archivo no contiene columna SKU proveedor'); return }
+      await parcharSku.mutateAsync({ sesionId, items })
+      setError(null)
+    } catch {
+      setError('Error al actualizar SKU proveedor')
+    }
   }
 
   function descargarExcel() {
@@ -352,6 +370,14 @@ export function SesionDetallePage() {
             <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
               <IcoDownload /> Excel
             </button>
+          )}
+          {esAdmin && sesion.items.some(i => !i.sku_proveedor) && (
+            <>
+              <input ref={skuFileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleSkuFile} />
+              <button className="sd-btn sd-btn--secondary" disabled={parcharSku.isPending} onClick={() => skuFileInputRef.current?.click()}>
+                {parcharSku.isPending ? 'Actualizando…' : 'Actualizar SKU'}
+              </button>
+            </>
           )}
           {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
             <>

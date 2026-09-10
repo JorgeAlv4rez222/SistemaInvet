@@ -108,4 +108,7 @@ export const pickingMasivoApi = {
 
   guardarLpnsEscaneados: (body: { sesionId: string; lpnsEscaneados: string[] }) =>
     apiClient.post<{ ok: boolean }>('/picking-masivo?accion=guardar-lpns-escaneados', body),
+
+  parcharSkuProveedor: (body: { sesionId: string; items: { codigo: string; skuProveedor: string }[] }) =>
+    apiClient.post<{ actualizados: number }>('/picking-masivo?accion=parchar-sku-proveedor', body),
 }

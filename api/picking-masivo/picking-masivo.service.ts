@@ -354,6 +354,23 @@ export const pickingMasivoService = {
     return { ok: true, data: { subtareasGeneradas: subtareas.length } }
   },
 
+  // ── 3b. Parchar sku_proveedor en items existentes ────────────────────────
+  async parcharSkuProveedor(
+    sesionId: string,
+    items: { codigo: string; skuProveedor: string }[]
+  ): Promise<ServiceResult<{ actualizados: number }>> {
+    let actualizados = 0
+    for (const item of items) {
+      const { error } = await supabase
+        .from('items_picking_masivo')
+        .update({ sku_proveedor: item.skuProveedor })
+        .eq('sesion_id', sesionId)
+        .eq('codigo', item.codigo)
+      if (!error) actualizados++
+    }
+    return { ok: true, data: { actualizados } }
+  },
+
   // ── 4. Listar sesiones ────────────────────────────────────────────────────
   async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase

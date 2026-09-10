@@ -125,3 +125,11 @@ export function useCancelarSesion() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesiones'] }),
   })
 }
+
+export function useParcharSkuProveedor(sesionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: pickingMasivoApi.parcharSkuProveedor,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['picking-masivo', 'sesion', sesionId] }),
+  })
+}
