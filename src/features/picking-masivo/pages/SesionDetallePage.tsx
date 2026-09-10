@@ -231,7 +231,8 @@ export function SesionDetallePage() {
         const eq = sub.es_equivalente && sub.producto_equivalente
           ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
         filas.push({
-          'UPC / EAN': item.codigo_barra ?? '—', 'Descripción': item.descripcion ?? item.codigo,
+          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.codigo,
+          'Descripción': item.descripcion ?? item.codigo,
           'Código': item.codigo, 'LPN': item.lpn ?? '—',
           'Cant. Solicitada': sub.cantidad_asignada,
           'Cant. Despachada': sub.cantidad_despachada ?? 0,
@@ -242,7 +243,7 @@ export function SesionDetallePage() {
       }
     }
     const ws = XLSX.utils.json_to_sheet(filas)
-    ws['!cols'] = [{ wch: 18 }, { wch: 40 }, { wch: 16 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 45 }]
+    ws['!cols'] = [{ wch: 18 }, { wch: 14 }, { wch: 40 }, { wch: 16 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 45 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
     XLSX.writeFile(wb, `picking-${sesion.nombre_cliente ?? sesion.numero_oc}-${sesion.numero_oc}.xlsx`.replace(/[^a-zA-Z0-9\-_.]/g, '_'))
