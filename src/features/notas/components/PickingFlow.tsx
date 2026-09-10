@@ -527,6 +527,15 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
               <p className="fecha-fifo">Ingreso: {formatearFecha(paradaActual.fechaIngreso)}</p>
             </div>
           )}
+          {equivalenteId && (() => {
+            const eq = item.equivalentes.find(e => e.productoId === equivalenteId)
+            return eq ? (
+              <div className="equiv-asignado-banner">
+                <span className="equiv-asignado-label">Equivalente asignado:</span>
+                <code className="equiv-asignado-sku">{eq.sku}</code>
+              </div>
+            ) : null
+          })()}
           <p className="paso-instruccion">Escanea el código de barras del producto</p>
           <div className="input-con-camara">
             <input

@@ -7110,6 +7110,63 @@ label {
 }
 
 /* Botones de acción de paso */
+/* Equivalente en PickingFlow */
+.equiv-asignado-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
+}
+.equiv-asignado-label {
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.equiv-asignado-sku {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--font-size-base);
+}
+
+/* Equivalente en RevisionFlow filas y paso escaneo */
+.rv-equiv-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+.rv-equiv-despacho {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.rv-equiv-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+}
+.rv-equiv-row--activo .rv-equiv-etiqueta {
+  color: var(--accent);
+}
+.rv-equiv-etiqueta {
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.rv-equiv-codigo {
+  font-size: var(--font-size-xs);
+  color: var(--text-2);
+}
+.rv-equiv-codigo--activo {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+}
+
 .rv-paso-acciones {
   display: flex;
   gap: var(--spacing-sm);

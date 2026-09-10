@@ -267,10 +267,13 @@ export function RevisionFlow({
     if (!codigo.trim() || paso.tipo !== 'escanear_producto') return
     const normalizar = (s: string) => s.replace(/^0+/, '')
     const escaneado  = normalizar(codigo.trim())
-    const cbOk  = paso.item.codigoBarra            ? normalizar(paso.item.codigoBarra) === escaneado : true
+    // Si hay equivalente, validar SOLO contra el código del equivalente (ya resuelto en codigoBarra por el servicio)
+    const cbEsperado = paso.item.codigoBarra
+    const cbOk  = cbEsperado ? normalizar(cbEsperado) === escaneado : true
     const altOk = paso.item.codigoBarraAlternativo ? normalizar(paso.item.codigoBarraAlternativo) === escaneado : false
-    if (paso.item.codigoBarra && !cbOk && !altOk) {
-      setScanError(`Producto incorrecto. Escanea: ${paso.item.skuEquivalente ?? paso.item.sku}`)
+    if (cbEsperado && !cbOk && !altOk) {
+      const skuEsperado = paso.item.skuEquivalente ?? paso.item.sku
+      setScanError(`Producto incorrecto. Escanea el código de: ${skuEsperado}`)
       setScanInput('')
       setTimeout(() => setScanError(''), 4000)
       scanRef.current?.focus()
@@ -353,7 +356,10 @@ export function RevisionFlow({
             <span className="nd-prod-nombre-completo">{item.nombre}</span>
           )}
           {item.skuEquivalente && (
-            <span className="nd-prod-equiv">↔ equiv. de {item.sku}</span>
+            <div className="rv-equiv-info">
+              <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Original:</span><code className="rv-equiv-codigo">{item.sku}</code></span>
+              <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Equivalente:</span><code className="rv-equiv-codigo rv-equiv-codigo--activo">{item.skuEquivalente}</code></span>
+            </div>
           )}
         </div>
 
@@ -541,14 +547,17 @@ export function RevisionFlow({
               <code className="nd-prod-sku-inline" style={{ flexShrink: 0 }}>{paso.item.skuEquivalente ?? paso.item.sku}</code>
               <span className="nd-prod-nombre" style={{ fontSize: 'var(--font-size-base)' }}>{paso.item.nombre}</span>
             </div>
-            <div className="nd-prod-codes">
-              {paso.item.skuEquivalente && (
-                <span className="nd-prod-equiv">↔ equiv. de {paso.item.sku}</span>
-              )}
-              {paso.item.codigoBarra && (
-                <code className="nd-prod-ean">{paso.item.codigoBarra}</code>
-              )}
-            </div>
+            {paso.item.skuEquivalente ? (
+              <div className="rv-equiv-despacho">
+                <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Producto original:</span><code className="rv-equiv-codigo">{paso.item.sku}</code></span>
+                <span className="rv-equiv-row rv-equiv-row--activo"><span className="rv-equiv-etiqueta">Equivalente asignado:</span><code className="rv-equiv-codigo rv-equiv-codigo--activo">{paso.item.skuEquivalente}</code></span>
+                {paso.item.codigoBarra && <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{paso.item.codigoBarra}</code>}
+              </div>
+            ) : (
+              <div className="nd-prod-codes">
+                {paso.item.codigoBarra && <code className="nd-prod-ean">{paso.item.codigoBarra}</code>}
+              </div>
+            )}
           </div>
 
           <div className={`nd-scanner-bar ${scanError ? 'nd-scanner-bar--error' : ''}`}>
