@@ -1064,7 +1064,7 @@ export const notasService = {
         upd.producto_id = prod.id
       }
       const { error: errMod } = await supabase
-        .from('notas_venta_productos')
+        .from('nota_productos')
         .update(upd)
         .eq('id', mod.notaProductoId)
         .eq('nota_venta_id', input.notaId)
@@ -1087,7 +1087,7 @@ export const notasService = {
         return { ok: false, error: { code: 'NOT_FOUND', message: `SKU no encontrado: ${nuevo.sku}` } }
       }
       const { error: errIns } = await supabase
-        .from('notas_venta_productos')
+        .from('nota_productos')
         .insert({ nota_venta_id: input.notaId, producto_id: prod.id, cantidad_solicitada: nuevo.cantidad, estado: 'pendiente' })
       if (errIns) {
         return { ok: false, error: { code: 'DB_ERROR', message: errIns.message } }
@@ -1097,7 +1097,7 @@ export const notasService = {
     // Eliminar ítems
     if (input.eliminar.length > 0) {
       const { error: errDel } = await supabase
-        .from('notas_venta_productos')
+        .from('nota_productos')
         .delete()
         .in('id', input.eliminar)
         .eq('nota_venta_id', input.notaId)
