@@ -691,7 +691,10 @@ function NotaHistorialRow({
   onDetalle: (notaId: string) => void
 }) {
   const cfg = ESTADO_NOTA_COLORS[nota.estado] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }
-  const fecha = new Date(nota.creadoEn).toLocaleDateString('es-CL', {
+  const fechaRaw = nota.estado === 'despachada' ? nota.fechaDespacho
+    : nota.estado === 'completa' ? nota.fechaPreparacion
+    : nota.creadoEn
+  const fecha = new Date(fechaRaw ?? nota.creadoEn).toLocaleDateString('es-CL', {
     day: '2-digit', month: '2-digit', year: 'numeric',
   })
 
@@ -726,7 +729,10 @@ function NotaHistorialCard({
   onDetalle: (notaId: string) => void
 }) {
   const cfg = ESTADO_NOTA_COLORS[nota.estado] ?? { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }
-  const fecha = new Date(nota.creadoEn).toLocaleDateString('es-CL', {
+  const fechaRaw = nota.estado === 'despachada' ? nota.fechaDespacho
+    : nota.estado === 'completa' ? nota.fechaPreparacion
+    : nota.creadoEn
+  const fecha = new Date(fechaRaw ?? nota.creadoEn).toLocaleDateString('es-CL', {
     day: '2-digit', month: '2-digit', year: 'numeric',
   })
   return (

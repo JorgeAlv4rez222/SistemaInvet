@@ -355,6 +355,8 @@ export const notasService = {
       tomadaPor:          n.tomada_por ?? null,
       completadaPor:      completadoresPorNota.get(n.id) ?? null,
       tieneDev:           (n.devoluciones?.length ?? 0) > 0,
+      fechaPreparacion:   (n as any).fecha_preparacion ?? null,
+      fechaDespacho:      (n as any).fecha_despacho ?? null,
     }))
 
     return { ok: true, data: result }
