@@ -7439,20 +7439,65 @@ label {
   cursor: not-allowed;
 }
 .rv-dev-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(0,160,223,0.08);
+  border: 1px solid rgba(0,160,223,0.3);
+  color: var(--text-1, #e2e8f0);
+  margin-bottom: 0.5rem;
+}
+.rv-dev-banner-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  background: rgba(0,160,223,0.1);
-  border: 1px solid rgba(0,160,223,0.3);
-  color: #00A0DF;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
 }
 .rv-dev-banner-ico {
   font-size: 1rem;
+  color: #00A0DF;
+}
+.rv-dev-banner-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #00A0DF;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rv-dev-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.rv-dev-tabla th {
+  text-align: left;
+  color: var(--text-2, #94a3b8);
+  font-weight: 500;
+  padding: 0.2rem 0.5rem 0.3rem;
+  border-bottom: 1px solid rgba(0,160,223,0.2);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.rv-dev-tabla td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.rv-dev-tabla tr:last-child td {
+  border-bottom: none;
+}
+.rv-dev-sku {
+  display: inline-block;
+  background: rgba(0,160,223,0.15);
+  color: #00A0DF;
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.rv-dev-cant {
+  font-weight: 600;
+  text-align: right;
+  color: #00A0DF;
 }
 
 .rv-anular-textarea {

@@ -85,6 +85,7 @@ export type DetalleNota = {
   fechaPreparacion:    string | null
   fechaDespacho:       string | null
   productos:           NotaProductoResumen[]
+  devolucion?:         { items: { sku: string; nombre: string; cantidad: number }[] } | null
 }
 
 export type RegistrarPickingInput = {
@@ -365,7 +366,8 @@ export const notasService = {
           *,
           productos!nota_productos_producto_id_fkey(sku, nombre, codigo_barra, codigo_barra_alternativo),
           productos_equivalente:productos!nota_productos_producto_equivalente_id_fkey(sku, codigo_barra, codigo_barra_alternativo)
-        )
+        ),
+        devoluciones(id, devolucion_items(cantidad, productos(sku, nombre)))
       `)
       .eq('id', notaId)
       .single()
@@ -423,6 +425,18 @@ export const notasService = {
         fechaPreparacion:   (data as any).fecha_preparacion ?? null,
         fechaDespacho:      (data as any).fecha_despacho ?? null,
         productos:          productosEnriquecidos,
+        devolucion:         (() => {
+          const devs = (data as any).devoluciones
+          if (!devs?.length) return null
+          const items = devs.flatMap((d: any) =>
+            (d.devolucion_items ?? []).map((di: any) => ({
+              sku:      di.productos?.sku ?? '',
+              nombre:   di.productos?.nombre ?? '',
+              cantidad: di.cantidad,
+            }))
+          )
+          return { items }
+        })(),
       },
     }
   },

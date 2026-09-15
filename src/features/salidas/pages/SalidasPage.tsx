@@ -133,6 +133,7 @@ function RevisionConDetalle({
       fechaPreparacion={(data as any).fechaPreparacion ?? null}
       fechaDespacho={(data as any).fechaDespacho ?? null}
       tieneDev={tieneDev}
+      devolucion={(data as any).devolucion ?? null}
       offline={offline}
       onCerrar={onCerrar}
     />

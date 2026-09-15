@@ -268,6 +268,7 @@ interface Props {
   fechaPreparacion?:   string | null
   fechaDespacho?:      string | null
   tieneDev?:           boolean
+  devolucion?:         { items: { sku: string; nombre: string; cantidad: number }[] } | null
   offline:             boolean
   onCerrar:            () => void
 }
@@ -277,7 +278,7 @@ interface Props {
 export function RevisionFlow({
   notaId, numeroNota, nombreCliente, rutCliente, numeroOc,
   comentarioDespacho, adminId, items, estadoNota, nombreChofer,
-  fechaPreparacion, fechaDespacho, tieneDev, offline, onCerrar,
+  fechaPreparacion, fechaDespacho, tieneDev, devolucion, offline, onCerrar,
 }: Props) {
   const yaDespachada = estadoNota === 'despachada'
   const rolUsuario   = localStorage.getItem('user_rol') ?? ''
@@ -565,8 +566,30 @@ export function RevisionFlow({
       {/* ── Banner devolución registrada ── */}
       {tieneDev && (
         <div className="rv-dev-banner">
-          <span className="rv-dev-banner-ico">↩</span>
-          <span>Devolución registrada para esta NV</span>
+          <div className="rv-dev-banner-header">
+            <span className="rv-dev-banner-ico">↩</span>
+            <span className="rv-dev-banner-titulo">Devolución registrada</span>
+          </div>
+          {devolucion?.items?.length ? (
+            <table className="rv-dev-tabla">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Producto</th>
+                  <th>Cant.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {devolucion.items.map((it, i) => (
+                  <tr key={i}>
+                    <td><span className="rv-dev-sku">{it.sku}</span></td>
+                    <td>{it.nombre}</td>
+                    <td className="rv-dev-cant">{it.cantidad}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
         </div>
       )}
 
