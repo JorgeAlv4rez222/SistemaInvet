@@ -333,13 +333,53 @@ export const historialService = {
       }
     }
 
+    // Devoluciones directas (por si el movimiento no se insertó correctamente)
+    const { data: devs } = await supabase
+      .from('devoluciones')
+      .select('id, created_at, usuario_id, usuarios(nombre), devolucion_items(cantidad, producto_id, productos(sku, nombre))')
+      .eq('nota_venta_id', notaId)
+
+    const movimientosDevolucion: MovimientoHistorial[] = []
+
+    for (const dev of (devs ?? []) as any[]) {
+      for (const item of (dev.devolucion_items ?? [])) {
+        const sku    = item.productos?.sku    ?? null
+        const nombre = item.productos?.nombre ?? null
+        const usuario = dev.usuarios?.nombre ?? 'Sistema'
+        movimientosDevolucion.push({
+          movimientoId:       `dev-${dev.id}-${item.producto_id}`,
+          tipo:               'devolucion' as any,
+          fecha:              dev.created_at,
+          usuario,
+          producto:           sku,
+          nombreProducto:     nombre,
+          cantidad:           item.cantidad,
+          detalle:            `${usuario} registró devolución de ${item.cantidad} unidades de ${sku} para nota ${nota.numero_nota}`,
+          ubicacion:          null,
+          notaNumero:         nota.numero_nota,
+          notaVentaId:        notaId,
+          importacionCodigo:  null,
+          cantidadSolicitada: null,
+          skuEquivalente:     null,
+          skuOriginal:        null,
+        })
+      }
+    }
+
+    // Mezclar movimientos de BD con los de devoluciones directas, evitando duplicados
+    const movsBD = (data as RawMovimiento[] ?? []).map(mapearMovimiento)
+    const tieneMovjDevEnBD = movsBD.some(m => m.tipo === 'devolucion')
+    const movsFinal = tieneMovjDevEnBD
+      ? movsBD
+      : [...movsBD, ...movimientosDevolucion].sort((a, b) => a.fecha.localeCompare(b.fecha))
+
     return {
       ok: true,
       data: {
         nota:              nota.numero_nota,
         cliente:           nota.nombre_cliente,
         estado:            nota.estado,
-        movimientos:       (data as RawMovimiento[] ?? []).map(mapearMovimiento),
+        movimientos:       movsFinal,
         despacho:          despacho
           ? {
               nombreChofer:    despacho.nombre_chofer,
