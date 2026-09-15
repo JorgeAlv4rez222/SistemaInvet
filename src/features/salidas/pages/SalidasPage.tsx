@@ -159,7 +159,7 @@ export function SalidasPage() {
 
   const kpis = useMemo(() => ({
     porAuditar:      notas.filter((n) => n.estado === 'completa').length,
-    despachadasHoy:  notas.filter((n) => n.estado === 'despachada' && n.actualizadoEn?.startsWith(hoy)).length,
+    despachadasHoy:  notas.filter((n) => n.estado === 'despachada' && n.fechaDespacho?.startsWith(hoy)).length,
   }), [notas, hoy])
 
   const aniosDisponibles = useMemo(() => {
