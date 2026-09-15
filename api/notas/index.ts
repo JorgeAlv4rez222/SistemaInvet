@@ -51,6 +51,26 @@ const anularNotaSchema = z.object({
   motivo:  z.string().min(1),
 })
 
+const editarNotaSchema = z.object({
+  adminId: z.string().uuid(),
+  notaId:  z.string().uuid(),
+  modificaciones: z.array(z.object({
+    notaProductoId: z.string().uuid(),
+    cantidad:       z.number().int().positive(),
+    nuevoSku:       z.string().optional(),
+  })),
+  nuevos: z.array(z.object({
+    sku:      z.string().min(1),
+    cantidad: z.number().int().positive(),
+  })),
+  eliminar: z.array(z.string().uuid()),
+})
+
+const eliminarNotaSchema = z.object({
+  adminId: z.string().uuid(),
+  notaId:  z.string().uuid(),
+})
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { accion, id, estado, usuarioId } = req.query
 
@@ -104,6 +124,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       const result = await notasService.cambiarEstadoNota(parsed.data)
       if (!result.ok) return res.status(400).json({ error: result.error })
+      return res.status(200).json(result.data)
+    }
+
+    if (accion === 'editar-nota') {
+      const parsed = editarNotaSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      }
+      const result = await notasService.editarNota(parsed.data)
+      if (!result.ok) return res.status(result.error.code === 'UNAUTHORIZED' ? 403 : result.error.code === 'NOT_FOUND' ? 404 : 400).json({ error: result.error })
+      return res.status(200).json(result.data)
+    }
+
+    if (accion === 'eliminar-nota') {
+      const parsed = eliminarNotaSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      }
+      const result = await notasService.eliminarNota(parsed.data)
+      if (!result.ok) return res.status(result.error.code === 'UNAUTHORIZED' ? 403 : result.error.code === 'NOT_FOUND' ? 404 : 400).json({ error: result.error })
       return res.status(200).json(result.data)
     }
 

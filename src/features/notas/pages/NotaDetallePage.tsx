@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDetalleNota, useConcluirParcial, useEnviarARevision, useRegistrarPicking } from '../hooks/useNotas'
+import { useDetalleNota, useConcluirParcial, useEnviarARevision, useRegistrarPicking, useEditarNota, useEliminarNota } from '../hooks/useNotas'
 import { PickingFlow } from '../components/PickingFlow'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -98,6 +98,268 @@ function fmtFecha(iso: string | null | undefined): string {
   return d.toLocaleString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
+function IcoEdit({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  )
+}
+function IcoTrash({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+    </svg>
+  )
+}
+function IcoPlus({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  )
+}
+
+// ─── Modal Editar Nota ─────────────────────────────────────────────────────
+
+type ItemEdicion = {
+  notaProductoId: string
+  sku: string
+  nombre: string
+  cantidad: number
+  nuevoSku: string
+  marcarEliminar: boolean
+}
+type NuevoItemEdicion = { _id: string; sku: string; cantidad: string }
+
+type ModalEditarProps = {
+  notaId:   string
+  adminId:  string
+  items:    { notaProductoId: string; sku: string; nombre: string; cantidadSolicitada: number }[]
+  onGuardado: () => void
+  onCerrar: () => void
+}
+
+function ModalEditarNota({ notaId, adminId, items: itemsOriginales, onGuardado, onCerrar }: ModalEditarProps) {
+  const [items, setItems] = useState<ItemEdicion[]>(() =>
+    itemsOriginales.map((i) => ({ ...i, cantidad: i.cantidadSolicitada, nuevoSku: '', marcarEliminar: false }))
+  )
+  const [nuevos, setNuevos] = useState<NuevoItemEdicion[]>([])
+  const [error, setError]   = useState<string | null>(null)
+  const editar = useEditarNota()
+
+  function actualizarItem(idx: number, campo: Partial<ItemEdicion>) {
+    setItems((prev) => prev.map((it, i) => i === idx ? { ...it, ...campo } : it))
+  }
+  function agregarNuevo() {
+    setNuevos((prev) => [...prev, { _id: Math.random().toString(36).slice(2), sku: '', cantidad: '' }])
+  }
+  function actualizarNuevo(id: string, campo: Partial<NuevoItemEdicion>) {
+    setNuevos((prev) => prev.map((n) => n._id === id ? { ...n, ...campo } : n))
+  }
+  function quitarNuevo(id: string) {
+    setNuevos((prev) => prev.filter((n) => n._id !== id))
+  }
+
+  async function handleGuardar() {
+    setError(null)
+    const modificaciones = items
+      .filter((it) => !it.marcarEliminar)
+      .map((it) => ({
+        notaProductoId: it.notaProductoId,
+        cantidad:       it.cantidad,
+        nuevoSku:       it.nuevoSku.trim() || undefined,
+      }))
+    const nuevosValidos = nuevos.filter((n) => n.sku.trim() && parseInt(n.cantidad) > 0)
+    const eliminar = items.filter((it) => it.marcarEliminar).map((it) => it.notaProductoId)
+
+    if (modificaciones.length === 0 && nuevosValidos.length === 0 && eliminar.length === 0) {
+      onCerrar(); return
+    }
+
+    try {
+      await editar.mutateAsync({
+        adminId,
+        notaId,
+        modificaciones,
+        nuevos: nuevosValidos.map((n) => ({ sku: n.sku.trim(), cantidad: parseInt(n.cantidad) })),
+        eliminar,
+      })
+      onGuardado()
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al guardar los cambios')
+    }
+  }
+
+  const activos = items.filter((it) => !it.marcarEliminar)
+  const eliminados = items.filter((it) => it.marcarEliminar)
+
+  return (
+    <div className="nd-modal-overlay" onClick={onCerrar}>
+      <div className="nd-modal-box nd-modal-box--lg" onClick={(e) => e.stopPropagation()}>
+        <div className="nd-modal-header">
+          <h3 className="nd-modal-titulo">Editar ítems de la NV</h3>
+          <button className="nd-modal-cerrar" onClick={onCerrar}><IcoX size={18} /></button>
+        </div>
+
+        <div className="nd-modal-body">
+          {activos.map((it, idx) => (
+            <div key={it.notaProductoId} className="nd-edit-fila">
+              <div className="nd-edit-info">
+                <code className="nd-prod-sku-inline">{it.sku}</code>
+                <span className="nd-edit-nombre">{it.nombre}</span>
+              </div>
+              <div className="nd-edit-controles">
+                <label className="nd-edit-campo">
+                  <span className="nd-edit-campo-label">Cantidad</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="nd-edit-input nd-edit-input--sm"
+                    value={it.cantidad}
+                    onChange={(e) => actualizarItem(idx, { cantidad: parseInt(e.target.value) || 1 })}
+                  />
+                </label>
+                <label className="nd-edit-campo">
+                  <span className="nd-edit-campo-label">Reemplazar SKU</span>
+                  <input
+                    type="text"
+                    className="nd-edit-input"
+                    placeholder="Nuevo SKU (opcional)"
+                    value={it.nuevoSku}
+                    onChange={(e) => actualizarItem(idx, { nuevoSku: e.target.value.toUpperCase() })}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="nd-edit-btn-eliminar"
+                  title="Eliminar ítem"
+                  onClick={() => actualizarItem(idx, { marcarEliminar: true })}
+                >
+                  <IcoTrash size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {eliminados.length > 0 && (
+            <div className="nd-edit-eliminados">
+              <span className="nd-edit-eliminados-label">Se eliminarán:</span>
+              {eliminados.map((it, idx) => (
+                <div key={it.notaProductoId} className="nd-edit-eliminado-fila">
+                  <code className="nd-prod-sku-inline" style={{ opacity: 0.5 }}>{it.sku}</code>
+                  <button
+                    type="button"
+                    className="nd-edit-btn-restaurar"
+                    onClick={() => actualizarItem(items.indexOf(it), { marcarEliminar: false })}
+                  >
+                    Restaurar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {nuevos.map((n) => (
+            <div key={n._id} className="nd-edit-fila nd-edit-fila--nuevo">
+              <div className="nd-edit-controles" style={{ width: '100%' }}>
+                <label className="nd-edit-campo" style={{ flex: 2 }}>
+                  <span className="nd-edit-campo-label">SKU nuevo</span>
+                  <input
+                    type="text"
+                    className="nd-edit-input"
+                    placeholder="SKU del producto"
+                    value={n.sku}
+                    onChange={(e) => actualizarNuevo(n._id, { sku: e.target.value.toUpperCase() })}
+                  />
+                </label>
+                <label className="nd-edit-campo">
+                  <span className="nd-edit-campo-label">Cantidad</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="nd-edit-input nd-edit-input--sm"
+                    value={n.cantidad}
+                    onChange={(e) => actualizarNuevo(n._id, { cantidad: e.target.value })}
+                  />
+                </label>
+                <button type="button" className="nd-edit-btn-eliminar" onClick={() => quitarNuevo(n._id)}>
+                  <IcoX size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <button type="button" className="nd-edit-btn-agregar" onClick={agregarNuevo}>
+            <IcoPlus size={13} /> Agregar ítem
+          </button>
+        </div>
+
+        {error && <p className="nd-modal-error">{error}</p>}
+
+        <div className="nd-modal-footer">
+          <button className="btn-secundario" onClick={onCerrar} disabled={editar.isPending}>Cancelar</button>
+          <button className="btn-primario" onClick={handleGuardar} disabled={editar.isPending}>
+            {editar.isPending ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modal Eliminar Nota ───────────────────────────────────────────────────
+
+type ModalEliminarProps = {
+  notaId:     string
+  adminId:    string
+  numeroNota: string
+  onEliminado: () => void
+  onCerrar:   () => void
+}
+
+function ModalEliminarNota({ notaId, adminId, numeroNota, onEliminado, onCerrar }: ModalEliminarProps) {
+  const [error, setError] = useState<string | null>(null)
+  const eliminar = useEliminarNota()
+
+  async function handleEliminar() {
+    setError(null)
+    try {
+      await eliminar.mutateAsync({ adminId, notaId })
+      onEliminado()
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al eliminar la nota')
+    }
+  }
+
+  return (
+    <div className="nd-modal-overlay" onClick={onCerrar}>
+      <div className="nd-modal-box" onClick={(e) => e.stopPropagation()}>
+        <div className="nd-modal-header">
+          <h3 className="nd-modal-titulo">Eliminar NV {numeroNota}</h3>
+        </div>
+        <div className="nd-modal-body">
+          <p className="nd-modal-desc">¿Estás seguro de que deseas eliminar esta nota de venta? Esta acción no se puede deshacer.</p>
+        </div>
+        {error && <p className="nd-modal-error">{error}</p>}
+        <div className="nd-modal-footer">
+          <button className="btn-secundario" onClick={onCerrar} disabled={eliminar.isPending}>Cancelar</button>
+          <button
+            className="btn-primario"
+            style={{ background: '#dc2626' }}
+            onClick={handleEliminar}
+            disabled={eliminar.isPending}
+          >
+            {eliminar.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const NOTA_ESTADO_LABEL: Record<string, string> = {
   pendiente:   'Pendiente',
   preparacion: 'En preparación',
@@ -160,6 +422,9 @@ export function NotaDetallePage() {
   const [concluirTexto,     setConcluirTexto]     = useState('')
   const [concluirError,     setConcluirError]     = useState<string | null>(null)
   const [errorRevision,     setErrorRevision]     = useState<string | null>(null)
+  const [menuModificar,     setMenuModificar]     = useState(false)
+  const [modalEditar,       setModalEditar]       = useState(false)
+  const [modalEliminar,     setModalEliminar]     = useState(false)
 
   const scanRef            = useRef<HTMLInputElement>(null)
   const registrarPicking   = useRegistrarPicking()
@@ -446,6 +711,24 @@ export function NotaDetallePage() {
   // ── Render página ─────────────────────────────────────────────────────────
   return (
     <div className="nd-page">
+      {modalEditar && esAdmin && data.estado === 'pendiente' && (
+        <ModalEditarNota
+          notaId={notaId}
+          adminId={operadorId}
+          items={data.productos.map((p) => ({ notaProductoId: p.notaProductoId, sku: p.sku, nombre: p.nombre, cantidadSolicitada: p.cantidadSolicitada }))}
+          onGuardado={() => { setModalEditar(false); void refetch() }}
+          onCerrar={() => setModalEditar(false)}
+        />
+      )}
+      {modalEliminar && esAdmin && data.estado === 'pendiente' && (
+        <ModalEliminarNota
+          notaId={notaId}
+          adminId={operadorId}
+          numeroNota={data.numeroNota}
+          onEliminado={() => { setModalEliminar(false); navigate('/notas') }}
+          onCerrar={() => setModalEliminar(false)}
+        />
+      )}
 
       {/* ── HEADER EJECUTIVO ── */}
       <div className="nd-header">
@@ -460,6 +743,33 @@ export function NotaDetallePage() {
             </span>
           </div>
           <div className="nd-header-acciones">
+            {esAdmin && data.estado === 'pendiente' && (
+              <div className="nd-modificar-wrap" style={{ position: 'relative' }}>
+                <button
+                  className="nd-btn-modificar"
+                  onClick={() => setMenuModificar((v) => !v)}
+                  disabled={offline}
+                >
+                  <IcoEdit size={13} /> Modificar NV
+                </button>
+                {menuModificar && (
+                  <div className="nd-modificar-menu" onClick={() => setMenuModificar(false)}>
+                    <button
+                      className="nd-modificar-opcion"
+                      onClick={() => { setMenuModificar(false); setModalEditar(true) }}
+                    >
+                      <IcoEdit size={13} /> Editar ítems
+                    </button>
+                    <button
+                      className="nd-modificar-opcion nd-modificar-opcion--danger"
+                      onClick={() => { setMenuModificar(false); setModalEliminar(true) }}
+                    >
+                      <IcoTrash size={13} /> Eliminar nota
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {!notaCerrada && esAdmin && (
               <button
                 className="btn-primario nd-btn-enviar"

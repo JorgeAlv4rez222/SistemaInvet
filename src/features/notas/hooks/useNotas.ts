@@ -76,6 +76,26 @@ export function useCambiarEstadoNota() {
   })
 }
 
+export function useEditarNota() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: notasApi.editarNota,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notas'] })
+    },
+  })
+}
+
+export function useEliminarNota() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: notasApi.eliminarNota,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notas'] })
+    },
+  })
+}
+
 export function useAnularNota() {
   const qc = useQueryClient()
   return useMutation({

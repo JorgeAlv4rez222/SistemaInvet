@@ -1004,4 +1004,150 @@ export const notasService = {
 
     return { ok: true, data: { notaId: input.notaId, estado: 'anulada' } }
   },
+
+  async editarNota(input: {
+    adminId: string
+    notaId: string
+    modificaciones: { notaProductoId: string; cantidad: number; nuevoSku?: string }[]
+    nuevos: { sku: string; cantidad: number }[]
+    eliminar: string[]
+  }): Promise<ServiceResult<{ notaId: string }>> {
+    if (!(await verificarAdmin(input.adminId))) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Solo el Admin puede editar notas' } }
+    }
+
+    const { data: nota, error: errNota } = await supabase
+      .from('notas_venta')
+      .select('id, numero_nota, nombre_cliente, estado')
+      .eq('id', input.notaId)
+      .single()
+
+    if (errNota || !nota) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada' } }
+    }
+    if (nota.estado !== 'pendiente') {
+      return { ok: false, error: { code: 'CONFLICT_ESTADO_INVALIDO', message: 'Solo se pueden editar notas en estado pendiente' } }
+    }
+
+    // Modificar ítems existentes
+    for (const mod of input.modificaciones) {
+      if (mod.cantidad <= 0) {
+        return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'La cantidad debe ser mayor a 0' } }
+      }
+      const upd: Record<string, unknown> = { cantidad_solicitada: mod.cantidad }
+      if (mod.nuevoSku) {
+        const { data: prod } = await supabase
+          .from('productos')
+          .select('id')
+          .eq('sku', mod.nuevoSku.trim().toUpperCase())
+          .single()
+        if (!prod) {
+          return { ok: false, error: { code: 'NOT_FOUND', message: `SKU no encontrado: ${mod.nuevoSku}` } }
+        }
+        upd.producto_id = prod.id
+      }
+      const { error: errMod } = await supabase
+        .from('notas_venta_productos')
+        .update(upd)
+        .eq('id', mod.notaProductoId)
+        .eq('nota_venta_id', input.notaId)
+      if (errMod) {
+        return { ok: false, error: { code: 'DB_ERROR', message: errMod.message } }
+      }
+    }
+
+    // Agregar ítems nuevos
+    for (const nuevo of input.nuevos) {
+      if (nuevo.cantidad <= 0) {
+        return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'La cantidad debe ser mayor a 0' } }
+      }
+      const { data: prod } = await supabase
+        .from('productos')
+        .select('id')
+        .eq('sku', nuevo.sku.trim().toUpperCase())
+        .single()
+      if (!prod) {
+        return { ok: false, error: { code: 'NOT_FOUND', message: `SKU no encontrado: ${nuevo.sku}` } }
+      }
+      const { error: errIns } = await supabase
+        .from('notas_venta_productos')
+        .insert({ nota_venta_id: input.notaId, producto_id: prod.id, cantidad_solicitada: nuevo.cantidad, estado: 'pendiente' })
+      if (errIns) {
+        return { ok: false, error: { code: 'DB_ERROR', message: errIns.message } }
+      }
+    }
+
+    // Eliminar ítems
+    if (input.eliminar.length > 0) {
+      const { error: errDel } = await supabase
+        .from('notas_venta_productos')
+        .delete()
+        .in('id', input.eliminar)
+        .eq('nota_venta_id', input.notaId)
+      if (errDel) {
+        return { ok: false, error: { code: 'DB_ERROR', message: errDel.message } }
+      }
+    }
+
+    await supabase.from('movimientos').insert({
+      tipo:          'edicion_nota',
+      nota_venta_id: input.notaId,
+      usuario_id:    input.adminId,
+      detalle: {
+        numeroNota:      nota.numero_nota,
+        modificaciones:  input.modificaciones.length,
+        nuevos:          input.nuevos.length,
+        eliminados:      input.eliminar.length,
+        editadoPor:      input.adminId,
+        rol:             'admin',
+      },
+    })
+
+    return { ok: true, data: { notaId: input.notaId } }
+  },
+
+  async eliminarNota(input: { adminId: string; notaId: string }): Promise<ServiceResult<{ notaId: string }>> {
+    if (!(await verificarAdmin(input.adminId))) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Solo el Admin puede eliminar notas' } }
+    }
+
+    const { data: nota, error: errNota } = await supabase
+      .from('notas_venta')
+      .select('id, numero_nota, nombre_cliente, estado')
+      .eq('id', input.notaId)
+      .single()
+
+    if (errNota || !nota) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada' } }
+    }
+    if (nota.estado !== 'pendiente') {
+      return { ok: false, error: { code: 'CONFLICT_ESTADO_INVALIDO', message: 'Solo se pueden eliminar notas en estado pendiente' } }
+    }
+
+    const { error: errUp } = await supabase
+      .from('notas_venta')
+      .update({ estado: 'anulada', comentario_despacho: 'Nota eliminada por administrador' })
+      .eq('id', input.notaId)
+
+    if (errUp) {
+      return { ok: false, error: { code: 'DB_ERROR', message: errUp.message } }
+    }
+
+    await supabase.from('movimientos').insert({
+      tipo:          'cambio_estado_nota',
+      nota_venta_id: input.notaId,
+      usuario_id:    input.adminId,
+      detalle: {
+        numeroNota:    nota.numero_nota,
+        nombreCliente: nota.nombre_cliente,
+        estadoAnterior: 'pendiente',
+        estadoNuevo:    'anulada',
+        motivo:         'Nota eliminada por administrador',
+        eliminadoPor:   input.adminId,
+        rol:            'admin',
+      },
+    })
+
+    return { ok: true, data: { notaId: input.notaId } }
+  },
 }

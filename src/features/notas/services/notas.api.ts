@@ -52,4 +52,15 @@ export const notasApi = {
 
   anularNota: (body: { adminId: string; notaId: string; motivo: string }) =>
     apiClient.post<{ notaId: string; estado: string }>('/notas?accion=anular-nota', body),
+
+  editarNota: (body: {
+    adminId: string
+    notaId: string
+    modificaciones: { notaProductoId: string; cantidad: number; nuevoSku?: string }[]
+    nuevos: { sku: string; cantidad: number }[]
+    eliminar: string[]
+  }) => apiClient.post<{ notaId: string }>('/notas?accion=editar-nota', body),
+
+  eliminarNota: (body: { adminId: string; notaId: string }) =>
+    apiClient.post<{ notaId: string }>('/notas?accion=eliminar-nota', body),
 }
