@@ -27,6 +27,15 @@ const cambiarEstadoSchema = z.object({
 const enviarRevisionSchema = z.object({
   adminId: z.string().uuid(), notaId: z.string().uuid(),
 })
+const anularNotaSchema = z.object({
+  adminId: z.string().uuid(),
+  notaId:  z.string().uuid(),
+  motivo:  z.string().min(1),
+})
+const eliminarNotaSchema = z.object({
+  adminId: z.string().uuid(),
+  notaId:  z.string().uuid(),
+})
 const editarNotaSchema = z.object({
   adminId:        z.string().uuid(),
   notaId:         z.string().uuid(),
@@ -79,6 +88,18 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const parsed = concluirParcialSchema.safeParse(body)
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await notasService.concluirParcial(parsed.data)
+      return result.ok ? json(result.data) : json({ error: result.error }, 400)
+    }
+    if (accion === 'anular-nota') {
+      const parsed = anularNotaSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await notasService.anularNota(parsed.data)
+      return result.ok ? json(result.data) : json({ error: result.error }, 400)
+    }
+    if (accion === 'eliminar-nota') {
+      const parsed = eliminarNotaSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await notasService.eliminarNota(parsed.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 400)
     }
     if (accion === 'editar-nota') {
