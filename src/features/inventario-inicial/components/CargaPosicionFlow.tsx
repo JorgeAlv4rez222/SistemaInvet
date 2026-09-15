@@ -228,6 +228,12 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
               disabled={!posInfo || cargando}
             />
           </div>
+          {posInfo && (
+            <div className="inv2-camara-row">
+              <BarcodeScanner title="Escanear código de producto con cámara" onDetected={cod => { setCodProducto(cod); setError(null); confirmarProducto(cod) }} />
+              <span className="inv2-camara-label">Escanear con cámara</span>
+            </div>
+          )}
         </div>
 
         {/* Acciones */}

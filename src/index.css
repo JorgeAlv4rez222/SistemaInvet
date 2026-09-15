@@ -2062,6 +2062,17 @@ label {
 }
 
 /* Modificar posición (details) */
+.inv2-camara-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.1rem 0;
+}
+.inv2-camara-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
 .inv2-modificar-details {
   padding: 0.5rem 1rem;
   font-size: 0.8rem;
