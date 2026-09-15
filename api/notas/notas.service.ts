@@ -73,6 +73,8 @@ export type NotaResumen = {
   tomadaPor:          string | null
   completadaPor:      string | null
   tieneDev:           boolean
+  fechaPreparacion:   string | null
+  fechaDespacho:      string | null
 }
 
 export type DetalleNota = {
