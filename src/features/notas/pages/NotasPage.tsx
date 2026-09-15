@@ -10,6 +10,7 @@ const ESTADO_LABELS: Record<string, string> = {
   preparacion: 'En preparación',
   completa:    'Completa',
   despachada:  'Despachada',
+  anulada:     'Anulada',
 }
 
 const MESES = [

@@ -45,6 +45,12 @@ const cambiarEstadoSchema = z.object({
   nombreChofer: z.string().min(1),
 })
 
+const anularNotaSchema = z.object({
+  adminId: z.string().uuid(),
+  notaId:  z.string().uuid(),
+  motivo:  z.string().min(1),
+})
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { accion, id, estado, usuarioId } = req.query
 
@@ -98,6 +104,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       const result = await notasService.cambiarEstadoNota(parsed.data)
       if (!result.ok) return res.status(400).json({ error: result.error })
+      return res.status(200).json(result.data)
+    }
+
+    if (accion === 'anular-nota') {
+      const parsed = anularNotaSchema.safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      }
+      const result = await notasService.anularNota(parsed.data)
+      if (!result.ok) return res.status(result.error.code === 'UNAUTHORIZED' ? 403 : result.error.code === 'NOT_FOUND' ? 404 : 400).json({ error: result.error })
       return res.status(200).json(result.data)
     }
 

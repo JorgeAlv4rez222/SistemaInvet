@@ -49,4 +49,7 @@ export const notasApi = {
 
   enviarARevision: (body: EnviarARevisionInput) =>
     apiClient.post<EnviarARevisionResult>('/notas?accion=enviar-revision', body),
+
+  anularNota: (body: { adminId: string; notaId: string; motivo: string }) =>
+    apiClient.post<{ notaId: string; estado: string }>('/notas?accion=anular-nota', body),
 }

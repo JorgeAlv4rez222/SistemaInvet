@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useValidarProducto } from '../hooks/useSalidas'
-import { useCambiarEstadoNota } from '../../notas/hooks/useNotas'
+import { useCambiarEstadoNota, useAnularNota } from '../../notas/hooks/useNotas'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
@@ -186,6 +186,66 @@ function ModalChofer({ notaId, adminId, onCerrar }: ModalChoferProps) {
   )
 }
 
+// ── Modal anular NV ───────────────────────────────────────────────────────
+
+type ModalAnularProps = {
+  notaId:    string
+  adminId:   string
+  onCerrar:  () => void
+  onAnulada: () => void
+}
+
+function ModalAnular({ notaId, adminId, onCerrar, onAnulada }: ModalAnularProps) {
+  const [motivo, setMotivo] = useState('')
+  const [error, setError]   = useState<string | null>(null)
+  const anular = useAnularNota()
+
+  async function handleAnular() {
+    setError(null)
+    if (!motivo.trim()) { setError('Ingresa un motivo para la anulación'); return }
+    try {
+      await anular.mutateAsync({ adminId, notaId, motivo: motivo.trim() })
+      onAnulada()
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al anular la nota')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
+      <div className="bg-slate-800 border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-base font-semibold text-white mb-1">Anular Nota de Venta</h3>
+        <p className="text-xs text-slate-400 mb-4">Esta acción es irreversible. Ingresa el motivo de anulación.</p>
+        <textarea
+          className="rv-anular-textarea"
+          rows={4}
+          placeholder="Motivo de anulación…"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          autoFocus
+        />
+        {error && <p className="text-red-400 text-xs mb-3 mt-2">{error}</p>}
+        <div className="flex gap-2 mt-4">
+          <button
+            className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
+            onClick={onCerrar}
+            disabled={anular.isPending}
+          >
+            Cancelar
+          </button>
+          <button
+            className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            disabled={anular.isPending || !motivo.trim()}
+            onClick={handleAnular}
+          >
+            {anular.isPending ? 'Anulando…' : 'Confirmar anulación'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────
 
 function fmtFecha(iso: string | null | undefined): string {
@@ -229,6 +289,7 @@ export function RevisionFlow({
   const [error, setError]         = useState<string | null>(null)
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [mostrarModalChofer, setMostrarModalChofer] = useState(false)
+  const [mostrarModalAnular, setMostrarModalAnular] = useState(false)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
 
   function toggleExpandido(id: string) {
@@ -396,6 +457,14 @@ export function RevisionFlow({
           onCerrar={() => { setMostrarModalChofer(false); onCerrar() }}
         />
       )}
+      {mostrarModalAnular && (
+        <ModalAnular
+          notaId={notaId}
+          adminId={adminId}
+          onCerrar={() => setMostrarModalAnular(false)}
+          onAnulada={() => { setMostrarModalAnular(false); onCerrar() }}
+        />
+      )}
 
       {/* ── Header ejecutivo ── */}
       <div className="nd-header">
@@ -478,6 +547,19 @@ export function RevisionFlow({
       {/* ── Avisos ── */}
       {offline && <div className="nd-aviso nd-aviso--offline">Sin conexión — modo solo lectura.</div>}
       {error   && <div className="nd-aviso nd-aviso--error">{error}</div>}
+
+      {/* ── Botón Anular NV (solo admin, solo en vista lista, no despachada) ── */}
+      {paso.tipo === 'lista' && esAdmin && !yaDespachada && (
+        <div style={{ padding: '0 var(--spacing-md)', marginBottom: '0.5rem' }}>
+          <button
+            className="rv-btn-anular"
+            disabled={offline}
+            onClick={() => setMostrarModalAnular(true)}
+          >
+            Anular NV
+          </button>
+        </div>
+      )}
 
       {/* ── Progreso global (solo en vista lista) ── */}
       {paso.tipo === 'lista' && (

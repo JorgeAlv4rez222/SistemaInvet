@@ -956,4 +956,52 @@ export const notasService = {
       data: { notaId: input.notaId, estado: 'despachada', despachoId: despacho.id, nombreChofer: input.nombreChofer, fechaDespacho },
     }
   },
+
+  async anularNota(input: { adminId: string; notaId: string; motivo: string }): Promise<ServiceResult<{ notaId: string; estado: string }>> {
+    if (!(await verificarAdmin(input.adminId))) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Solo el Admin puede anular notas' } }
+    }
+    if (!input.motivo.trim()) {
+      return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'El motivo de anulación es obligatorio' } }
+    }
+
+    const { data: nota, error } = await supabase
+      .from('notas_venta')
+      .select('id, numero_nota, nombre_cliente, estado')
+      .eq('id', input.notaId)
+      .single()
+
+    if (error || !nota) {
+      return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada' } }
+    }
+    if (nota.estado === 'anulada') {
+      return { ok: false, error: { code: 'CONFLICT_ESTADO_INVALIDO', message: 'La nota ya está anulada' } }
+    }
+
+    const { error: errUp } = await supabase
+      .from('notas_venta')
+      .update({ estado: 'anulada', comentario_despacho: input.motivo.trim() })
+      .eq('id', input.notaId)
+
+    if (errUp) {
+      return { ok: false, error: { code: 'DB_ERROR', message: errUp.message } }
+    }
+
+    await supabase.from('movimientos').insert({
+      tipo:          'cambio_estado_nota',
+      nota_venta_id: input.notaId,
+      usuario_id:    input.adminId,
+      detalle: {
+        numeroNota:     nota.numero_nota,
+        nombreCliente:  nota.nombre_cliente,
+        estadoAnterior: nota.estado,
+        estadoNuevo:    'anulada',
+        motivo:         input.motivo.trim(),
+        anuladorPor:    input.adminId,
+        rol:            'admin',
+      },
+    })
+
+    return { ok: true, data: { notaId: input.notaId, estado: 'anulada' } }
+  },
 }

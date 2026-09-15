@@ -75,3 +75,14 @@ export function useCambiarEstadoNota() {
     },
   })
 }
+
+export function useAnularNota() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: notasApi.anularNota,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notas'] })
+      qc.invalidateQueries({ queryKey: ['salidas'] })
+    },
+  })
+}
