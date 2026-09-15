@@ -11,7 +11,7 @@ import type { ItemRevision } from '../components/RevisionFlow'
 type Vista =
   | { tipo: 'lista' }
   | { tipo: 'importar' }
-  | { tipo: 'revision';   notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null }
+  | { tipo: 'revision';   notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null; tieneDev: boolean }
   | { tipo: 'devolucion'; notaId: string }
 
 const MESES = [
@@ -96,10 +96,10 @@ function tiempoRelativo(fecha: string): string {
 
 // ─── RevisionConDetalle ────────────────────────────────────────────────────
 function RevisionConDetalle({
-  notaId, estadoNota, nombreChofer, adminId, offline, onCerrar,
+  notaId, estadoNota, nombreChofer, adminId, offline, tieneDev, onCerrar,
 }: {
   notaId: string; estadoNota: 'completa' | 'despachada'
-  nombreChofer: string | null; adminId: string; offline: boolean; onCerrar: () => void
+  nombreChofer: string | null; adminId: string; offline: boolean; tieneDev: boolean; onCerrar: () => void
 }) {
   const { data, isLoading, isError } = useDetalleNota(notaId)
   if (isLoading) return <p className="cargando">Cargando productos…</p>
@@ -132,6 +132,7 @@ function RevisionConDetalle({
       nombreChofer={nombreChofer}
       fechaPreparacion={(data as any).fechaPreparacion ?? null}
       fechaDespacho={(data as any).fechaDespacho ?? null}
+      tieneDev={tieneDev}
       offline={offline}
       onCerrar={onCerrar}
     />
@@ -195,7 +196,7 @@ export function SalidasPage() {
   }
 
   function abrirRevision(nota: NotaParaRevision) {
-    setVista({ tipo: 'revision', notaId: nota.notaId, estadoNota: nota.estado, nombreChofer: nota.nombreChofer })
+    setVista({ tipo: 'revision', notaId: nota.notaId, estadoNota: nota.estado, nombreChofer: nota.nombreChofer, tieneDev: nota.tieneDev })
   }
 
   if (vista.tipo === 'importar') {
@@ -203,7 +204,7 @@ export function SalidasPage() {
       <ImportarNotaRevisionFlow
         adminId={adminId}
         onVolver={() => setVista({ tipo: 'lista' })}
-        onCreada={(notaId) => setVista({ tipo: 'revision', notaId, estadoNota: 'completa', nombreChofer: null })}
+        onCreada={(notaId) => setVista({ tipo: 'revision', notaId, estadoNota: 'completa', nombreChofer: null, tieneDev: false })}
       />
     )
   }
@@ -216,6 +217,7 @@ export function SalidasPage() {
         nombreChofer={vista.nombreChofer}
         adminId={adminId}
         offline={offline}
+        tieneDev={vista.tieneDev}
         onCerrar={() => setVista({ tipo: 'lista' })}
       />
     )
@@ -418,7 +420,7 @@ export function SalidasPage() {
                         : <><IcoScan size={14} /> Auditar NV</>
                       }
                     </button>
-                    {esDespachada && esAdmin && (
+                    {esDespachada && esAdmin && !nota.tieneDev && (
                       <button
                         className="btn-primario nota-card-btn sal-btn-devolucion"
                         disabled={offline}
@@ -426,6 +428,9 @@ export function SalidasPage() {
                       >
                         Devolución
                       </button>
+                    )}
+                    {esDespachada && nota.tieneDev && (
+                      <span className="badge sal-badge-devolucion">Devolución registrada</span>
                     )}
                   </div>
                 </div>

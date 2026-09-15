@@ -16,6 +16,7 @@ export type NotaParaRevision = {
   fechaDespacho:       string | null
   nombreChofer:        string | null
   comentarioDespacho:  string | null
+  tieneDev:            boolean
 }
 
 export type { ValidarProductoResult }

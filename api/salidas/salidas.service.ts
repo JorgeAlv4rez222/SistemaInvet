@@ -38,7 +38,7 @@ export const salidasService = {
   async obtenerNotasParaRevision(): Promise<ServiceResult<NotaResumen[]>> {
     const { data, error } = await supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, revisado_admin)')
+      .select('*, nota_productos(id, revisado_admin), devoluciones(id)')
       .in('estado', ['completa', 'despachada'])
       .order('updated_at', { ascending: false })
 
@@ -46,6 +46,7 @@ export const salidasService = {
 
     type RawNota = NotaVenta & {
       nota_productos: { id: string; revisado_admin: boolean }[]
+      devoluciones:   { id: string }[]
     }
     const notas = data as RawNota[] ?? []
 
@@ -55,6 +56,7 @@ export const salidasService = {
       totalRevisados:      nota.nota_productos.filter((np) => np.revisado_admin).length,
       nombreChofer:        (nota as any).nombre_chofer ?? null,
       comentarioDespacho:  nota.comentario_despacho ?? null,
+      tieneDev:            (nota.devoluciones?.length ?? 0) > 0,
     }))
 
     return { ok: true, data: result }

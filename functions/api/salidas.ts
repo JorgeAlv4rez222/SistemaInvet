@@ -23,8 +23,10 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       productosCompletos: n.totalRevisados,
       creadoEn:            n.created_at,
       actualizadoEn:       n.updated_at,
+      fechaDespacho:       n.fecha_despacho ?? null,
       nombreChofer:        n.nombreChofer ?? null,
       comentarioDespacho:  n.comentarioDespacho ?? null,
+      tieneDev:            n.tieneDev ?? false,
     }))
     return json(mapped)
   }

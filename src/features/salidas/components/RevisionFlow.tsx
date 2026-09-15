@@ -267,6 +267,7 @@ interface Props {
   nombreChofer:        string | null
   fechaPreparacion?:   string | null
   fechaDespacho?:      string | null
+  tieneDev?:           boolean
   offline:             boolean
   onCerrar:            () => void
 }
@@ -276,7 +277,7 @@ interface Props {
 export function RevisionFlow({
   notaId, numeroNota, nombreCliente, rutCliente, numeroOc,
   comentarioDespacho, adminId, items, estadoNota, nombreChofer,
-  fechaPreparacion, fechaDespacho, offline, onCerrar,
+  fechaPreparacion, fechaDespacho, tieneDev, offline, onCerrar,
 }: Props) {
   const yaDespachada = estadoNota === 'despachada'
   const rolUsuario   = localStorage.getItem('user_rol') ?? ''
@@ -558,6 +559,14 @@ export function RevisionFlow({
           >
             Anular NV
           </button>
+        </div>
+      )}
+
+      {/* ── Banner devolución registrada ── */}
+      {tieneDev && (
+        <div className="rv-dev-banner">
+          <span className="rv-dev-banner-ico">↩</span>
+          <span>Devolución registrada para esta NV</span>
         </div>
       )}
 
