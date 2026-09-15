@@ -3548,6 +3548,12 @@ label {
   border-color: rgba(0,160,223,0.4);
   color: #38bdf8;
 }
+.hnv-tab--dev { border-color: rgba(0,160,223,0.25); }
+.hnv-tab--dev.activo {
+  background: rgba(0,160,223,0.15);
+  border-color: rgba(0,160,223,0.5);
+  color: #00A0DF;
+}
 
 /* ── Lista de NVs ── */
 .hnv-lista-wrap { display: flex; flex-direction: column; }

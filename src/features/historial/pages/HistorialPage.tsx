@@ -706,18 +706,20 @@ function NotaHistorialCard({
 
 function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void }) {
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [soloConDev, setSoloConDev] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const { data, isLoading, isError } = useNotas(filtroEstado || undefined)
 
   const notas = useMemo(() => {
-    const todas = data ?? []
+    let todas = data ?? []
+    if (soloConDev) todas = todas.filter(n => (n as any).tieneDev)
     if (!busqueda.trim()) return todas
     const q = busqueda.toLowerCase()
     return todas.filter(n =>
       n.numeroNota.toLowerCase().includes(q) ||
       n.nombreCliente.toLowerCase().includes(q)
     )
-  }, [data, busqueda])
+  }, [data, busqueda, soloConDev])
 
   return (
     <div className="hnv-view">
@@ -736,12 +738,18 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
           {(['', 'completa', 'despachada'] as const).map((e) => (
             <button
               key={e}
-              className={`hnv-tab${filtroEstado === e ? ' activo' : ''}`}
-              onClick={() => setFiltroEstado(e)}
+              className={`hnv-tab${filtroEstado === e && !soloConDev ? ' activo' : ''}`}
+              onClick={() => { setFiltroEstado(e); setSoloConDev(false) }}
             >
               {e ? ESTADO_NOTA_LABELS[e] : `Todas${data ? ` (${data.length})` : ''}`}
             </button>
           ))}
+          <button
+            className={`hnv-tab hnv-tab--dev${soloConDev ? ' activo' : ''}`}
+            onClick={() => { setSoloConDev(v => !v); setFiltroEstado('') }}
+          >
+            ↩ Devolución
+          </button>
         </div>
       </div>
 

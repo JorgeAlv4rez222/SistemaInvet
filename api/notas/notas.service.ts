@@ -72,6 +72,7 @@ export type NotaResumen = {
   importadoPor:       string
   tomadaPor:          string | null
   completadaPor:      string | null
+  tieneDev:           boolean
 }
 
 export type DetalleNota = {
@@ -306,11 +307,12 @@ export const notasService = {
     type RawNota = NotaVenta & {
       nota_productos: { id: string; estado: string }[]
       usuarios: { nombre: string } | null
+      devoluciones: { id: string }[]
     }
 
     let q = supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre)')
+      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), devoluciones(id)')
       .order('created_at', { ascending: false })
     if (estado) q = q.eq('estado', estado)
 
@@ -352,6 +354,7 @@ export const notasService = {
       importadoPor:       n.usuarios?.nombre ?? '',
       tomadaPor:          n.tomada_por ?? null,
       completadaPor:      completadoresPorNota.get(n.id) ?? null,
+      tieneDev:           (n.devoluciones?.length ?? 0) > 0,
     }))
 
     return { ok: true, data: result }
