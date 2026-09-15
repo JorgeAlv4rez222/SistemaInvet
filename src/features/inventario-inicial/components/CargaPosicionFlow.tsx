@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useResolverPosicion, useResolverProducto, useRegistrarLoteInicial, useEliminarLoteInicial, useBuscarLotePorPosicion } from '../hooks/useInventarioInicial'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
+import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 
 type RegistroSesion = {
   id:        string
@@ -176,7 +177,10 @@ export function CargaPosicionFlow({ usuarioId }: Props) {
               autoComplete="off"
               disabled={cargando}
             />
-            {posInfo && <span className="inv2-field-check">✓</span>}
+            {posInfo
+              ? <span className="inv2-field-check">✓</span>
+              : <BarcodeScanner title="Escanear QR de ubicación" onDetected={cod => { setCodPosicion(cod); setError(null); confirmarPosicion(cod) }} />
+            }
           </div>
           {posInfo && (
             <div className="inv2-pos-badge">

@@ -14,16 +14,10 @@ export function InventarioInicialPage() {
   if (rol !== 'admin') return null
 
   return (
-    <div className="inv-page">
-      <div className="inv-page-header">
-        <div className="inv-page-titulo">
-          <h1>Ubicación Inicial</h1>
-          <span className="inv-page-subtitulo">
-            Asignación de ubicación física para productos almacenados. (Pendiente de integración con SF para actualización de stock).
-          </span>
-        </div>
+    <div className="inv2-page">
+      <div className="inv2-page-header">
+        <h1 className="inv2-page-titulo">Ubicación Inicial</h1>
       </div>
-
       <CargaPosicionFlow usuarioId={usuarioId} />
     </div>
   )
