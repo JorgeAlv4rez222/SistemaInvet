@@ -247,7 +247,7 @@ export function SalidasPage() {
             <span className="notas-kpi-icon"><IcoScan size={18} /></span>
             <div>
               <span className="notas-kpi-num">{kpis.porAuditar}</span>
-              <span className="notas-kpi-label">Por auditar</span>
+              <span className="notas-kpi-label">Por Revisar</span>
             </div>
           </div>
           <div className={`notas-kpi-card ${kpis.despachadasHoy > 0 ? 'notas-kpi-card--green' : ''}`}>
@@ -418,7 +418,7 @@ export function SalidasPage() {
                     >
                       {esDespachada
                         ? <><IcoDoc size={14} /> Ver despacho</>
-                        : <><IcoScan size={14} /> Auditar NV</>
+                        : <><IcoScan size={14} /> Revisar NV</>
                       }
                     </button>
                     {esDespachada && esAdmin && !nota.tieneDev && (
