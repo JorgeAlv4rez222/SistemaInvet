@@ -45,6 +45,7 @@ const TIPO_CONFIG: Record<string, { color: string; bg: string; icono: string }> 
   equivalente_usado:    { color: '#fde68a', bg: 'rgba(245,158,11,0.15)',  icono: '≈' },
   cambio_estado_nota:   { color: '#7dd3fc', bg: 'rgba(14,165,233,0.15)',  icono: '✎' },
   despacho:             { color: '#f9a8d4', bg: 'rgba(236,72,153,0.15)', icono: '▶' },
+  devolucion:           { color: '#67e8f9', bg: 'rgba(0,160,223,0.15)',  icono: '↩' },
 }
 
 function BadgeTipo({ tipo }: { tipo: string }) {
@@ -167,7 +168,7 @@ function MovimientoCard({
 
 // ── Tarjeta agrupada por nota ─────────────────────────────────────────────
 
-const TIPOS_NOTA = new Set(['salida', 'salida_parcial', 'equivalente_usado', 'cambio_estado_nota', 'despacho'])
+const TIPOS_NOTA = new Set(['salida', 'salida_parcial', 'equivalente_usado', 'cambio_estado_nota', 'despacho', 'devolucion'])
 
 function NotaGrupoCard({
   numero,

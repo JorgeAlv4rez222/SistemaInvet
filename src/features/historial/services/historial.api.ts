@@ -30,6 +30,7 @@ export const TIPOS_MOVIMIENTO = [
   'traslado_reubicacion',
   'traslado_intercambio',
   'equivalente_usado',
+  'devolucion',
 ] as const
 
 export type TipoFiltro = typeof TIPOS_MOVIMIENTO[number]
@@ -44,6 +45,7 @@ export const TIPO_LABELS: Record<string, string> = {
   equivalente_usado:     'Equivalente usado',
   cambio_estado_nota:    'Cambio estado nota',
   despacho:              'Despacho',
+  devolucion:            'Devolución',
 }
 
 function buildQuery(params: Record<string, string | number | undefined>): string {

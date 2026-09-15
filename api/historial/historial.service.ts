@@ -17,6 +17,7 @@ export type TipoMovimiento =
   | 'cambio_estado_nota'
   | 'revision_admin'
   | 'despacho'
+  | 'devolucion'
 
 export type MovimientoHistorial = {
   movimientoId:       string
@@ -152,6 +153,9 @@ function textoLegible(tipo: TipoMovimiento, detalle: DetalleJson | null, usuario
 
     case 'despacho':
       return `${usuario} despachó nota ${d.numeroNota} al chofer ${d.nombreChofer}`
+
+    case 'devolucion':
+      return `${usuario} registró devolución de ${cant(d.cantidad)} unidades de ${d.sku} para nota ${d.numeroNota}`
 
     default:
       return `${usuario} realizó acción: ${tipo}`
