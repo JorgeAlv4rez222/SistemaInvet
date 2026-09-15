@@ -27,6 +27,20 @@ const cambiarEstadoSchema = z.object({
 const enviarRevisionSchema = z.object({
   adminId: z.string().uuid(), notaId: z.string().uuid(),
 })
+const editarNotaSchema = z.object({
+  adminId:        z.string().uuid(),
+  notaId:         z.string().uuid(),
+  modificaciones: z.array(z.object({
+    notaProductoId: z.string().uuid(),
+    cantidad:       z.coerce.number().int().positive(),
+    nuevoSku:       z.string().optional(),
+  })).optional().default([]),
+  nuevos: z.array(z.object({
+    sku:      z.string().min(1),
+    cantidad: z.coerce.number().int().positive(),
+  })).optional().default([]),
+  eliminar: z.array(z.string().uuid()).optional().default([]),
+})
 
 export async function onRequest({ request, env }: { request: Request; env: Env }): Promise<Response> {
   initSupabase(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
@@ -65,6 +79,12 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const parsed = concluirParcialSchema.safeParse(body)
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await notasService.concluirParcial(parsed.data)
+      return result.ok ? json(result.data) : json({ error: result.error }, 400)
+    }
+    if (accion === 'editar-nota') {
+      const parsed = editarNotaSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await notasService.editarNota(parsed.data)
       return result.ok ? json(result.data) : json({ error: result.error }, 400)
     }
     if (accion === 'enviar-revision') {
