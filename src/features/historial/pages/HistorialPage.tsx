@@ -478,8 +478,13 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
 
   const filas = useMemo(() => {
     if (!data) return [] as MovimientoHistorial[]
-    const TIPOS_EXCLUIDOS = new Set(['cambio_estado_nota', 'despacho', 'picking', 'revision_admin', 'equivalente_usado'])
+    const TIPOS_EXCLUIDOS = new Set(['cambio_estado_nota', 'despacho', 'picking', 'revision_admin', 'equivalente_usado', 'devolucion'])
     return (data.movimientos ?? []).filter(m => !TIPOS_EXCLUIDOS.has(m.tipo) && m.producto)
+  }, [data])
+
+  const filasDevolucion = useMemo(() => {
+    if (!data) return [] as MovimientoHistorial[]
+    return (data.movimientos ?? []).filter(m => m.tipo === 'devolucion')
   }, [data])
 
   const totalSolicitado = filas.reduce((s, m) => s + (m.cantidadSolicitada ?? m.cantidad ?? 0), 0)
@@ -542,6 +547,43 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
               </div>
             </div>
           </div>
+
+          {/* ── Sección devolución ── */}
+          {filasDevolucion.length > 0 && (
+            <div className="hnv-dev-wrap">
+              <div className="hnv-dev-titulo">↩ Devolución registrada · {filasDevolucion.length} producto{filasDevolucion.length !== 1 ? 's' : ''}</div>
+              <table className="hnv-dev-tabla">
+                <thead>
+                  <tr>
+                    <th className="hnv-dev-th">SKU</th>
+                    <th className="hnv-dev-th">Producto</th>
+                    <th className="hnv-dev-th hnv-dev-th--r">Cant. devuelta</th>
+                    <th className="hnv-dev-th">Registrado por</th>
+                    <th className="hnv-dev-th">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filasDevolucion.map(m => {
+                    const d   = new Date(m.fecha)
+                    const dia = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                    const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    return (
+                      <tr key={m.movimientoId} className="hnv-dev-fila">
+                        <td className="hnv-dev-td"><span className="hnv-dev-sku">{m.producto ?? '—'}</span></td>
+                        <td className="hnv-dev-td">{m.nombreProducto ?? '—'}</td>
+                        <td className="hnv-dev-td hnv-dev-td--r"><span className="hnv-dev-cant">{m.cantidad ?? 0}</span></td>
+                        <td className="hnv-dev-td">{m.usuario}</td>
+                        <td className="hnv-dev-td">
+                          <span className="hnv-fecha-dia">{dia}</span>
+                          <span className="hnv-fecha-hora">{hora} hrs</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* ── Tabla de trazabilidad ── */}
           <div className="hnv-traz-wrap">
