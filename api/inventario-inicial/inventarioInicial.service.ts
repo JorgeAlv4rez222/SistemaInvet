@@ -69,7 +69,7 @@ export const inventarioInicialService = {
       .single()
 
     if (error || !data) {
-      return { ok: false, error: { code: 'NOT_FOUND', message: `Producto con código "${codigoBarra}" no encontrado en el sistema.` } }
+      return { ok: false, error: { code: 'NOT_FOUND', message: `Producto con código de barra "${codigoBarra.trim()}" no encontrado en el sistema.` } }
     }
 
     return { ok: true, data: { id: data.id, sku: data.sku, nombre: data.nombre } }
@@ -79,7 +79,7 @@ export const inventarioInicialService = {
   async buscarLotePorPosicion(codigoPosicion: string): Promise<ServiceResult<{ loteId: string; skuProducto: string; nombreProducto: string; posicionCodigo: string; posicionId: string }>> {
     const { data: posicion, error: errorPos } = await supabase
       .from('posiciones_rack')
-      .select('id, codigo, ocupada')
+      .select('id, codigo')
       .eq('codigo', codigoPosicion.trim().toUpperCase())
       .single()
 
@@ -87,24 +87,24 @@ export const inventarioInicialService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: `Posición "${codigoPosicion}" no encontrada.` } }
     }
 
-    if (!posicion.ocupada) {
-      return { ok: false, error: { code: 'NOT_FOUND', message: `La posición ${posicion.codigo} no tiene productos asignados.` } }
-    }
-
     const { data: lote, error: errorLote } = await supabase
       .from('lotes_inventario')
-      .select('id, productos(sku, nombre)')
+      .select('id, producto_id')
       .eq('posicion_id', posicion.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (errorLote || !lote) {
-      return { ok: false, error: { code: 'NOT_FOUND', message: 'No se encontró el lote en esta posición.' } }
+      return { ok: false, error: { code: 'NOT_FOUND', message: `La posición ${posicion.codigo} no tiene productos asignados.` } }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prod = (lote as any).productos
+    const { data: prod } = await supabase
+      .from('productos')
+      .select('sku, nombre')
+      .eq('id', lote.producto_id)
+      .single()
+
     return {
       ok: true,
       data: {
