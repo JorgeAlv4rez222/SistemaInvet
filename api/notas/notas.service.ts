@@ -178,9 +178,10 @@ async function obtenerUbicacionesFifo(productoId: string): Promise<Ubicacion[]> 
     .select('id, cantidad, fecha_ingreso, created_at, posiciones_rack(codigo)')
     .eq('producto_id', productoId)
     .eq('activo', true)
-    .gt('cantidad', 0)
+    .gte('cantidad', 0)
+    .not('posicion_id', 'is', null)
     .order('fecha_ingreso', { ascending: true })
-    .order('created_at', { ascending: true }) // TC-FIFO-005: desempate por created_at
+    .order('created_at', { ascending: true })
 
   type LoteRaw = { id: string; cantidad: number; fecha_ingreso: string; created_at: string; posiciones_rack: { codigo: string } | null }
 
