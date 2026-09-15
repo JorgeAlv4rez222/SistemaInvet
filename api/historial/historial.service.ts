@@ -334,27 +334,49 @@ export const historialService = {
     }
 
     // Devoluciones directas (por si el movimiento no se insertó correctamente)
-    const { data: devs } = await supabase
+    const { data: devRows } = await supabase
       .from('devoluciones')
-      .select('id, usuario_id, usuarios(nombre), devolucion_items(cantidad, producto_id, productos(sku, nombre))')
+      .select('id, usuario_id')
       .eq('nota_venta_id', notaId)
 
     const movimientosDevolucion: MovimientoHistorial[] = []
 
-    for (const dev of (devs ?? []) as any[]) {
-      for (const item of (dev.devolucion_items ?? [])) {
-        const sku    = item.productos?.sku    ?? null
-        const nombre = item.productos?.nombre ?? null
-        const usuario = dev.usuarios?.nombre ?? 'Sistema'
+    if (devRows && devRows.length > 0) {
+      const devIds = devRows.map((d: any) => d.id)
+      const usuarioIds = [...new Set(devRows.map((d: any) => d.usuario_id).filter(Boolean))]
+
+      const [{ data: items }, { data: usuariosRows }] = await Promise.all([
+        supabase
+          .from('devolucion_items')
+          .select('devolucion_id, cantidad, producto_id')
+          .in('devolucion_id', devIds),
+        usuarioIds.length > 0
+          ? supabase.from('usuarios').select('id, nombre').in('id', usuarioIds)
+          : Promise.resolve({ data: [] }),
+      ])
+
+      const productoIds = [...new Set((items ?? []).map((i: any) => i.producto_id).filter(Boolean))]
+      const { data: productosRows } = productoIds.length > 0
+        ? await supabase.from('productos').select('id, sku, nombre').in('id', productoIds)
+        : { data: [] }
+
+      const usuarioMap = new Map((usuariosRows ?? []).map((u: any) => [u.id, u.nombre]))
+      const productoMap = new Map((productosRows ?? []).map((p: any) => [p.id, { sku: p.sku, nombre: p.nombre }]))
+      const devUsuarioMap = new Map(devRows.map((d: any) => [d.id, d.usuario_id]))
+
+      for (const item of (items ?? []) as any[]) {
+        const prod    = productoMap.get(item.producto_id)
+        const userId  = devUsuarioMap.get(item.devolucion_id)
+        const usuario = usuarioMap.get(userId) ?? 'Sistema'
         movimientosDevolucion.push({
-          movimientoId:       `dev-${dev.id}-${item.producto_id}`,
+          movimientoId:       `dev-${item.devolucion_id}-${item.producto_id}`,
           tipo:               'devolucion' as any,
           fecha:              new Date().toISOString(),
           usuario,
-          producto:           sku,
-          nombreProducto:     nombre,
+          producto:           prod?.sku ?? null,
+          nombreProducto:     prod?.nombre ?? null,
           cantidad:           item.cantidad,
-          detalle:            `${usuario} registró devolución de ${item.cantidad} unidades de ${sku} para nota ${nota.numero_nota}`,
+          detalle:            `${usuario} registró devolución de ${item.cantidad} unidades de ${prod?.sku} para nota ${nota.numero_nota}`,
           ubicacion:          null,
           notaNumero:         nota.numero_nota,
           notaVentaId:        notaId,
