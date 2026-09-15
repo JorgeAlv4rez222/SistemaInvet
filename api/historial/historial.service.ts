@@ -336,7 +336,7 @@ export const historialService = {
     // Devoluciones directas (por si el movimiento no se insertó correctamente)
     const { data: devs } = await supabase
       .from('devoluciones')
-      .select('id, created_at, usuario_id, usuarios(nombre), devolucion_items(cantidad, producto_id, productos(sku, nombre))')
+      .select('id, usuario_id, usuarios(nombre), devolucion_items(cantidad, producto_id, productos(sku, nombre))')
       .eq('nota_venta_id', notaId)
 
     const movimientosDevolucion: MovimientoHistorial[] = []
@@ -349,7 +349,7 @@ export const historialService = {
         movimientosDevolucion.push({
           movimientoId:       `dev-${dev.id}-${item.producto_id}`,
           tipo:               'devolucion' as any,
-          fecha:              dev.created_at,
+          fecha:              new Date().toISOString(),
           usuario,
           producto:           sku,
           nombreProducto:     nombre,
