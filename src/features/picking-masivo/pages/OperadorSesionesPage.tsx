@@ -157,7 +157,7 @@ function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
 
 export function OperadorSesionesPage() {
   const [busqueda, setBusqueda] = useState('')
-  const { data, isLoading, isError } = useSesionesPicking('activa')
+  const { data, isLoading, isError } = useSesionesPicking('en_proceso')
   useRealtimeSesiones()
 
   const rol      = ROL()

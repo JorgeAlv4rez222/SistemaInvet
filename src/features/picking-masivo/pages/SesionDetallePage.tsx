@@ -106,7 +106,7 @@ function IcoChevron({ open }: { open: boolean }) {
 // ── Labels ────────────────────────────────────────────────────────────────────
 
 const ESTADO_SESION_LABELS: Record<string, string> = {
-  validando: 'Validando', activa: 'Activa', completada: 'Completada',
+  validando: 'Validando', en_proceso: 'En Proceso', completada: 'Completada',
   despachado: 'Despachado', cancelada: 'Cancelada',
 }
 
@@ -120,7 +120,7 @@ const ESTADO_ITEM_BADGE: Record<string, { label: string; cls: string }> = {
 }
 
 const SESION_BADGE_CLS: Record<string, string> = {
-  activa: 'sd-sesion-badge--activa', completada: 'sd-sesion-badge--completada',
+  en_proceso: 'sd-sesion-badge--activa', completada: 'sd-sesion-badge--completada',
   despachado: 'sd-sesion-badge--despachada', cancelada: 'sd-sesion-badge--cancelada',
   validando: 'sd-sesion-badge--validando',
 }
@@ -279,10 +279,10 @@ export function SesionDetallePage() {
   const pct             = sesion.total_items ? Math.round((sesion.items_completados / sesion.total_items) * 100) : 0
   const rolUsuario      = localStorage.getItem('user_rol') ?? ''
   const esAdmin         = rolUsuario === 'admin' || rolUsuario === 'supervisor'
-  const puedeCancelar   = (sesion.estado === 'validando' || sesion.estado === 'activa') && esAdmin
+  const puedeCancelar   = (sesion.estado === 'validando' || sesion.estado === 'en_proceso') && esAdmin
 
   // Operador solo puede ver sesiones activas
-  if (!esAdmin && sesion.estado !== 'activa' && sesion.estado !== 'validando') {
+  if (!esAdmin && sesion.estado !== 'en_proceso' && sesion.estado !== 'validando') {
     return (
       <div className="sd-page">
         <div className="sd-bloqueado">

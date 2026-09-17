@@ -18,7 +18,7 @@ export type SesionResumen = {
   numero_oc:             string
   nombre_cliente:        string | null
   numero_oc_pedido:      string | null
-  estado:                'validando' | 'activa' | 'completada' | 'despachado' | 'cancelada'
+  estado:                'validando' | 'en_proceso' | 'completada' | 'despachado' | 'cancelada'
   total_items:           number
   items_completados:     number
   archivo_nombre:        string | null

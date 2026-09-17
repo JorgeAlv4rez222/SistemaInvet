@@ -346,7 +346,7 @@ export const pickingMasivoService = {
     // Marcar sesión como activa
     const { error: updErr } = await supabase
       .from('sesiones_picking_masivo')
-      .update({ estado: 'activa', activada_en: new Date().toISOString() })
+      .update({ estado: 'en_proceso', activada_en: new Date().toISOString() })
       .eq('id', input.sesionId)
 
     if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }

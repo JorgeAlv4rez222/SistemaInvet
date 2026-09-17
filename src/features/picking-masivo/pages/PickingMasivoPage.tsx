@@ -14,7 +14,7 @@ function derivarEstado(s: SesionResumen): EstadoAdmin {
   if (s.estado === 'despachado') return 'despachada'
   if (s.estado === 'completada') return 'completada'
   if (s.estado === 'validando')  return 'validando'
-  if (s.estado === 'activa')     return 'en_proceso'
+  if (s.estado === 'en_proceso') return 'en_proceso'
   return 'en_proceso'
 }
 
@@ -199,7 +199,7 @@ export function PickingMasivoPage() {
   const sesiones = data ?? []
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
-  const enProceso   = sesiones.filter(s => s.estado === 'activa' || s.estado === 'validando')
+  const enProceso   = sesiones.filter(s => s.estado === 'en_proceso' || s.estado === 'validando')
   const completadas = sesiones.filter(s => s.estado === 'completada' || s.estado === 'despachado')
 
   // ── Filtros ───────────────────────────────────────────────────────────────
