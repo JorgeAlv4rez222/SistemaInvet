@@ -199,7 +199,7 @@ export function PickingMasivoPage() {
   const sesiones = data ?? []
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
-  const enProceso   = sesiones.filter(s => s.estado === 'en_proceso' || s.estado === 'validando')
+  const enProceso   = sesiones.filter(s => { const e = derivarEstado(s); return e === 'en_proceso' || e === 'validando' })
   const completadas = sesiones.filter(s => s.estado === 'completada' || s.estado === 'despachado')
 
   // ── Filtros ───────────────────────────────────────────────────────────────
