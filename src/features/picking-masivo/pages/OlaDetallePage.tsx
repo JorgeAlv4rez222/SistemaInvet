@@ -31,13 +31,13 @@ function IcoBack({ size = 16 }: { size?: number }) {
 export function OlaDetallePage() {
   const { id }    = useParams<{ id: string }>()
   const navigate  = useNavigate()
-  const { user }  = useAuth()
+  const { sesion } = useAuth()
   const { data: ola, isLoading, error } = useOla(id ?? null)
 
   if (isLoading) return <div className="notas-page"><p className="text-muted" style={{ padding: '2rem' }}>Cargando ola…</p></div>
   if (error || !ola) return <div className="notas-page"><p className="error-banner">Ola no encontrada</p></div>
 
-  const esOperador = user?.rol === 'operador'
+  const esOperador = sesion.rol === 'operador'
 
   return (
     <div className="notas-page">
