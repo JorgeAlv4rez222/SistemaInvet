@@ -1,13 +1,28 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSesionesPicking, useCancelarSesion } from '../hooks/usePickingMasivo'
+import { useOlas, useCancelarOla } from '../hooks/useOlas'
 import { useRealtimeSesiones } from '../hooks/useRealtimePicking'
 import type { SesionResumen } from '../services/picking-masivo.api'
+import type { OlaResumen } from '../services/olas.api'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 type EstadoAdmin = 'libre' | 'en_proceso' | 'completada' | 'despachada' | 'cancelada' | 'validando'
 type FiltroEstado = EstadoAdmin | 'todas'
+
+type FilaUnificada = {
+  id:          string
+  tipo:        'sesion' | 'ola'
+  cliente:     string
+  oc:          string | null
+  entrega:     string
+  completados: number
+  total:       number
+  estado:      EstadoAdmin
+  creadoEn:    string
+  creadoPor:   string | null
+}
 
 function derivarEstado(s: SesionResumen): EstadoAdmin {
   if (s.estado === 'cancelada')  return 'cancelada'
@@ -16,6 +31,57 @@ function derivarEstado(s: SesionResumen): EstadoAdmin {
   if (s.estado === 'validando')  return 'validando'
   if (s.estado === 'en_proceso') return 'en_proceso'
   return 'en_proceso'
+}
+
+function derivarEstadoOla(o: OlaResumen): EstadoAdmin {
+  if (o.estado === 'cancelada')      return 'cancelada'
+  if (o.estado === 'despachada')     return 'despachada'
+  if (o.estado === 'completada')     return 'completada'
+  if (o.estado === 'validando')      return 'validando'
+  if (o.estado === 'en_extraccion')  return 'en_proceso'
+  if (o.estado === 'en_preparacion') return 'en_proceso'
+  return 'en_proceso'
+}
+
+function normalizarSesion(s: SesionResumen): FilaUnificada {
+  return {
+    id:          s.id,
+    tipo:        'sesion',
+    cliente:     s.nombre_cliente ?? '—',
+    oc:          s.numero_oc_pedido ?? null,
+    entrega:     s.numero_oc,
+    completados: s.items_completados,
+    total:       s.total_items,
+    estado:      derivarEstado(s),
+    creadoEn:    s.creado_en,
+    creadoPor:   s.creado_por_usuario?.nombre ?? null,
+  }
+}
+
+function normalizarOla(o: OlaResumen): FilaUnificada {
+  const proveedor = o.proveedor.charAt(0).toUpperCase() + o.proveedor.slice(1)
+  const completados =
+    o.estado === 'completada' || o.estado === 'despachada' ? o.total_lineas : 0
+  // Convertir YYYY-MM-DD → DD-MM-YYYY para compatibilidad con urgenciaBadge
+  let entrega = '—'
+  if (o.fecha_entrega) {
+    const parts = o.fecha_entrega.split('-')
+    entrega = parts.length === 3 && parts[0].length === 4
+      ? `${parts[2]}-${parts[1]}-${parts[0]}`
+      : o.fecha_entrega
+  }
+  return {
+    id:          o.id,
+    tipo:        'ola',
+    cliente:     proveedor,
+    oc:          null,
+    entrega,
+    completados,
+    total:       o.total_lineas,
+    estado:      derivarEstadoOla(o),
+    creadoEn:    o.creado_en,
+    creadoPor:   o.creado_por_usuario?.nombre ?? null,
+  }
 }
 
 const ESTADO_CFG: Record<EstadoAdmin, { label: string; cls: string; dot: string }> = {
@@ -103,35 +169,43 @@ function MenuContextual({ onCancelar }: { onCancelar: () => void }) {
   )
 }
 
-// ── Fila de sesión ────────────────────────────────────────────────────────────
+// ── Fila unificada ────────────────────────────────────────────────────────────
 
 function OlaFila({
-  s,
+  fila,
   onMonitorear,
   onCancelar,
 }: {
-  s: SesionResumen
+  fila: FilaUnificada
   onMonitorear: () => void
   onCancelar: () => void
 }) {
-  const estado    = derivarEstado(s)
-  const cfg       = ESTADO_CFG[estado]
-  const pct       = s.total_items > 0 ? Math.round((s.items_completados / s.total_items) * 100) : 0
-  const udsTxt    = `${s.items_completados.toLocaleString('es-CL')} / ${s.total_items.toLocaleString('es-CL')} Uds`
-  const badge     = urgenciaBadge(s.numero_oc)
-  const esHoy     = badge?.label === 'HOY'
-  const alerta    = esHoy && pct < 50
-  const cancelable = estado === 'libre' || estado === 'validando' || estado === 'en_proceso'
-  const accionLabel = estado === 'despachada' || estado === 'cancelada' ? 'Ver detalle' : 'Ver monitoreo'
+  const cfg         = ESTADO_CFG[fila.estado]
+  const pct         = fila.total > 0 ? Math.round((fila.completados / fila.total) * 100) : 0
+  const udsTxt      = fila.tipo === 'sesion'
+    ? `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} Uds`
+    : `${fila.total.toLocaleString('es-CL')} líneas`
+  const badge       = urgenciaBadge(fila.entrega)
+  const esHoy       = badge?.label === 'HOY'
+  const alerta      = esHoy && pct < 50
+  const cancelable  = fila.estado === 'libre' || fila.estado === 'validando' || fila.estado === 'en_proceso'
+  const accionLabel = fila.estado === 'despachada' || fila.estado === 'cancelada' ? 'Ver detalle' : 'Ver'
 
   return (
-    <tr className={`pm-t-fila pm-t-fila--${estado}`}>
+    <tr className={`pm-t-fila pm-t-fila--${fila.estado}`}>
 
       {/* Identificación */}
       <td className="pm-t-td pm-t-td--id">
-        <span className="pm-t-cliente">{s.nombre_cliente ?? '—'}</span>
-        {s.numero_oc_pedido && (
-          <span className="pm-t-oc">OC {s.numero_oc_pedido}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {fila.tipo === 'ola' && (
+            <span className="pm-admin-badge" style={{ fontSize: 10, padding: '1px 6px', background: 'var(--accent)', color: '#fff', borderRadius: 4 }}>
+              WAVE
+            </span>
+          )}
+          <span className="pm-t-cliente">{fila.cliente}</span>
+        </div>
+        {fila.oc && (
+          <span className="pm-t-oc">OC {fila.oc}</span>
         )}
       </td>
 
@@ -140,22 +214,27 @@ function OlaFila({
         <div className="pm-t-prog-wrap">
           <div className="pm-t-prog-header">
             <span className="pm-t-uds">{udsTxt}</span>
-            <span className={`pm-t-pct${alerta ? ' pm-t-pct--alerta' : ''}`}>{pct}%</span>
+            {fila.tipo === 'sesion' && (
+              <span className={`pm-t-pct${alerta ? ' pm-t-pct--alerta' : ''}`}>{pct}%</span>
+            )}
           </div>
-          <ProgressBar pct={pct} alerta={alerta} />
+          {fila.tipo === 'sesion' && <ProgressBar pct={pct} alerta={alerta} />}
         </div>
       </td>
 
       {/* Entrega */}
       <td className="pm-t-td pm-t-td--entrega">
-        <span className="pm-t-fecha-entrega">{s.numero_oc}</span>
+        <span className="pm-t-fecha-entrega">{fila.entrega}</span>
+        {badge && (
+          <span className={`pm-urgencia pm-urgencia--badge ${badge.cls}`}>{badge.label}</span>
+        )}
       </td>
 
       {/* Creación */}
       <td className="pm-t-td pm-t-td--creacion">
-        <span className="pm-t-fecha-creacion">{fmtFecha(s.creado_en)}</span>
-        {s.creado_por_usuario && (
-          <span className="pm-t-creador">{s.creado_por_usuario.nombre}</span>
+        <span className="pm-t-fecha-creacion">{fmtFecha(fila.creadoEn)}</span>
+        {fila.creadoPor && (
+          <span className="pm-t-creador">{fila.creadoPor}</span>
         )}
       </td>
 
@@ -190,41 +269,61 @@ export function PickingMasivoPage() {
   const [busqueda, setBusqueda]     = useState('')
   const [filtroFecha, setFiltroFecha] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todas')
-  const [confirmCancelar, setConfirmCancelar] = useState<string | null>(null)
+  const [confirmCancelar, setConfirmCancelar] = useState<{ id: string; tipo: 'sesion' | 'ola' } | null>(null)
 
-  const { data, isLoading, isError } = useSesionesPicking()
-  const cancelar = useCancelarSesion()
+  const { data: dataSesiones, isLoading: loadSes, isError: errSes } = useSesionesPicking()
+  const { data: dataOlas,     isLoading: loadOlas, isError: errOlas } = useOlas()
+  const cancelarSesion = useCancelarSesion()
+  const cancelarOla    = useCancelarOla()
   useRealtimeSesiones()
 
-  const sesiones = data ?? []
+  const isLoading = loadSes || loadOlas
+  const isError   = errSes  || errOlas
+
+  // Unificar ambas fuentes
+  const filas: FilaUnificada[] = [
+    ...(dataSesiones ?? []).map(normalizarSesion),
+    ...(dataOlas     ?? []).map(normalizarOla),
+  ].sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime())
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
-  const enProceso   = sesiones.filter(s => { const e = derivarEstado(s); return e === 'en_proceso' || e === 'validando' })
-  const completadas = sesiones.filter(s => s.estado === 'completada' || s.estado === 'despachado')
+  const enProceso   = filas.filter(f => f.estado === 'en_proceso' || f.estado === 'validando')
+  const completadas = filas.filter(f => f.estado === 'completada' || f.estado === 'despachada')
 
   // ── Filtros ───────────────────────────────────────────────────────────────
-  const filtradas = sesiones.filter(s => {
+  const filtradas = filas.filter(f => {
     const q = busqueda.toLowerCase()
     const matchBusq = !q ||
-      (s.nombre_cliente ?? '').toLowerCase().includes(q) ||
-      s.numero_oc.toLowerCase().includes(q) ||
-      (s.numero_oc_pedido ?? '').toLowerCase().includes(q)
+      f.cliente.toLowerCase().includes(q) ||
+      (f.oc ?? '').toLowerCase().includes(q) ||
+      f.entrega.toLowerCase().includes(q)
 
     const matchFecha = !filtroFecha || (() => {
       const [y, m, d] = filtroFecha.split('-')
-      return s.numero_oc === `${d}-${m}-${y}`
+      return f.entrega === `${d}-${m}-${y}`
     })()
 
-    const estado = derivarEstado(s)
     const matchEstado = filtroEstado === 'todas' ||
-      estado === filtroEstado ||
-      (filtroEstado === 'completada' && estado === 'despachada')
+      f.estado === filtroEstado ||
+      (filtroEstado === 'completada' && f.estado === 'despachada')
 
     return matchBusq && matchFecha && matchEstado
   })
 
-  function handleCancelar(sesionId: string) {
-    cancelar.mutate(sesionId, { onSuccess: () => setConfirmCancelar(null) })
+  function handleCancelar(id: string, tipo: 'sesion' | 'ola') {
+    if (tipo === 'sesion') {
+      cancelarSesion.mutate(id, { onSuccess: () => setConfirmCancelar(null) })
+    } else {
+      cancelarOla.mutate(id, { onSuccess: () => setConfirmCancelar(null) })
+    }
+  }
+
+  function handleMonitorear(fila: FilaUnificada) {
+    if (fila.tipo === 'ola') {
+      navigate(`/picking-masivo/ola/${fila.id}`)
+    } else {
+      navigate(`/picking-masivo/${fila.id}`)
+    }
   }
 
   function toggleFiltro(f: FiltroEstado) {
@@ -261,7 +360,7 @@ export function PickingMasivoPage() {
           className={`pm-admin-kpi ${filtroEstado === 'todas' ? 'pm-admin-kpi--activo' : ''}`}
           onClick={() => setFiltroEstado('todas')}
         >
-          <span className="pm-admin-kpi-val">{sesiones.length}</span>
+          <span className="pm-admin-kpi-val">{filas.length}</span>
           <span className="pm-admin-kpi-label">TODAS</span>
         </button>
 
@@ -288,7 +387,7 @@ export function PickingMasivoPage() {
           <span className="pm-admin-search-ico">🔍</span>
           <input
             className="pm-admin-search"
-            placeholder="Buscar por Cliente, N° OC o LPN…"
+            placeholder="Buscar por proveedor, cliente, OC o fecha…"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
           />
@@ -332,7 +431,7 @@ export function PickingMasivoPage() {
             <table className="pm-t-tabla">
               <thead>
                 <tr className="pm-t-thead-tr">
-                  <th className="pm-t-th pm-t-th--id">Cliente / OC</th>
+                  <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
                   <th className="pm-t-th pm-t-th--prog">Progreso</th>
                   <th className="pm-t-th pm-t-th--entrega">Entrega</th>
                   <th className="pm-t-th pm-t-th--creacion">Creación</th>
@@ -341,12 +440,12 @@ export function PickingMasivoPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtradas.map(s => (
+                {filtradas.map(f => (
                   <OlaFila
-                    key={s.id}
-                    s={s}
-                    onMonitorear={() => navigate(`/picking-masivo/${s.id}`)}
-                    onCancelar={() => setConfirmCancelar(s.id)}
+                    key={`${f.tipo}-${f.id}`}
+                    fila={f}
+                    onMonitorear={() => handleMonitorear(f)}
+                    onCancelar={() => setConfirmCancelar({ id: f.id, tipo: f.tipo })}
                   />
                 ))}
               </tbody>
@@ -359,16 +458,16 @@ export function PickingMasivoPage() {
       {confirmCancelar && (
         <div className="modal-overlay" onClick={() => setConfirmCancelar(null)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h2 className="modal-titulo">¿Cancelar sesión?</h2>
-            <p className="modal-desc">Esta acción no se puede deshacer. Las subtareas en progreso quedarán liberadas.</p>
+            <h2 className="modal-titulo">¿Cancelar {confirmCancelar.tipo === 'ola' ? 'ola' : 'sesión'}?</h2>
+            <p className="modal-desc">Esta acción no se puede deshacer. Las tareas en progreso quedarán liberadas.</p>
             <div className="modal-acciones">
               <button className="btn-secundario" onClick={() => setConfirmCancelar(null)}>Volver</button>
               <button
                 className="btn-peligro"
-                disabled={cancelar.isPending}
-                onClick={() => handleCancelar(confirmCancelar)}
+                disabled={cancelarSesion.isPending || cancelarOla.isPending}
+                onClick={() => handleCancelar(confirmCancelar.id, confirmCancelar.tipo)}
               >
-                {cancelar.isPending ? 'Cancelando…' : 'Sí, cancelar sesión'}
+                {(cancelarSesion.isPending || cancelarOla.isPending) ? 'Cancelando…' : 'Sí, cancelar'}
               </button>
             </div>
           </div>
