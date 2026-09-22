@@ -24,6 +24,7 @@ import { OperadorSesionesPage }   from './features/picking-masivo/pages/Operador
 import { OperadorColaPage }       from './features/picking-masivo/pages/OperadorColaPage'
 import { ConfirmarSubtareaPage }  from './features/picking-masivo/pages/ConfirmarSubtareaPage'
 import { DespachoSesionPage }    from './features/picking-masivo/pages/DespachoSesionPage'
+import { OlaDetallePage }        from './features/picking-masivo/pages/OlaDetallePage'
 import { UsuariosPage }          from './features/usuarios/pages/UsuariosPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -60,7 +61,8 @@ export default function App() {
       <Route path="/inventario-inicial" element={<Protected><InventarioInicialPage /></Protected>} />
       <Route path="/picking-masivo"       element={<Protected><PickingMasivoPage /></Protected>} />
       <Route path="/picking-masivo/nueva" element={<Protected><NuevaSesionPage /></Protected>} />
-      <Route path="/picking-masivo/:id"   element={<Protected><SesionDetallePage /></Protected>} />
+      <Route path="/picking-masivo/ola/:id" element={<Protected><OlaDetallePage /></Protected>} />
+      <Route path="/picking-masivo/:id"    element={<Protected><SesionDetallePage /></Protected>} />
 
       {/* Picking masivo — operador */}
       <Route path="/picking-masivo/operador"                             element={<Protected><OperadorSesionesPage /></Protected>} />
