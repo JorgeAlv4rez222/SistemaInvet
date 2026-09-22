@@ -211,7 +211,6 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                 onClick={() => seleccionarProveedor(id)}
               >
                 <span className="pm-proveedor-nombre">{label}</span>
-                <span className="pm-proveedor-desc">{desc}</span>
               </button>
             ))}
           </div>
@@ -319,20 +318,22 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           {/* Preview Construmart — agrupado por OC */}
           {datos.tipo === 'construmart' && (
             <>
-              <div className="ing-filtro-grupo">
-                <span className="ing-filtro-label">Fecha de entrega</span>
-                <input
-                  className="ing-filtro-select"
-                  value={numeroOc}
-                  onChange={(e) => setNumeroOc(e.target.value)}
-                  placeholder="Ej: 28-09-2026"
-                  autoFocus
-                />
+              <p className="pm-prev-titulo">Detalle completo de planilla Construmart</p>
+
+              {/* Fecha de entrega */}
+              <div className="pm-prev-fecha-wrap">
+                <label className="pm-prev-fecha-label">Fecha de entrega</label>
+                <div className="pm-prev-fecha-input-wrap">
+                  <input
+                    className="pm-prev-fecha-input"
+                    value={numeroOc}
+                    onChange={(e) => setNumeroOc(e.target.value)}
+                    placeholder="Ej: 28-09-2026"
+                    autoFocus
+                  />
+                  <span className="pm-prev-fecha-ico">📅</span>
+                </div>
               </div>
-              <p className="notas-conteo">
-                {datos.ordenes.length} órdenes · {totalLineas} LPN{totalLineas !== 1 ? 's' : ''} ·{' '}
-                {consolidarSkusConstrumart(datos.ordenes).length} SKU{consolidarSkusConstrumart(datos.ordenes).length !== 1 ? 's' : ''} únicos
-              </p>
               <div className="excel-tabla-wrap">
                 <table className="excel-tabla">
                   <thead>
@@ -348,8 +349,8 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                   <tbody>
                     {datos.ordenes.flatMap((o, oi) =>
                       o.lineas.map((l, li) => (
-                        <tr key={`${oi}-${li}`} className={(oi + li) % 2 === 0 ? 'excel-tr--par' : 'excel-tr--impar'}>
-                          {li === 0 && <td className="excel-td" rowSpan={o.lineas.length} style={{ verticalAlign: 'middle', fontWeight: 600 }}>{o.numeroOrden}</td>}
+                        <tr key={`${oi}-${li}`} className={`${oi % 2 === 0 ? 'excel-tr--par' : 'excel-tr--impar'}${li === 0 ? ' excel-tr--orden-inicio' : ''}`}>
+                          {li === 0 && <td className="excel-td excel-td--orden" rowSpan={o.lineas.length}>{o.numeroOrden}</td>}
                           {li === 0 && <td className="excel-td" rowSpan={o.lineas.length} style={{ verticalAlign: 'middle' }}>{o.numeroGuia}</td>}
                           <td className="excel-td" style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{l.lpn}</td>
                           <td className="excel-td">{l.skuProveedor}</td>
@@ -405,7 +406,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           {/* Construmart — resumen wave */}
           {datos?.tipo === 'construmart' && (
             <div className="pm-validado-resumen">
-              <p>Ola wave lista para crear</p>
+              <p>Sesión lista para crear</p>
               <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
                 {datos.ordenes.length} órdenes · {totalLineas} LPNs ·{' '}
                 {consolidarSkusConstrumart(datos.ordenes).length} SKUs consolidados

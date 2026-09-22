@@ -67,7 +67,8 @@ export function ProtectedRoute({ children, rutaActual }: Props) {
   // Excepción: /picking-masivo/operador es la ruta propia del operador
   if (rol === 'operador') {
     const esRutaOperadorPM = rutaActual.startsWith('/picking-masivo/operador')
-    const bloqueada = !esRutaOperadorPM && (
+    const esRutaOla        = rutaActual.startsWith('/picking-masivo/ola/')
+    const bloqueada = !esRutaOperadorPM && !esRutaOla && (
       RUTAS_SOLO_ADMIN.some((r) => rutaActual.startsWith(r))
       || RUTAS_ADMIN_SUPERVISOR.some((r) => rutaActual.startsWith(r))
     )

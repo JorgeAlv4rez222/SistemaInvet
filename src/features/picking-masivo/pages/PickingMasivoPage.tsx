@@ -182,9 +182,7 @@ function OlaFila({
 }) {
   const cfg         = ESTADO_CFG[fila.estado]
   const pct         = fila.total > 0 ? Math.round((fila.completados / fila.total) * 100) : 0
-  const udsTxt      = fila.tipo === 'sesion'
-    ? `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} Uds`
-    : `${fila.total.toLocaleString('es-CL')} líneas`
+  const udsTxt      = `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} ${fila.tipo === 'sesion' ? 'Uds' : 'líneas'}`
   const badge       = urgenciaBadge(fila.entrega)
   const esHoy       = badge?.label === 'HOY'
   const alerta      = esHoy && pct < 50
@@ -196,14 +194,7 @@ function OlaFila({
 
       {/* Identificación */}
       <td className="pm-t-td pm-t-td--id">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {fila.tipo === 'ola' && (
-            <span className="pm-admin-badge" style={{ fontSize: 10, padding: '1px 6px', background: 'var(--accent)', color: '#fff', borderRadius: 4 }}>
-              WAVE
-            </span>
-          )}
-          <span className="pm-t-cliente">{fila.cliente}</span>
-        </div>
+        <span className="pm-t-cliente">{fila.cliente}</span>
         {fila.oc && (
           <span className="pm-t-oc">OC {fila.oc}</span>
         )}
@@ -214,20 +205,15 @@ function OlaFila({
         <div className="pm-t-prog-wrap">
           <div className="pm-t-prog-header">
             <span className="pm-t-uds">{udsTxt}</span>
-            {fila.tipo === 'sesion' && (
-              <span className={`pm-t-pct${alerta ? ' pm-t-pct--alerta' : ''}`}>{pct}%</span>
-            )}
+            <span className={`pm-t-pct${alerta ? ' pm-t-pct--alerta' : ''}`}>{pct}%</span>
           </div>
-          {fila.tipo === 'sesion' && <ProgressBar pct={pct} alerta={alerta} />}
+          <ProgressBar pct={pct} alerta={alerta} />
         </div>
       </td>
 
       {/* Entrega */}
       <td className="pm-t-td pm-t-td--entrega">
         <span className="pm-t-fecha-entrega">{fila.entrega}</span>
-        {badge && (
-          <span className={`pm-urgencia pm-urgencia--badge ${badge.cls}`}>{badge.label}</span>
-        )}
       </td>
 
       {/* Creación */}

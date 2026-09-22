@@ -160,13 +160,6 @@ export function OlaDetallePage() {
   return (
     <div className="notas-page ola-page">
 
-      {/* ── Breadcrumb ── */}
-      <nav className="ola-breadcrumb">
-        <Link to="/picking-masivo" className="ola-breadcrumb-link">Olas</Link>
-        <IcoChevron />
-        <span className="ola-breadcrumb-actual">{titulo}</span>
-      </nav>
-
       {/* ── Header ── */}
       <div className="ola-header">
         <div className="ola-header-left">
@@ -210,22 +203,22 @@ export function OlaDetallePage() {
           <h2 className="ola-pasos-titulo">Pasos del picking</h2>
           <div className="ola-pasos-lista">
             <PasoCard
-              numero={1} titulo="Extracción consolidada"
-              desc="Los operadores extraen el total de unidades por SKU desde las posiciones FIFO."
+              numero={1} titulo="Picking Consolidado"
+              desc="El Personal extrae el total de unidades por SKU."
               activo={ola.estado === 'en_extraccion'}
               hecho={fase > 1}
               onIr={() => navigate(`/picking-masivo/ola/${id}/extraccion`)}
-              btnLabel="Ir a extracción (Fase 1)"
+              btnLabel="Picking"
             />
             <PasoCard
               numero={2} titulo="Preparación y asignación LPN"
-              desc="El operador escanea cada LPN para asignar las cajas a cada tienda destino."
+              desc="El personal escanea cada LPN para asignar los SKU a cada tienda destino."
               activo={ola.estado === 'en_preparacion'}
               hecho={fase > 2}
               onIr={() => navigate(`/picking-masivo/ola/${id}/preparacion`)}
               btnLabel="Ir a preparación (Fase 2)"
             />
-            {!esOperador && (
+            {sesion.rol === 'supervisor' && (
               <PasoCard
                 numero={3} titulo="Validación y despacho"
                 desc="El supervisor valida los LPNs escaneados y autoriza el despacho al transportista."

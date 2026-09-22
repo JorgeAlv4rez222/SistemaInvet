@@ -70,52 +70,38 @@ function SubtareaCard({
     : 'sd-item-card--libre'
 
   return (
-    <div className={`sd-item-card ${cardMod}`}>
+    <div className={`sd-item-card ext-tarea-card ${cardMod}`}>
 
-      {/* ── Fila principal (clickeable para expandir LPN) ── */}
-      <div className="oc-card-row" onClick={() => item?.lpn && setExpandido(v => !v)}>
+      {/* ── Cabecera ── */}
+      <div className="ext-tarea-header" onClick={() => item?.lpn && setExpandido(v => !v)}
+        style={{ cursor: item?.lpn ? 'pointer' : 'default' }}>
 
-        {/* Rack */}
-        <div className="sd-item-rack">
-          <span className="sd-rack-badge">
-            <IcoPin /> {rack}
+        {/* SKU + códigos + posición */}
+        <div className="ext-tarea-info">
+          <span className="ext-tarea-sku">{desc}</span>
+          <span className="ext-tarea-ean">
+            <span className="ext-tarea-ean-label">EAN</span>
+            {ean ?? '—'}
+            {rack !== 'S/U' && (
+              <span style={{ marginLeft: 8, color: 'var(--accent)', fontFamily: 'inherit', fontWeight: 600 }}>
+                <IcoPin /> {rack}
+              </span>
+            )}
           </span>
-        </div>
-
-        {/* SKU / Descripción */}
-        <div className="sd-item-sku">
-          <span className="sd-item-nombre">{desc}</span>
-          <div className="sd-item-codes">
-            <span className="sd-sku-tag">SKU: {sku}</span>
-            {ean && <span className="sd-ean-tag">EAN: {ean}</span>}
-          </div>
         </div>
 
         {/* Cantidad */}
-        <div className="oc-item-cant">
-          <strong>{total}</strong>
-          <span className="oc-item-cant-unit"> Uds</span>
+        <div className="ext-tarea-cant">
+          <span className="ext-tarea-cant-num">{total}</span>
+          <span className="ext-tarea-cant-unit">Uds</span>
         </div>
 
-        {/* Estado */}
-        <div className="sd-item-estado">
-          <span className={`sd-badge ${badgeCls}`}>
-            {esCompleta && <IcoCheck />}
-            {bloqueadaXOtro && <IcoLock />}
-            {badgeLabel}
-          </span>
-        </div>
-
-        {/* Acción — detiene propagación para no toggle expandido */}
-        <div className="sd-item-acciones" onClick={e => e.stopPropagation()}>
+        {/* Acciones */}
+        <div className="ext-tarea-actions" onClick={e => e.stopPropagation()}>
           {esCompleta ? (
-            <div className="sd-accion-btn sd-accion-btn--disabled">
-              <IcoCheck /> Completado
-            </div>
+            <span className="sd-badge sd-badge--ok"><IcoCheck /> Listo</span>
           ) : bloqueadaXOtro ? (
-            <div className="sd-accion-btn sd-accion-btn--disabled">
-              <IcoLock /> Bloqueado
-            </div>
+            <span className="sd-badge sd-badge--proceso"><IcoLock /> Ocupado</span>
           ) : esMia ? (
             <button
               className="sd-accion-btn sd-accion-btn--picking"
@@ -129,7 +115,7 @@ function SubtareaCard({
               disabled={tomandoId === sub.id}
               onClick={() => onTomar(sub)}
             >
-              <IcoScan /> {tomandoId === sub.id ? 'Tomando…' : 'Picking'}
+              {tomandoId === sub.id ? 'Tomando…' : 'Tomar'}
             </button>
           )}
         </div>
@@ -137,9 +123,13 @@ function SubtareaCard({
 
       {/* ── LPN expandible ── */}
       {expandido && item?.lpn && (
-        <div className="oc-lpn-expand">
-          <span className="oc-lpn-expand-label">LPN Destino</span>
-          <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>
+        <div className="ext-tarea-body">
+          <div className="ext-ruta">
+            <span className="ext-ruta-label">LPN Destino</span>
+            <div className="ext-ruta-chips">
+              <span className="ext-ruta-chip">{item.lpn}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

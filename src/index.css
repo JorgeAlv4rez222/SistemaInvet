@@ -1675,38 +1675,249 @@ label {
 .ola-footer-meta { margin-top: 1.25rem; display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted); }
 
 /* ── ExtraccionOlaPage ── */
-.ext-tarea-card   { flex-direction: column; align-items: stretch; gap: 0.75rem; }
-.ext-tarea-fila   { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+/* Card base */
+.ext-tarea-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Cabecera de la card: SKU + cantidad + acciones */
+.ext-tarea-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.ext-tarea-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ext-tarea-sku  { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.ext-tarea-ean  {
+  font-size: 0.72rem; font-family: monospace; letter-spacing: 0.04em;
+  color: var(--text-muted); display: flex; align-items: center; gap: 4px;
+}
+.ext-tarea-ean-label { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; }
+
+.ext-tarea-cant {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+  white-space: nowrap;
+}
+.ext-tarea-cant-num  { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ext-tarea-cant-unit { font-size: 0.68rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em; }
+
+.ext-tarea-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Cuerpo expandible (ruta, confirmar, etc.) */
+.ext-tarea-body {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
 
 /* Ruta FIFO */
-.ext-ruta         { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; border-top: 1px solid var(--border); }
-.ext-ruta-label   { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; }
-.ext-ruta-chips   { display: flex; flex-wrap: wrap; gap: 6px; }
+.ext-ruta       { display: flex; flex-direction: column; gap: 6px; }
+.ext-ruta-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
+.ext-ruta-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .ext-ruta-chip {
   display: inline-flex; align-items: center; gap: 5px;
   background: rgba(0,160,223,0.1); border: 1px solid rgba(0,160,223,0.25);
-  border-radius: var(--radius-sm); padding: 3px 8px;
-  font-size: 0.78rem; font-weight: 600; color: var(--accent);
+  border-radius: var(--radius-sm); padding: 4px 10px;
+  font-size: 0.8rem; font-weight: 600; color: var(--accent);
 }
 .ext-ruta-chip--done { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); color: var(--success); }
-.ext-ruta-cant    { font-weight: 400; color: var(--text-muted); margin-left: 3px; }
+.ext-ruta-cant { font-weight: 400; color: var(--text-muted); margin-left: 3px; }
 
 /* Confirmar inline */
-.ext-confirmar       { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-.ext-confirmar-row   { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-.ext-confirmar-label { font-size: 0.82rem; color: var(--text-secondary); white-space: nowrap; }
-.ext-confirmar-input { width: 110px; text-align: center; font-size: 1rem; font-weight: 700; }
+.ext-confirmar       { display: flex; flex-direction: column; gap: 10px; }
+.ext-confirmar-row   { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ext-confirmar-label { font-size: 0.82rem; color: var(--text-secondary); white-space: nowrap; font-weight: 600; }
+.ext-confirmar-input { width: 110px; text-align: center; font-size: 1.1rem; font-weight: 700; }
 .ext-confirmar-error { font-size: 0.78rem; color: var(--danger); margin: 0; }
-.ext-confirmar-hint  { font-size: 0.73rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+.ext-confirmar-hint  { font-size: 0.73rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
 /* Scan de validación */
-.ext-scan-input    { flex: 1; font-size: 1rem; letter-spacing: 0.05em; }
-.ext-ean-esperado  { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; font-family: monospace; }
-.ext-scan-ok       { font-size: 0.82rem; color: var(--success); font-weight: 600; margin: 0; }
+.ext-scan-input   { flex: 1; min-width: 160px; font-size: 1rem; letter-spacing: 0.05em; }
+.ext-ean-esperado { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; font-family: monospace; }
+.ext-scan-ok      { font-size: 0.84rem; color: var(--success); font-weight: 700; margin: 0; }
 
 /* Resultado completada */
-.ext-extraida         { font-size: 0.8rem; color: var(--text-secondary); padding-top: 4px; border-top: 1px solid var(--border); }
-.ext-extraida-parcial { color: var(--warning, #f59e0b); }
+.ext-extraida         { font-size: 0.8rem; color: var(--text-secondary); }
+.ext-extraida-parcial { color: var(--warning, #f59e0b); font-weight: 600; }
+
+/* ── PreparacionOlaPage (prep-) ──────────────────────────────────────────── */
+
+/* Bloque escáner */
+.prep-scanner-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 4px;
+}
+
+/* Lista de LPNs */
+.prep-lpn-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Tarjeta LPN */
+.prep-lpn-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prep-lpn-card--done {
+  opacity: 0.55;
+  border-color: rgba(34,197,94,0.3);
+}
+.prep-lpn-card--highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,160,223,0.18);
+  opacity: 1 !important;
+}
+
+/* Cabecera LPN */
+.prep-lpn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.prep-lpn-id-wrap { display: flex; flex-direction: column; gap: 2px; }
+.prep-lpn-id {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.prep-lpn-orden { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Badge estado */
+.prep-lpn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.prep-lpn-badge--ok   { background: rgba(34,197,94,0.12); color: var(--success, #22c55e); }
+.prep-lpn-badge--pend { background: rgba(0,160,223,0.10); color: var(--accent); }
+
+/* Tienda */
+.prep-lpn-tienda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Líneas de producto */
+.prep-lpn-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.prep-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.prep-linea--done .prep-linea-desc,
+.prep-linea--done .prep-linea-cant { color: var(--text-muted); text-decoration: line-through; }
+.prep-linea-desc { font-size: 0.82rem; color: var(--text-primary); flex: 1; }
+.prep-linea-cant { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+
+/* Preview inline del LPN escaneado */
+.prep-preview {
+  background: rgba(0,160,223,0.07);
+  border: 1px solid rgba(0,160,223,0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prep-preview--done {
+  background: rgba(34,197,94,0.06);
+  border-color: rgba(34,197,94,0.25);
+}
+.prep-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.prep-preview-tienda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.prep-preview-orden { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; font-weight: 400; }
+.prep-preview-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.prep-preview-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.prep-preview-cant {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Responsive tablet */
+@media (min-width: 600px) {
+  .prep-lpn-lista    { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .prep-scanner-wrap { padding: 20px 24px; }
+  .prep-lpn-card     { padding: 16px 20px; }
+  .prep-lpn-id       { font-size: 1.05rem; }
+}
+@media (min-width: 900px) {
+  .prep-lpn-lista    { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Responsive tablet */
+@media (max-width: 700px) {
+  .ext-tarea-header { grid-template-columns: 1fr auto; }
+  .ext-tarea-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .ext-tarea-cant-num { font-size: 1.05rem; }
+}
 
 .requerido { color: var(--danger); }
 .opcional  { color: var(--text-muted); font-size: var(--font-size-xs); font-weight: 400; }
@@ -6285,20 +6496,95 @@ label {
   font-size: 10px;
 }
 
-/* Filas */
-.excel-tr--par  { background: rgba(255,255,255,0.02); }
-.excel-tr--impar { background: transparent; }
-.excel-tabla tbody tr:hover { background: rgba(125,211,252,0.06); }
+/* Preview Construmart */
+.pm-prev-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.pm-prev-stat {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.pm-prev-stat strong {
+  color: var(--accent);
+}
+.pm-prev-stat-sep {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.pm-prev-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+.pm-prev-fecha-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.pm-prev-fecha-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.pm-prev-fecha-input-wrap {
+  position: relative;
+}
+.pm-prev-fecha-input {
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.pm-prev-fecha-input:focus { border-color: var(--accent); }
+.pm-prev-fecha-input::placeholder { color: var(--text-muted); }
+.pm-prev-fecha-ico {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+/* Filas — alternancia por orden, no por línea */
+.excel-tr--par   { background: rgba(0,160,223,0.06); }
+.excel-tr--impar { background: rgba(255,255,255,0.02); }
+.excel-tr--orden-inicio td { border-top: 2px solid var(--border); }
+.excel-tabla tbody tr:hover td { background: rgba(125,211,252,0.10); }
 
 .excel-td {
-  padding: 8px var(--spacing-sm);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 9px var(--spacing-sm);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   color: var(--text-primary);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+}
+.excel-td--orden {
+  font-weight: 700;
+  color: var(--accent);
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .excel-td--derecha {
   text-align: right;
@@ -13023,6 +13309,60 @@ input[type="radio"] {
   .sd-page .cola-progreso-wrap { padding: 10px 14px 6px; }
   .sd-page .sd-items-lista { padding: 10px 14px 80px; gap: 6px; }
   /* El grid de sd-item-row ya está definido en el bloque 701-1100; heredamos eso */
+}
+
+/* ── ConfirmarLpnPage (clpn-*) ──────────────────────────────── */
+.clpn-context-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 600px) {
+  .clpn-context-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.clpn-productos {
+  margin: 0 auto;
+  max-width: 640px;
+  padding: 4px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.clpn-productos-titulo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+.clpn-prod-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.clpn-prod-row:last-child { border-bottom: none; }
+.clpn-prod-info {
+  flex: 1;
+  min-width: 0;
+}
+.clpn-prod-desc {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clpn-prod-cant {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @layer base {

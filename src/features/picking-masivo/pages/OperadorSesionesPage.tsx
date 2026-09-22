@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSesionesPicking } from '../hooks/usePickingMasivo'
+import { useOlas } from '../hooks/useOlas'
 import { useRealtimeSesiones } from '../hooks/useRealtimePicking'
 import type { SesionResumen } from '../services/picking-masivo.api'
+import type { OlaResumen } from '../services/olas.api'
 
 const ROL = () => localStorage.getItem('user_rol') ?? ''
 
@@ -155,21 +157,105 @@ function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
   )
 }
 
+// ── Card de ola wave (Construmart / Imperial) ─────────────────────────────────
+
+function OlaCard({ o, rol }: { o: OlaResumen; rol: string }) {
+  const navigate   = useNavigate()
+  const [open, setOpen] = useState(false)
+  const proveedor  = o.proveedor.charAt(0).toUpperCase() + o.proveedor.slice(1)
+  const fase       = o.estado === 'en_preparacion' ? 'Preparación LPN' : 'Extracción'
+  const faseRuta   = o.estado === 'en_preparacion'
+    ? `/picking-masivo/ola/${o.id}/preparacion`
+    : `/picking-masivo/ola/${o.id}/extraccion`
+
+  return (
+    <div className="ops-card ops-card--proceso">
+      <div className="ops-card-row" onClick={() => setOpen(v => !v)} role="button" tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && setOpen(v => !v)}>
+
+        <div className="ops-card-main">
+          <span className="ops-card-cliente">{proveedor}</span>
+          <div className="ops-card-meta">
+            {o.fecha_entrega && (
+              <span className="ops-meta-item ops-meta-item--lg">
+                Entrega: <strong>{o.fecha_entrega}</strong>
+              </span>
+            )}
+            <span className="ops-meta-sep">·</span>
+            <span className="ops-meta-item">Fase: <strong>{fase}</strong></span>
+          </div>
+          <div className="ops-progreso-inline">
+            <div className="ops-barra-bg">
+              <div className="ops-barra-fill" style={{ width: '0%', background: '#22c55e' }} />
+            </div>
+            <span className="ops-progreso-inline-txt">{o.total_lineas} líneas</span>
+          </div>
+        </div>
+
+        <div className="ops-card-right">
+          <div className="ops-meta-pills-v">
+            <div className="ops-badge ops-badge--proceso">
+              <span className="ops-badge-dot" />
+              EN PROCESO
+            </div>
+          </div>
+          <span className="ops-chevron"><IcoChevron open={open} /></span>
+        </div>
+      </div>
+
+      {open && (
+        <>
+          <div className="ops-divider" />
+          <div className="ops-card-expand">
+            <button
+              className="ops-btn ops-btn--tomar"
+              onClick={e => { e.stopPropagation(); navigate(faseRuta) }}
+            >
+              UNIRSE A PICKING
+            </button>
+            {(rol === 'supervisor' || rol === 'admin') && (
+              <button
+                className="ops-btn ops-btn--auditar"
+                onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/ola/${o.id}`) }}
+              >
+                <IcoEye />
+                VER DETALLE
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Página ────────────────────────────────────────────────────────────────────
+
 export function OperadorSesionesPage() {
   const [busqueda, setBusqueda] = useState('')
-  const { data, isLoading, isError } = useSesionesPicking('en_proceso')
+  const { data: dataSes,  isLoading: loadSes,  isError: errSes  } = useSesionesPicking('en_proceso')
+  const { data: dataOlas, isLoading: loadOlas, isError: errOlas } = useOlas()
   useRealtimeSesiones()
 
   const rol      = ROL()
-  const sesiones = data ?? []
+  const sesiones = dataSes  ?? []
+  const olas     = (dataOlas ?? []).filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion')
 
-  const filtradas = busqueda
-    ? sesiones.filter(s =>
-        (s.nombre_cliente ?? '').toLowerCase().includes(busqueda.toLowerCase()) ||
-        (s.numero_oc_pedido ?? '').toLowerCase().includes(busqueda.toLowerCase()) ||
-        s.numero_oc.toLowerCase().includes(busqueda.toLowerCase())
-      )
-    : sesiones
+  const isLoading = loadSes || loadOlas
+  const isError   = errSes  || errOlas
+
+  const q = busqueda.toLowerCase()
+  const filtSes = !q ? sesiones : sesiones.filter(s =>
+    (s.nombre_cliente ?? '').toLowerCase().includes(q) ||
+    (s.numero_oc_pedido ?? '').toLowerCase().includes(q) ||
+    s.numero_oc.toLowerCase().includes(q)
+  )
+  const filtOlas = !q ? olas : olas.filter(o =>
+    o.proveedor.toLowerCase().includes(q) ||
+    (o.fecha_entrega ?? '').includes(q)
+  )
+
+  const total = filtSes.length + filtOlas.length
 
   return (
     <div className="ops-wrap">
@@ -196,16 +282,19 @@ export function OperadorSesionesPage() {
       {/* ── Estados ── */}
       {isLoading && <p className="cargando">Cargando sesiones…</p>}
       {isError   && <p className="error-msg">Error al cargar sesiones</p>}
-      {!isLoading && !isError && filtradas.length === 0 && (
+      {!isLoading && !isError && total === 0 && (
         <div className="notas-vacio">
           <p>{busqueda ? 'Sin resultados para esa búsqueda' : 'No hay sesiones activas en este momento'}</p>
         </div>
       )}
 
       {/* ── Lista ── */}
-      {!isLoading && !isError && filtradas.length > 0 && (
+      {!isLoading && !isError && total > 0 && (
         <div className="ops-lista">
-          {filtradas.map(s => (
+          {filtOlas.map(o => (
+            <OlaCard key={o.id} o={o} rol={rol} />
+          ))}
+          {filtSes.map(s => (
             <SesionCard key={s.id} s={s} rol={rol} />
           ))}
         </div>

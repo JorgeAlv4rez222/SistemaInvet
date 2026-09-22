@@ -4,7 +4,6 @@ import {
   useOla,
   useColaExtraccion,
   useTomarTarea,
-  useConfirmarExtraccion,
   useLiberarPropiasExtraccion,
 } from '../hooks/useOlas'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -43,13 +42,7 @@ function TareaCard({
   tomandoId:  string | null
   onTomar:    (tarea: TareaExtraccion) => void
 }) {
-  const [scanInput, setScanInput]   = useState<string>('')
-  const [scanOk, setScanOk]         = useState(false)
-  const [cantidad, setCantidad]     = useState<string>('')
-  const [error, setError]           = useState<string | null>(null)
-  const [confirmando, setConf]      = useState(false)
-
-  const confirmar = useConfirmarExtraccion(olaId)
+  const navigate = useNavigate()
 
   const esMia          = tarea.estado === 'bloqueado' && tarea.bloqueado_por === operadorId
   const bloqueadaXOtro = tarea.estado === 'bloqueado' && tarea.bloqueado_por !== operadorId
@@ -57,46 +50,6 @@ function TareaCard({
   const esLibre        = tarea.estado === 'libre'
 
   const ruta = tarea.ruta_sugerida ?? []
-
-  function handleScan(valor: string) {
-    setScanInput(valor)
-    setError(null)
-    const ean = tarea.codigo_barra?.trim() ?? ''
-    if (valor.trim() === ean) {
-      setScanOk(true)
-    } else if (valor.length >= ean.length && ean.length > 0) {
-      setError(`Código incorrecto. Esperado: ${ean}`)
-    }
-  }
-
-  function handleScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      const ean = tarea.codigo_barra?.trim() ?? ''
-      if (scanInput.trim() === ean) {
-        setScanOk(true)
-      } else {
-        setError(`Código incorrecto. Esperado: ${ean}`)
-      }
-    }
-  }
-
-  async function handleConfirmar() {
-    const cant = parseInt(cantidad, 10)
-    if (!Number.isFinite(cant) || cant < 0) { setError('Ingresa una cantidad válida'); return }
-    if (cant > tarea.cantidad_total) { setError(`Máximo ${tarea.cantidad_total} unidades`); return }
-    setError(null)
-    setConf(true)
-    try {
-      await confirmar.mutateAsync({ tareaId: tarea.id, usuarioId: operadorId, cantidadExtraida: cant })
-      setCantidad('')
-      setScanOk(false)
-      setScanInput('')
-    } catch (e) {
-      setError(e instanceof ApiResponseError ? e.message : 'Error al confirmar')
-    } finally {
-      setConf(false)
-    }
-  }
 
   const cardMod = esCompleta      ? 'sd-item-card--completado'
     : esMia           ? 'sd-item-card--en-progreso'
@@ -106,135 +59,81 @@ function TareaCard({
   return (
     <div className={`sd-item-card ext-tarea-card ${cardMod}`}>
 
-      {/* ── Fila resumen ── */}
-      <div className="ext-tarea-fila">
+      {/* ── Cabecera ── */}
+      <div className="ext-tarea-header">
 
-        {/* Descripción + EAN */}
-        <div className="sd-item-sku" style={{ flex: 1 }}>
-          <span className="sd-item-nombre">{tarea.descripcion}</span>
+        {/* SKU + EAN */}
+        <div className="ext-tarea-info">
+          <span className="ext-tarea-sku">{tarea.descripcion}</span>
           {tarea.codigo_barra && (
-            <span className="sd-ean-tag" style={{ marginTop: 2 }}>EAN: {tarea.codigo_barra}</span>
+            <span className="ext-tarea-ean">
+              <span className="ext-tarea-ean-label">EAN</span>
+              {tarea.codigo_barra}
+            </span>
           )}
         </div>
 
-        {/* Cantidad total */}
-        <div className="oc-item-cant" style={{ minWidth: 60 }}>
-          <strong>{tarea.cantidad_total}</strong>
-          <span className="oc-item-cant-unit"> Uds</span>
+        {/* Cantidad */}
+        <div className="ext-tarea-cant">
+          <span className="ext-tarea-cant-num">{tarea.cantidad_total}</span>
+          <span className="ext-tarea-cant-unit">Uds</span>
         </div>
 
-        {/* Badge de estado */}
-        <div className="sd-item-estado">
+        {/* Acciones / estado */}
+        <div className="ext-tarea-actions">
           {esCompleta && (
-            <span className="sd-badge sd-badge--ok"><IcoCheck /> Completado</span>
+            <span className="sd-badge sd-badge--ok"><IcoCheck /> Listo</span>
           )}
           {bloqueadaXOtro && (
-            <span className="sd-badge sd-badge--proceso"><IcoLock /> Bloqueado</span>
+            <span className="sd-badge sd-badge--proceso"><IcoLock /> Ocupado</span>
           )}
           {esMia && (
-            <span className="sd-badge sd-badge--proceso">En proceso</span>
+            <button
+              className="sd-accion-btn sd-accion-btn--picking"
+              onClick={() => navigate(`/picking-masivo/ola/${olaId}/extraccion/${tarea.id}`)}
+            >
+              Continuar
+            </button>
           )}
           {esLibre && (
-            <span className="sd-badge sd-badge--libre">Libre</span>
+            <button
+              className="sd-accion-btn sd-accion-btn--picking"
+              disabled={tomandoId === tarea.id}
+              onClick={() => onTomar(tarea)}
+            >
+              {tomandoId === tarea.id ? 'Tomando…' : 'Tomar'}
+            </button>
           )}
         </div>
-
-        {/* Acción rápida */}
-        {esLibre && (
-          <button
-            className="sd-accion-btn sd-accion-btn--picking"
-            disabled={tomandoId === tarea.id}
-            onClick={() => onTomar(tarea)}
-          >
-            {tomandoId === tarea.id ? 'Tomando…' : 'Tomar'}
-          </button>
-        )}
       </div>
 
       {/* ── Ruta FIFO sugerida ── */}
       {ruta.length > 0 && (esMia || esCompleta) && (
-        <div className="ext-ruta">
-          <span className="ext-ruta-label">Ruta FIFO sugerida</span>
-          <div className="ext-ruta-chips">
-            {ruta.map((tramo, i) => (
-              <span key={i} className={`ext-ruta-chip ${esCompleta ? 'ext-ruta-chip--done' : ''}`}>
-                <IcoPin /> {tramo.posicion_codigo}
-                <span className="ext-ruta-cant">{tramo.cantidad} u.</span>
-              </span>
-            ))}
+        <div className="ext-tarea-body">
+          <div className="ext-ruta">
+            <span className="ext-ruta-label">Ruta FIFO sugerida</span>
+            <div className="ext-ruta-chips">
+              {ruta.map((tramo, i) => (
+                <span key={i} className={`ext-ruta-chip ${esCompleta ? 'ext-ruta-chip--done' : ''}`}>
+                  <IcoPin /> {tramo.posicion_codigo}
+                  <span className="ext-ruta-cant">{tramo.cantidad} u.</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Confirmar extracción (inline) ── */}
-      {esMia && (
-        <div className="ext-confirmar">
-          {error && <p className="ext-confirmar-error">{error}</p>}
-
-          {/* Paso 1 — Escanear código de barra */}
-          {!scanOk && (
-            <>
-              <p className="ext-confirmar-label" style={{ marginBottom: 4 }}>
-                Escanea el código de barra del producto para validar
-              </p>
-              <div className="ext-confirmar-row">
-                <input
-                  type="text"
-                  className="ing-filtro-select ext-scan-input"
-                  placeholder="Escanea el EAN…"
-                  value={scanInput}
-                  onChange={e => handleScan(e.target.value)}
-                  onKeyDown={handleScanKeyDown}
-                  autoFocus
-                  autoComplete="off"
-                />
-                {tarea.codigo_barra && (
-                  <span className="ext-ean-esperado">EAN: {tarea.codigo_barra}</span>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Paso 2 — Ingresar cantidad (solo si scan válido) */}
-          {scanOk && (
-            <>
-              <p className="ext-scan-ok">✓ Producto verificado — ingresa la cantidad extraída</p>
-              <div className="ext-confirmar-row">
-                <label className="ext-confirmar-label">Cantidad extraída</label>
-                <input
-                  type="number"
-                  className="ing-filtro-select ext-confirmar-input"
-                  min={0}
-                  max={tarea.cantidad_total}
-                  placeholder={String(tarea.cantidad_total)}
-                  value={cantidad}
-                  onChange={e => { setCantidad(e.target.value); setError(null) }}
-                  onKeyDown={e => e.key === 'Enter' && handleConfirmar()}
-                  autoFocus
-                />
-                <button
-                  className="btn-primario"
-                  disabled={confirmando || !cantidad}
-                  onClick={handleConfirmar}
-                >
-                  {confirmando ? 'Guardando…' : 'Confirmar'}
-                </button>
-              </div>
-              <p className="ext-confirmar-hint">
-                Si extrajiste todo, ingresa <strong>{tarea.cantidad_total}</strong>. Si hubo falta de stock, ingresa la cantidad real.
-              </p>
-            </>
-          )}
-        </div>
-      )}
 
       {/* ── Cantidad extraída (completada) ── */}
       {esCompleta && tarea.cantidad_extraida != null && (
-        <div className="ext-extraida">
-          Extraído: <strong>{tarea.cantidad_extraida}</strong> de {tarea.cantidad_total} Uds.
-          {tarea.cantidad_extraida < tarea.cantidad_total && (
-            <span className="ext-extraida-parcial"> (diferencia: {tarea.cantidad_total - tarea.cantidad_extraida})</span>
-          )}
+        <div className="ext-tarea-body">
+          <div className="ext-extraida">
+            Extraído: <strong>{tarea.cantidad_extraida}</strong> de {tarea.cantidad_total} Uds.
+            {tarea.cantidad_extraida < tarea.cantidad_total && (
+              <span className="ext-extraida-parcial"> · diferencia: {tarea.cantidad_total - tarea.cantidad_extraida}</span>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -286,7 +185,7 @@ export function ExtraccionOlaPage() {
     setTomandoId(tarea.id)
     try {
       await tomarTarea.mutateAsync({ tareaId: tarea.id, usuarioId: operadorId })
-      setFiltro('mias')
+      navigate(`/picking-masivo/ola/${olaId}/extraccion/${tarea.id}`)
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'La tarea ya fue tomada por otro operador')
     } finally {
