@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { parsearExcelPicking, type FilaExcelPicking } from '../utils/parsearExcelPicking'
 import { parsearExcelConstrumart, consolidarSkusConstrumart, type OrdenConstrumart } from '../utils/parsearExcelConstrumart'
 import { useActivarSesion, useCrearSesion, useValidarExcel } from '../hooks/usePickingMasivo'
+import { useCrearOla, useActivarOla } from '../hooks/useOlas'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { ValidarExcelResult } from '../services/picking-masivo.api'
 
@@ -56,6 +57,8 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
   const validarExcel  = useValidarExcel()
   const crearSesion   = useCrearSesion()
   const activarSesion = useActivarSesion()
+  const crearOla      = useCrearOla()
+  const activarOla    = useActivarOla()
 
   function seleccionarProveedor(p: Proveedor) {
     setProveedor(p)
@@ -131,11 +134,16 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
     setError(null)
 
     try {
-      if (datos.tipo === 'construmart') {
-        // TODO: llamar a crearOla cuando el Cloudflare function /olas esté disponible
-        // navigate(`/picking-masivo/ola/${olaId}`)
-        setError('Flujo wave picking en implementación — disponible pronto')
-        setCreando(false)
+      if (datos.tipo === 'construmart' || datos.tipo === 'imperial') {
+        const { olaId } = await crearOla.mutateAsync({
+          usuarioId:    adminId,
+          proveedor:    datos.tipo,
+          fechaEntrega: numeroOc.trim(),
+          archivoNombre: archivo?.name ?? 'excel.xlsx',
+          ordenes:      datos.tipo === 'construmart' ? datos.ordenes : [],
+        })
+        await activarOla.mutateAsync({ olaId, usuarioId: adminId })
+        navigate(`/picking-masivo/ola/${olaId}`)
         return
       }
 
