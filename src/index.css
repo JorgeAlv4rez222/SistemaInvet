@@ -1575,19 +1575,104 @@ label {
 .pm-proveedor-desc   { font-size: 0.78rem; color: var(--text-muted); }
 
 /* ── OlaDetallePage ── */
-.pm-ola-meta {
+.ola-page { display: flex; flex-direction: column; gap: 0; }
+
+/* Breadcrumb */
+.ola-breadcrumb       { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+.ola-breadcrumb-link  { color: var(--text-muted); text-decoration: none; }
+.ola-breadcrumb-link:hover { color: var(--accent); }
+.ola-breadcrumb-actual { color: var(--text-secondary); }
+
+/* Header */
+.ola-header       { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+.ola-header-left  { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.ola-titulo       { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+/* Estado badge */
+.ola-badge           { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; font-weight: 600; border: 1px solid; white-space: nowrap; }
+.ola-badge--activa   { background: rgba(0,168,232,0.12); color: var(--accent); border-color: rgba(0,168,232,0.3); }
+.ola-badge--validando { background: rgba(234,179,8,0.12); color: #eab308; border-color: rgba(234,179,8,0.3); }
+.ola-badge--completada { background: rgba(34,197,94,0.12); color: var(--success); border-color: rgba(34,197,94,0.3); }
+.ola-badge--despachada { background: rgba(99,102,241,0.12); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+.ola-badge--cancelada  { background: rgba(239,68,68,0.12); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+
+/* KPI grid */
+.ola-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 900px) { .ola-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .ola-kpi-grid { grid-template-columns: 1fr; } }
+
+.ola-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm) var(--spacing-lg);
+  flex-direction: column;
+  gap: 4px;
+}
+.ola-kpi-card--skeleton {
+  height: 90px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.25} }
+
+.ola-kpi-icon   { color: var(--accent); margin-bottom: 2px; }
+.ola-kpi-label  { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; }
+.ola-kpi-valor  { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.ola-kpi-archivo-nombre {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* Skeleton header */
+.ola-skeleton-header { height: 36px; background: var(--surface); border-radius: var(--radius-sm); width: 60%; margin-bottom: 1.25rem; animation: pulse 1.4s ease-in-out infinite; }
+
+/* Pasos del picking */
+.ola-pasos-seccion { margin-top: 0.25rem; }
+.ola-pasos-titulo  { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; }
+.ola-pasos-lista   { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ola-paso {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
-  margin-bottom: var(--spacing-md);
+  transition: border-color 0.15s;
 }
-.pm-ola-meta-item  { display: flex; flex-direction: column; gap: 2px; }
-.pm-ola-meta-label { font-size: var(--font-size-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.pm-ola-acciones   { display: flex; gap: var(--spacing-sm); flex-wrap: wrap; margin-top: var(--spacing-sm); }
+.ola-paso--activo { border-color: var(--accent); background: rgba(0,168,232,0.04); }
+.ola-paso--hecho  { opacity: 0.65; }
+
+.ola-paso-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+  flex-shrink: 0;
+  background: var(--border);
+  color: var(--text-secondary);
+}
+.ola-paso--activo .ola-paso-num { background: var(--accent); color: #fff; }
+.ola-paso--hecho  .ola-paso-num { background: var(--success); color: #fff; }
+
+.ola-paso-body   { flex: 1; }
+.ola-paso-titulo { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 2px; }
+.ola-paso-desc   { font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+.ola-paso-btn    { flex-shrink: 0; white-space: nowrap; }
+.ola-paso-done   { flex-shrink: 0; font-size: 0.72rem; color: var(--success); font-weight: 600; }
+
+/* Footer */
+.ola-footer-meta { margin-top: 1.25rem; display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted); }
 
 .requerido { color: var(--danger); }
 .opcional  { color: var(--text-muted); font-size: var(--font-size-xs); font-weight: 400; }

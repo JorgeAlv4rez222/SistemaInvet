@@ -1,93 +1,251 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useOla } from '../hooks/useOlas'
 import { useAuth } from '../../auth/hooks/useAuth'
 
-const ESTADO_LABEL: Record<string, string> = {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const FASE_LABEL: Record<string, string> = {
   validando:      'Validando',
-  en_extraccion:  'En extracción',
-  en_preparacion: 'En preparación',
-  completada:     'Completada',
+  en_extraccion:  'Fase 1 — Extracción',
+  en_preparacion: 'Fase 2 — Preparación',
+  completada:     'Fase 3 — Despacho',
   despachada:     'Despachada',
   cancelada:      'Cancelada',
 }
 
-const ESTADO_BADGE: Record<string, string> = {
-  validando:      'badge-validando',
-  en_extraccion:  'badge-en-proceso',
-  en_preparacion: 'badge-en-proceso',
-  completada:     'badge-completado',
-  despachada:     'badge-despachado',
-  cancelada:      'badge-cancelada',
+const FASE_CLASS: Record<string, string> = {
+  validando:      'ola-badge--validando',
+  en_extraccion:  'ola-badge--activa',
+  en_preparacion: 'ola-badge--activa',
+  completada:     'ola-badge--completada',
+  despachada:     'ola-badge--despachada',
+  cancelada:      'ola-badge--cancelada',
 }
 
-function IcoBack({ size = 16 }: { size?: number }) {
+function fmt(val: string | null | undefined, fb = '—') {
+  return val ?? fb
+}
+
+// ─── Iconos ───────────────────────────────────────────────────────────────────
+
+function IcoBack() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
       <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
     </svg>
   )
 }
 
+function IcoChevron() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  )
+}
+
+function IcoExcel() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>
+    </svg>
+  )
+}
+
+function IcoBox() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={22} height={22}>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  )
+}
+
+function IcoTag() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={22} height={22}>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  )
+}
+
+function IcoCalendar() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={22} height={22}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  )
+}
+
+function IcoList() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={22} height={22}>
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+  )
+}
+
+// ─── Paso visual ─────────────────────────────────────────────────────────────
+
+type PasoProps = {
+  numero: number
+  titulo: string
+  desc:   string
+  activo: boolean
+  hecho:  boolean
+  onIr?:  () => void
+  btnLabel?: string
+}
+
+function PasoCard({ numero, titulo, desc, activo, hecho, onIr, btnLabel }: PasoProps) {
+  return (
+    <div className={`ola-paso ${activo ? 'ola-paso--activo' : ''} ${hecho ? 'ola-paso--hecho' : ''}`}>
+      <div className="ola-paso-num">
+        {hecho
+          ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={14} height={14}><polyline points="20 6 9 17 4 12"/></svg>
+          : numero
+        }
+      </div>
+      <div className="ola-paso-body">
+        <p className="ola-paso-titulo">{titulo}</p>
+        <p className="ola-paso-desc">{desc}</p>
+      </div>
+      {activo && onIr && (
+        <button className="btn-primario ola-paso-btn" onClick={onIr}>
+          {btnLabel ?? 'Ir'}
+        </button>
+      )}
+      {hecho && <span className="ola-paso-done">Completado</span>}
+    </div>
+  )
+}
+
+// ─── Página ───────────────────────────────────────────────────────────────────
+
 export function OlaDetallePage() {
-  const { id }    = useParams<{ id: string }>()
-  const navigate  = useNavigate()
-  const { sesion } = useAuth()
+  const { id }      = useParams<{ id: string }>()
+  const navigate    = useNavigate()
+  const { sesion }  = useAuth()
   const { data: ola, isLoading, error } = useOla(id ?? null)
 
-  if (isLoading) return <div className="notas-page"><p className="text-muted" style={{ padding: '2rem' }}>Cargando ola…</p></div>
-  if (error || !ola) return <div className="notas-page"><p className="error-banner">Ola no encontrada</p></div>
+  if (isLoading) {
+    return (
+      <div className="notas-page">
+        <div className="ola-skeleton-header" />
+        <div className="ola-kpi-grid">
+          {[0,1,2,3].map(i => <div key={i} className="ola-kpi-card ola-kpi-card--skeleton" />)}
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !ola) {
+    return <div className="notas-page"><p className="error-banner">Ola no encontrada</p></div>
+  }
 
   const esOperador = sesion.rol === 'operador'
+  const proveedor  = ola.proveedor.charAt(0).toUpperCase() + ola.proveedor.slice(1)
+  const titulo     = `Entrega ${proveedor}`
+
+  const faseIdx: Record<string, number> = {
+    validando: 0, en_extraccion: 1, en_preparacion: 2, completada: 3, despachada: 3,
+  }
+  const fase = faseIdx[ola.estado] ?? 0
 
   return (
-    <div className="notas-page">
-      <div className="ing-detalle-header">
-        <button className="btn-volver" onClick={() => navigate('/picking-masivo')}>
-          <IcoBack /> Volver
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <h1 className="notas-titulo">
-            Ola wave — {ola.proveedor.charAt(0).toUpperCase() + ola.proveedor.slice(1)}
-          </h1>
-          <span className={`badge ${ESTADO_BADGE[ola.estado] ?? ''}`}>
-            {ESTADO_LABEL[ola.estado] ?? ola.estado}
+    <div className="notas-page ola-page">
+
+      {/* ── Breadcrumb ── */}
+      <nav className="ola-breadcrumb">
+        <Link to="/picking-masivo" className="ola-breadcrumb-link">Olas</Link>
+        <IcoChevron />
+        <span className="ola-breadcrumb-actual">{titulo}</span>
+      </nav>
+
+      {/* ── Header ── */}
+      <div className="ola-header">
+        <div className="ola-header-left">
+          <button className="btn-volver" onClick={() => navigate('/picking-masivo')}>
+            <IcoBack /> Volver
+          </button>
+          <h1 className="ola-titulo">{titulo}</h1>
+          <span className={`ola-badge ${FASE_CLASS[ola.estado] ?? ''}`}>
+            {FASE_LABEL[ola.estado] ?? ola.estado}
           </span>
         </div>
       </div>
 
-      {/* Resumen */}
-      <div className="pm-ola-meta">
-        <div className="pm-ola-meta-item"><span className="pm-ola-meta-label">Entrega</span><span>{ola.fecha_entrega}</span></div>
-        <div className="pm-ola-meta-item"><span className="pm-ola-meta-label">Órdenes</span><span>{ola.total_ordenes}</span></div>
-        <div className="pm-ola-meta-item"><span className="pm-ola-meta-label">LPNs</span><span>{ola.total_lineas}</span></div>
-        <div className="pm-ola-meta-item"><span className="pm-ola-meta-label">Archivo</span><span style={{ fontSize: '0.8rem' }}>{ola.archivo_nombre ?? '—'}</span></div>
-        {ola.creado_por_usuario && (
-          <div className="pm-ola-meta-item"><span className="pm-ola-meta-label">Creado por</span><span>{ola.creado_por_usuario.nombre}</span></div>
-        )}
+      {/* ── KPI grid ── */}
+      <div className="ola-kpi-grid">
+        <div className="ola-kpi-card">
+          <div className="ola-kpi-icon"><IcoCalendar /></div>
+          <span className="ola-kpi-label">Entrega</span>
+          <span className="ola-kpi-valor">{fmt(ola.fecha_entrega)}</span>
+        </div>
+        <div className="ola-kpi-card">
+          <div className="ola-kpi-icon"><IcoList /></div>
+          <span className="ola-kpi-label">Órdenes</span>
+          <span className="ola-kpi-valor">{ola.total_ordenes}</span>
+        </div>
+        <div className="ola-kpi-card">
+          <div className="ola-kpi-icon"><IcoTag /></div>
+          <span className="ola-kpi-label">LPNs</span>
+          <span className="ola-kpi-valor">{ola.total_lineas}</span>
+        </div>
+        <div className="ola-kpi-card ola-kpi-card--archivo">
+          <div className="ola-kpi-icon"><IcoExcel /></div>
+          <span className="ola-kpi-label">Archivo</span>
+          <span className="ola-kpi-archivo-nombre">{fmt(ola.archivo_nombre)}</span>
+        </div>
       </div>
 
-      {/* Acciones por fase */}
-      <div className="pm-ola-acciones">
-        {ola.estado === 'en_extraccion' && (
-          <button className="btn-primario" onClick={() => navigate(`/picking-masivo/ola/${id}/extraccion`)}>
-            Ir a extracción (Fase 1)
-          </button>
+      {/* ── Pasos del picking ── */}
+      {ola.estado !== 'cancelada' && (
+        <section className="ola-pasos-seccion">
+          <h2 className="ola-pasos-titulo">Pasos del picking</h2>
+          <div className="ola-pasos-lista">
+            <PasoCard
+              numero={1} titulo="Extracción consolidada"
+              desc="Los operadores extraen el total de unidades por SKU desde las posiciones FIFO."
+              activo={ola.estado === 'en_extraccion'}
+              hecho={fase > 1}
+              onIr={() => navigate(`/picking-masivo/ola/${id}/extraccion`)}
+              btnLabel="Ir a extracción (Fase 1)"
+            />
+            <PasoCard
+              numero={2} titulo="Preparación y asignación LPN"
+              desc="El operador escanea cada LPN para asignar las cajas a cada tienda destino."
+              activo={ola.estado === 'en_preparacion'}
+              hecho={fase > 2}
+              onIr={() => navigate(`/picking-masivo/ola/${id}/preparacion`)}
+              btnLabel="Ir a preparación (Fase 2)"
+            />
+            {!esOperador && (
+              <PasoCard
+                numero={3} titulo="Validación y despacho"
+                desc="El supervisor valida los LPNs escaneados y autoriza el despacho al transportista."
+                activo={ola.estado === 'completada'}
+                hecho={ola.estado === 'despachada'}
+                onIr={() => navigate(`/picking-masivo/ola/${id}/despacho`)}
+                btnLabel="Ir a despacho (Fase 3)"
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Pie de página (creado por / despachado por) ── */}
+      <div className="ola-footer-meta">
+        {ola.creado_por_usuario && (
+          <span>Creado por <strong>{ola.creado_por_usuario.nombre}</strong></span>
         )}
-        {ola.estado === 'en_preparacion' && (
-          <button className="btn-primario" onClick={() => navigate(`/picking-masivo/ola/${id}/preparacion`)}>
-            Ir a preparación LPN (Fase 2)
-          </button>
-        )}
-        {ola.estado === 'completada' && !esOperador && (
-          <button className="btn-primario" onClick={() => navigate(`/picking-masivo/ola/${id}/despacho`)}>
-            Ir a despacho (Fase 3)
-          </button>
-        )}
-        {ola.estado === 'despachada' && (
-          <p className="text-muted" style={{ padding: '1rem 0' }}>
-            Ola despachada el {new Date(ola.despachada_en!).toLocaleDateString('es-CL')}
-            {ola.nombre_chofer ? ` · Chofer: ${ola.nombre_chofer}` : ''}
-          </p>
+        {ola.despachada_en && ola.nombre_chofer && (
+          <span>Despachado · Chofer: <strong>{ola.nombre_chofer}</strong></span>
         )}
       </div>
     </div>
