@@ -43,9 +43,11 @@ function TareaCard({
   tomandoId:  string | null
   onTomar:    (tarea: TareaExtraccion) => void
 }) {
-  const [cantidad, setCantidad]   = useState<string>('')
-  const [error, setError]         = useState<string | null>(null)
-  const [confirmando, setConf]    = useState(false)
+  const [scanInput, setScanInput]   = useState<string>('')
+  const [scanOk, setScanOk]         = useState(false)
+  const [cantidad, setCantidad]     = useState<string>('')
+  const [error, setError]           = useState<string | null>(null)
+  const [confirmando, setConf]      = useState(false)
 
   const confirmar = useConfirmarExtraccion(olaId)
 
@@ -56,6 +58,28 @@ function TareaCard({
 
   const ruta = tarea.ruta_sugerida ?? []
 
+  function handleScan(valor: string) {
+    setScanInput(valor)
+    setError(null)
+    const ean = tarea.codigo_barra?.trim() ?? ''
+    if (valor.trim() === ean) {
+      setScanOk(true)
+    } else if (valor.length >= ean.length && ean.length > 0) {
+      setError(`Código incorrecto. Esperado: ${ean}`)
+    }
+  }
+
+  function handleScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      const ean = tarea.codigo_barra?.trim() ?? ''
+      if (scanInput.trim() === ean) {
+        setScanOk(true)
+      } else {
+        setError(`Código incorrecto. Esperado: ${ean}`)
+      }
+    }
+  }
+
   async function handleConfirmar() {
     const cant = parseInt(cantidad, 10)
     if (!Number.isFinite(cant) || cant < 0) { setError('Ingresa una cantidad válida'); return }
@@ -65,6 +89,8 @@ function TareaCard({
     try {
       await confirmar.mutateAsync({ tareaId: tarea.id, usuarioId: operadorId, cantidadExtraida: cant })
       setCantidad('')
+      setScanOk(false)
+      setScanInput('')
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al confirmar')
     } finally {
@@ -144,30 +170,61 @@ function TareaCard({
       {esMia && (
         <div className="ext-confirmar">
           {error && <p className="ext-confirmar-error">{error}</p>}
-          <div className="ext-confirmar-row">
-            <label className="ext-confirmar-label">Cantidad extraída</label>
-            <input
-              type="number"
-              className="ing-filtro-select ext-confirmar-input"
-              min={0}
-              max={tarea.cantidad_total}
-              placeholder={String(tarea.cantidad_total)}
-              value={cantidad}
-              onChange={e => { setCantidad(e.target.value); setError(null) }}
-              onKeyDown={e => e.key === 'Enter' && handleConfirmar()}
-              autoFocus
-            />
-            <button
-              className="btn-primario"
-              disabled={confirmando || !cantidad}
-              onClick={handleConfirmar}
-            >
-              {confirmando ? 'Guardando…' : 'Confirmar'}
-            </button>
-          </div>
-          <p className="ext-confirmar-hint">
-            Si extrajiste todo, ingresa <strong>{tarea.cantidad_total}</strong>. Si hubo falta de stock, ingresa la cantidad real.
-          </p>
+
+          {/* Paso 1 — Escanear código de barra */}
+          {!scanOk && (
+            <>
+              <p className="ext-confirmar-label" style={{ marginBottom: 4 }}>
+                Escanea el código de barra del producto para validar
+              </p>
+              <div className="ext-confirmar-row">
+                <input
+                  type="text"
+                  className="ing-filtro-select ext-scan-input"
+                  placeholder="Escanea el EAN…"
+                  value={scanInput}
+                  onChange={e => handleScan(e.target.value)}
+                  onKeyDown={handleScanKeyDown}
+                  autoFocus
+                  autoComplete="off"
+                />
+                {tarea.codigo_barra && (
+                  <span className="ext-ean-esperado">EAN: {tarea.codigo_barra}</span>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Paso 2 — Ingresar cantidad (solo si scan válido) */}
+          {scanOk && (
+            <>
+              <p className="ext-scan-ok">✓ Producto verificado — ingresa la cantidad extraída</p>
+              <div className="ext-confirmar-row">
+                <label className="ext-confirmar-label">Cantidad extraída</label>
+                <input
+                  type="number"
+                  className="ing-filtro-select ext-confirmar-input"
+                  min={0}
+                  max={tarea.cantidad_total}
+                  placeholder={String(tarea.cantidad_total)}
+                  value={cantidad}
+                  onChange={e => { setCantidad(e.target.value); setError(null) }}
+                  onKeyDown={e => e.key === 'Enter' && handleConfirmar()}
+                  autoFocus
+                />
+                <button
+                  className="btn-primario"
+                  disabled={confirmando || !cantidad}
+                  onClick={handleConfirmar}
+                >
+                  {confirmando ? 'Guardando…' : 'Confirmar'}
+                </button>
+              </div>
+              <p className="ext-confirmar-hint">
+                Si extrajiste todo, ingresa <strong>{tarea.cantidad_total}</strong>. Si hubo falta de stock, ingresa la cantidad real.
+              </p>
+            </>
+          )}
         </div>
       )}
 

@@ -1699,6 +1699,11 @@ label {
 .ext-confirmar-error { font-size: 0.78rem; color: var(--danger); margin: 0; }
 .ext-confirmar-hint  { font-size: 0.73rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
 
+/* Scan de validación */
+.ext-scan-input    { flex: 1; font-size: 1rem; letter-spacing: 0.05em; }
+.ext-ean-esperado  { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; font-family: monospace; }
+.ext-scan-ok       { font-size: 0.82rem; color: var(--success); font-weight: 600; margin: 0; }
+
 /* Resultado completada */
 .ext-extraida         { font-size: 0.8rem; color: var(--text-secondary); padding-top: 4px; border-top: 1px solid var(--border); }
 .ext-extraida-parcial { color: var(--warning, #f59e0b); }
