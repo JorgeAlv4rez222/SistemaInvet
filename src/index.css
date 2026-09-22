@@ -1549,6 +1549,31 @@ label {
   white-space: nowrap;
 }
 
+/* ── Paso selección de proveedor (picking masivo) ── */
+.pm-upload-subtitulo { color: var(--text-secondary); margin-bottom: var(--spacing-md); font-size: var(--font-size-sm); }
+.pm-proveedor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+.pm-proveedor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 1.5rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+.pm-proveedor-card:hover { border-color: var(--accent); background: rgba(0,160,223,0.07); }
+.pm-proveedor-nombre { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.pm-proveedor-desc   { font-size: 0.78rem; color: var(--text-muted); }
+
 .requerido { color: var(--danger); }
 .opcional  { color: var(--text-muted); font-size: var(--font-size-xs); font-weight: 400; }
 
