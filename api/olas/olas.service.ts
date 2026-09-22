@@ -25,6 +25,7 @@ export type OrdenOlaInput = {
 export type CrearOlaInput = {
   proveedor:      ProveedorOla
   archivoNombre:  string
+  fechaEntrega?:  string
   usuarioId:      string
   ordenes:        OrdenOlaInput[]
 }
@@ -222,12 +223,16 @@ export const olasService = {
     }
 
     // Insertar cabecera de la ola
+    const totalOrdenes = new Set(input.ordenes.map(o => o.numeroOrden)).size
+
     const { data: ola, error: olaErr } = await supabase
       .from('olas_picking')
       .insert({
         proveedor:      input.proveedor,
         archivo_nombre: input.archivoNombre,
+        fecha_entrega:  input.fechaEntrega || null,
         estado:         'validando',
+        total_ordenes:  totalOrdenes,
         total_lineas:   totalLineas,
         creado_por:     input.usuarioId,
       })
@@ -404,7 +409,7 @@ export const olasService = {
   async listarOlas(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase
       .from('olas_picking')
-      .select('id, proveedor, archivo_nombre, estado, total_lineas, creado_por, creado_en, activada_en, completada_en, despachado_en, nombre_chofer')
+      .select('id, proveedor, archivo_nombre, fecha_entrega, estado, total_ordenes, total_lineas, creado_por, creado_en, activada_en, completada_en, despachado_en, nombre_chofer')
       .order('creado_en', { ascending: false })
 
     if (estado) q = q.eq('estado', estado)
