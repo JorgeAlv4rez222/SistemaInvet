@@ -98,11 +98,13 @@ type PasoProps = {
   desc:   string
   activo: boolean
   hecho:  boolean
+  verDetalle?: boolean
   onIr?:  () => void
   btnLabel?: string
 }
 
-function PasoCard({ numero, titulo, desc, activo, hecho, onIr, btnLabel }: PasoProps) {
+function PasoCard({ numero, titulo, desc, activo, hecho, verDetalle, onIr, btnLabel }: PasoProps) {
+  const mostrarBtn = onIr && (activo || (hecho && verDetalle))
   return (
     <div className={`ola-paso ${activo ? 'ola-paso--activo' : ''} ${hecho ? 'ola-paso--hecho' : ''}`}>
       <div className="ola-paso-num">
@@ -115,12 +117,12 @@ function PasoCard({ numero, titulo, desc, activo, hecho, onIr, btnLabel }: PasoP
         <p className="ola-paso-titulo">{titulo}</p>
         <p className="ola-paso-desc">{desc}</p>
       </div>
-      {activo && onIr && (
+      {mostrarBtn && (
         <button className="btn-primario ola-paso-btn" onClick={onIr}>
-          {btnLabel ?? 'Ir'}
+          {activo && verDetalle ? 'Ver monitoreo' : (hecho && verDetalle) ? 'Ver detalle' : (btnLabel ?? 'Ir')}
         </button>
       )}
-      {hecho && <span className="ola-paso-done">Completado</span>}
+      {hecho && !mostrarBtn && <span className="ola-paso-done">Completado</span>}
     </div>
   )
 }
@@ -207,6 +209,7 @@ export function OlaDetallePage() {
               desc="El Personal extrae el total de unidades por SKU."
               activo={ola.estado === 'en_extraccion'}
               hecho={fase > 1}
+              verDetalle={!esOperador}
               onIr={() => navigate(`/picking-masivo/ola/${id}/extraccion`)}
               btnLabel="Picking"
             />
@@ -215,8 +218,9 @@ export function OlaDetallePage() {
               desc="El personal escanea cada LPN para asignar los SKU a cada tienda destino."
               activo={ola.estado === 'en_preparacion'}
               hecho={fase > 2}
+              verDetalle={!esOperador}
               onIr={() => navigate(`/picking-masivo/ola/${id}/preparacion`)}
-              btnLabel="Ir a preparación (Fase 2)"
+              btnLabel="Asignar LPN"
             />
             {sesion.rol === 'supervisor' && (
               <PasoCard
