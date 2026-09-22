@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOla } from '../hooks/useOlas'
-import { useAuth } from '../../../shared/hooks/useAuth'
+import { useAuth } from '../../auth/hooks/useAuth'
 
 const ESTADO_LABEL: Record<string, string> = {
   validando:      'Validando',
