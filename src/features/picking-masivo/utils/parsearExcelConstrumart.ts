@@ -53,11 +53,21 @@ function strCell(fila: Celda[], idx: number): string {
   if (idx === -1) return ''
   const v = fila[idx]
   if (v === null || v === undefined) return ''
-  return String(v).trim()
+  if (typeof v === 'number') {
+    // Evitar notación científica y sufijo .0 para enteros grandes
+    return Number.isInteger(v) ? String(v) : String(Math.round(v))
+  }
+  return String(v).trim().replace(/\.0$/, '')
 }
 
 function numCell(fila: Celda[], idx: number): number {
-  const s = strCell(fila, idx).replace(/[.,](?=\d{3}(?:[.,]|$))/g, '').replace(',', '.')
+  if (idx === -1) return NaN
+  const v = fila[idx]
+  // Si XLSX retornó el valor numérico real (raw: true), usarlo directamente
+  if (typeof v === 'number') return v
+  if (v === null || v === undefined) return NaN
+  // Fallback para string: eliminar separadores de miles y normalizar decimal
+  const s = String(v).trim().replace(/\./g, '').replace(',', '.')
   return parseFloat(s)
 }
 
@@ -66,9 +76,9 @@ function numCell(fila: Celda[], idx: number): number {
 export async function parsearExcelConstrumart(file: File): Promise<ResultadoParseConstrumart> {
   const errores: string[] = []
   const buffer = await file.arrayBuffer()
-  const wb     = XLSX.read(buffer, { type: 'array', cellText: true, cellDates: false })
+  const wb     = XLSX.read(buffer, { type: 'array', cellDates: false })
   const ws     = wb.Sheets[wb.SheetNames[0]]
-  const data   = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null, raw: false })
+  const data   = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null, raw: true })
 
   // Buscar fila de encabezados (primera fila con contenido)
   const headerRow = data.find(f => f.some(c => c !== null && c !== ''))
