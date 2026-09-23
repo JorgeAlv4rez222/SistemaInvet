@@ -190,17 +190,17 @@ export function OperadorSesionesPage() {
       </div>
 
       {/* ── Búsqueda ── */}
-      <div className="pm-admin-toolbar">
-        <div className="pm-t-search-wrap">
-          <span className="pm-t-search-ico"><IcoBuscar /></span>
+      <div className="pm-admin-search-row">
+        <div className="pm-admin-search-wrap">
+          <span className="pm-admin-search-ico"><IcoBuscar /></span>
           <input
-            className="pm-t-search"
+            className="pm-admin-search"
             placeholder="Buscar por cliente o proveedor…"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
           />
           {busqueda && (
-            <button className="pm-t-search-clear" onClick={() => setBusqueda('')}>✕</button>
+            <button className="pm-admin-search-clear" onClick={() => setBusqueda('')}>✕</button>
           )}
         </div>
       </div>
