@@ -57,7 +57,7 @@ function LpnCard({ lpn, lineas }: { lpn: string; lineas: LineaDespacho[] }) {
         <div className="prep-lpn-meta">
           {validado
             ? <span className="prep-lpn-badge prep-lpn-badge--ok"><IcoCheck /> Validado</span>
-            : <span className="prep-lpn-badge prep-lpn-badge--pend">{lineas.length} línea{lineas.length !== 1 ? 's' : ''} · {totalUds} Uds</span>
+            : <span className="prep-lpn-badge prep-lpn-badge--pend">{totalUds} Uds</span>
           }
         </div>
       </div>
@@ -283,17 +283,17 @@ export function DespachoOlaPage() {
           <div className="desp-modal" onClick={e => e.stopPropagation()}>
             <h3 className="desp-modal-titulo">Confirmar bulto</h3>
             <div className="desp-modal-fila">
-              <span className="desp-modal-label">LPN</span>
-              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--accent">{lpnPendiente.lpn}</span>
+              <span className="desp-modal-label desp-modal-label--white">LPN</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip">{lpnPendiente.lpn}</span>
             </div>
-            <div className="desp-modal-fila">
-              <span className="desp-modal-label">Tienda destino</span>
-              <span className="desp-modal-valor">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
+            <div className="desp-modal-fila desp-modal-fila--sep">
+              <span className="desp-modal-label desp-modal-label--white">Tienda destino</span>
+              <span className="desp-modal-valor desp-modal-valor--white">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
             </div>
             <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
               {lpnPendiente.lineas.map(l => (
                 <div key={l.id} className="desp-modal-fila">
-                  <span className="desp-modal-label" style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--accent)' }}>{l.descripcion}</span>
+                  <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip" style={{ fontSize: '0.85rem' }}>{l.descripcion}</span>
                   <span className="desp-modal-valor desp-modal-valor--xl">{l.cantidad_solicitada} Uds</span>
                 </div>
               ))}
