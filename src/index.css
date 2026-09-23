@@ -1699,6 +1699,10 @@ label {
   background: #22c55e;
   flex-shrink: 0;
 }
+.ola-monitor-banner--f3 {
+  border-color: rgba(245,158,11,0.25);
+  background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, transparent 60%);
+}
 .ola-monitor-barra-bg {
   height: 8px;
   border-radius: 4px;

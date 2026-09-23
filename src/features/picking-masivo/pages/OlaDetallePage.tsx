@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useOla, useColaExtraccion, useLineasPreparacion } from '../hooks/useOlas'
+import { useOla, useColaExtraccion, useLineasPreparacion, useLineasDespacho } from '../hooks/useOlas'
 import { useAuth } from '../../auth/hooks/useAuth'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -144,8 +144,9 @@ export function OlaDetallePage() {
   const esAdmin = sesion.rol === 'admin'
   const enFase  = ola?.estado === 'en_extraccion' || ola?.estado === 'en_preparacion'
 
-  const { data: tareas }       = useColaExtraccion(esAdmin && enFase ? (id ?? null) : null)
-  const { data: lineasF2 }     = useLineasPreparacion(esAdmin && ola?.estado === 'en_preparacion' ? (id ?? null) : null)
+  const { data: tareas }   = useColaExtraccion(esAdmin && enFase ? (id ?? null) : null)
+  const { data: lineasF2 } = useLineasPreparacion(esAdmin && ola?.estado === 'en_preparacion' ? (id ?? null) : null)
+  const { data: lineasF3 } = useLineasDespacho(esAdmin && (ola?.estado === 'completada' || ola?.estado === 'despachada') ? (id ?? null) : null)
 
   if (isLoading) {
     return (
@@ -275,6 +276,84 @@ export function OlaDetallePage() {
                   : <><strong>{cntCompF1}</strong> / {listaF1.length} SKUs · {pctF1}%</>
                 }
               </span>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Monitoreo Fase 3 (solo admin, completada o despachada) ── */}
+      {esAdmin && (ola.estado === 'completada' || ola.estado === 'despachada') && (() => {
+        const lista = (lineasF3 ?? []) as any[]
+        const validadas = lista.filter(l => l.fase3_validado)
+        const pendientes = lista.filter(l => !l.fase3_validado)
+        const pct = lista.length > 0 ? Math.round((validadas.length / lista.length) * 100) : 0
+
+        // Supervisores únicos que validaron algo
+        const supervisores = [...new Map(
+          validadas
+            .filter(l => l.fase3_por_nombre)
+            .map(l => [l.fase3_por_nombre, l])
+        ).values()]
+
+        const isDespachada = ola.estado === 'despachada'
+
+        return (
+          <div className="ola-monitor-banner ola-monitor-banner--f3">
+            <div className="ola-monitor-col ola-monitor-col--ops">
+              <span className="ola-monitor-titulo">
+                {isDespachada ? '✅ VALIDADO POR' : '👁 SUPERVISANDO DESPACHO'}
+              </span>
+              {supervisores.length === 0 ? (
+                <span className="ola-monitor-vacio">
+                  {isDespachada ? 'Sin registro de supervisor' : 'Sin supervisor activo aún'}
+                </span>
+              ) : (
+                <div className="ola-monitor-ops">
+                  {supervisores.map((l: any) => {
+                    // Para despachada: mostrar auditoría — quién, qué LPN, cuándo
+                    // Para completada: mostrar quién está trabajando y último LPN
+                    const ultimoLpn = validadas
+                      .filter(v => v.fase3_por_nombre === l.fase3_por_nombre)
+                      .sort((a: any, b: any) => (b.fase3_en ?? '').localeCompare(a.fase3_en ?? ''))
+                    const ultimo = ultimoLpn[0]
+                    const hora = ultimo?.fase3_en
+                      ? new Date(ultimo.fase3_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+                      : null
+                    const fecha = ultimo?.fase3_en
+                      ? new Date(ultimo.fase3_en).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' })
+                      : null
+                    return (
+                      <div key={l.fase3_por_nombre} className="ola-monitor-op-row">
+                        <span className="ola-monitor-avatar"><IcoUser /></span>
+                        <div className="ola-monitor-op-info">
+                          <span className="ola-monitor-op-nombre">{l.fase3_por_nombre}</span>
+                          {ultimo && (
+                            <span className="ola-monitor-op-sku">
+                              LPN {ultimo.lpn}
+                              {fecha && hora && <> · {fecha} {hora}</>}
+                            </span>
+                          )}
+                        </div>
+                        <span className="ola-monitor-op-dot" style={{ background: isDespachada ? '#22c55e' : '#f59e0b' }} />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="ola-monitor-col ola-monitor-col--prog">
+              <span className="ola-monitor-titulo">AVANCE FASE 3</span>
+              <div className="ola-monitor-barra-bg">
+                <div className="ola-monitor-barra-fill" style={{ width: `${pct}%`, background: isDespachada ? '#22c55e' : undefined }} />
+              </div>
+              <span className="ola-monitor-uds">
+                <strong>{validadas.length}</strong> / {lista.length} LPNs validados · {pct}%
+              </span>
+              {pendientes.length > 0 && !isDespachada && (
+                <span style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+                  {pendientes.length} LPN{pendientes.length > 1 ? 's' : ''} pendiente{pendientes.length > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
           </div>
         )

@@ -113,14 +113,25 @@ export const olasDespachoService = {
       .from('ola_lineas')
       .select(`
         id, lpn, tienda, descripcion, cantidad_solicitada,
-        fase2_escaneado, fase3_validado, fase3_en,
+        fase2_escaneado, fase3_validado, fase3_por, fase3_en,
         ola_ordenes ( numero_orden )
       `)
       .eq('ola_id', olaId)
       .order('lpn', { ascending: true })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
-    return { ok: true, data: data ?? [] }
+
+    const ids = [...new Set((data ?? []).filter(l => l.fase3_por).map(l => l.fase3_por))]
+    let nombresMap: Record<string, string> = {}
+    if (ids.length > 0) {
+      const { data: usuarios } = await supabase.from('usuarios').select('id, nombre').in('id', ids)
+      for (const u of usuarios ?? []) nombresMap[u.id] = u.nombre
+    }
+    const result = (data ?? []).map(l => ({
+      ...l,
+      fase3_por_nombre: l.fase3_por ? (nombresMap[l.fase3_por] ?? null) : null,
+    }))
+    return { ok: true, data: result }
   },
 
   // ── Resumen de progreso Fase 3 ────────────────────────────────────────────
