@@ -165,7 +165,7 @@ export function OlaDetallePage() {
       {/* ── Header ── */}
       <div className="ola-header">
         <div className="ola-header-left">
-          <button className="btn-volver" onClick={() => navigate('/picking-masivo')}>
+          <button className="btn-volver" onClick={() => navigate(esOperador ? '/picking-masivo/operador' : '/picking-masivo')}>
             <IcoBack /> Volver
           </button>
           <h1 className="ola-titulo">{titulo}</h1>

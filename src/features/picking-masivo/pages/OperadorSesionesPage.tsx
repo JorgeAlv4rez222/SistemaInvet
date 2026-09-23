@@ -209,7 +209,7 @@ function OlaCard({ o, rol }: { o: OlaResumen; rol: string }) {
           <div className="ops-card-expand">
             <button
               className="ops-btn ops-btn--tomar"
-              onClick={e => { e.stopPropagation(); navigate(faseRuta) }}
+              onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/ola/${o.id}`) }}
             >
               UNIRSE A PICKING
             </button>
