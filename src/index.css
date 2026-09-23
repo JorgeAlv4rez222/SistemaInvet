@@ -9921,6 +9921,30 @@ input[type="radio"] {
 .cf-carga-total-btn--confirm:hover:not(:disabled) { opacity: 0.9; }
 .cf-carga-total-btn--confirm:disabled { opacity: 0.45; cursor: not-allowed; }
 
+.desp-despachar-wrap {
+  padding: 16px;
+}
+.desp-despachar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 24px;
+  background: #22c55e;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+  transition: opacity 0.15s;
+}
+.desp-despachar-btn svg { flex-shrink: 0; width: 22px; height: 22px; }
+.desp-despachar-btn:hover { opacity: 0.9; }
+
 /* Labels y textarea */
 
 .cf-label {

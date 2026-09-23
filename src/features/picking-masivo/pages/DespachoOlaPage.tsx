@@ -225,7 +225,7 @@ export function DespachoOlaPage() {
       {/* ── Todos validados ── */}
       {todosOk && (
         <div className="cf-scan-ok" style={{ margin: '12px 16px', fontSize: '1rem' }}>
-          <IcoCheck /> Todos los LPNs validados — listo para despachar
+          <IcoCheck /> Orden lista para Despachar
         </div>
       )}
 
@@ -268,13 +268,15 @@ export function DespachoOlaPage() {
 
       {/* ── Botón despachar ── */}
       {todosOk && (
-        <button
-          className="cf-carga-total-btn cf-carga-total-btn--confirm"
-          style={{ margin: '16px' }}
-          onClick={() => setChofer(true)}
-        >
-          <IcoTruck /> Despachar Carga
-        </button>
+        <div className="desp-despachar-wrap">
+          <button
+            className="desp-despachar-btn"
+            onClick={() => setChofer(true)}
+          >
+            <IcoTruck />
+            <span>Despachar Carga</span>
+          </button>
+        </div>
       )}
 
       {/* ── Modal: confirmar LPN ── */}
