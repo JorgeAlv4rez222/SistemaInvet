@@ -89,6 +89,11 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const result = await olasPreparacionService.lineasPendientes(id)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }
+    if (accion === 'lineas-despacho') {
+      if (!id) return json({ error: 'Falta id de ola' }, 400)
+      const result = await olasDespachoService.lineasDespacho(id)
+      return result.ok ? json(result.data) : json({ error: result.error }, 500)
+    }
     if (accion === 'resumen-despacho') {
       if (!id) return json({ error: 'Falta id de ola' }, 400)
       const result = await olasDespachoService.resumenDespacho(id)
