@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useColaExtraccion, useConfirmarExtraccion, useTomarTarea } from '../hooks/useOlas'
+import { productosApi } from '../../productos/services/productos.api'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
+import type { ProductoConEquivalentes } from '../../../shared/types/servicios'
+
+type ProductoBase = ProductoConEquivalentes['equivalentes'][number]
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +24,12 @@ function IcoCheck() {
 }
 function IcoWarn() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+}
+function IcoTool() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+}
+function IcoScan() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -61,20 +71,47 @@ export function ConfirmarExtraccionOlaPage() {
   const ruta        = tarea?.ruta_sugerida ?? []
   const primerRack  = ruta[0]?.posicion_codigo ?? null
 
-  const [barcode, setBarcode]       = useState('')
-  const [barcodeOk, setBarcodeOk]   = useState(false)
-  const [cantidad, setCantidad]     = useState('')
-  const [error, setError]           = useState<string | null>(null)
-  const [confirmando, setConf]      = useState(false)
-  const barcodeRef                  = useRef<HTMLInputElement>(null)
+  // ── Estado formulario ──
+  const [barcode, setBarcode]                     = useState('')
+  const [barcodeOk, setBarcodeOk]                 = useState(false)
+  const [cantidad, setCantidad]                   = useState('')
+  const [error, setError]                         = useState<string | null>(null)
+  const [confirmando, setConf]                    = useState(false)
+
+  // ── Estado equivalentes ──
+  const [equivalenteActivo, setEquivalenteActivo] = useState(false)
+  const [opcionesEq, setOpcionesEq]               = useState<ProductoBase[]>([])
+  const [equivalenteSel, setEquivalenteSel]       = useState<ProductoBase | null>(null)
+  const [loadingEq, setLoadingEq]                 = useState(false)
+
+  // ── Estado sin stock ──
+  const [sinStockMode, setSinStockMode]           = useState(false)
+
+  const barcodeRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!tarea) return
-    if (!codigoBarra) { setBarcodeOk(true); return }
+    const targetEan = equivalenteSel?.codigo_barra ?? codigoBarra
+    if (!targetEan) { setBarcodeOk(true); return }
     setBarcodeOk(false)
     setBarcode('')
     setTimeout(() => barcodeRef.current?.focus(), 100)
-  }, [tarea?.id])
+  }, [tarea?.id, equivalenteSel?.id])
+
+  // Cargar equivalentes cuando el panel está activo
+  useEffect(() => {
+    if (!equivalenteActivo || !tarea) { setOpcionesEq([]); return }
+    let vigente = true
+    setLoadingEq(true)
+    // Buscar por codigo_barra del producto
+    const ean = tarea.codigo_barra
+    if (!ean) { setOpcionesEq([]); setLoadingEq(false); return }
+    productosApi.getByCodigoBarra(ean)
+      .then(res => { if (vigente) setOpcionesEq(res?.equivalentes ?? []) })
+      .catch(() => { if (vigente) setOpcionesEq([]) })
+      .finally(() => { if (vigente) setLoadingEq(false) })
+    return () => { vigente = false }
+  }, [equivalenteActivo, tarea?.id])
 
   function handleScan(val: string) {
     const v = val.replace(/\D/g, '')
@@ -84,9 +121,10 @@ export function ConfirmarExtraccionOlaPage() {
   }
 
   function validarBarcode(val: string) {
-    if (!codigoBarra) { setBarcodeOk(true); setError(null); return }
+    const targetEan = equivalenteSel?.codigo_barra ?? codigoBarra
+    if (!targetEan) { setBarcodeOk(true); setError(null); return }
     const norm = (s: string) => s.replace(/^0+/, '')
-    if (norm(val.trim()) === norm(codigoBarra)) { setBarcodeOk(true); setError(null) }
+    if (norm(val.trim()) === norm(targetEan)) { setBarcodeOk(true); setError(null) }
     else setError('Código incorrecto. Escanea el producto correcto.')
   }
 
@@ -101,6 +139,19 @@ export function ConfirmarExtraccionOlaPage() {
       navigate(`/picking-masivo/ola/${olaId}/extraccion`)
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al confirmar')
+    } finally {
+      setConf(false)
+    }
+  }
+
+  async function handleSinStock() {
+    setConf(true)
+    setError(null)
+    try {
+      await confirmar.mutateAsync({ tareaId: tarea!.id, usuarioId: operadorId, cantidadExtraida: 0 })
+      navigate(`/picking-masivo/ola/${olaId}/extraccion`)
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al reportar sin stock')
     } finally {
       setConf(false)
     }
@@ -152,6 +203,8 @@ export function ConfirmarExtraccionOlaPage() {
   const cantTotal = tarea.cantidad_total
   const cantNum   = parseInt(cantidad, 10) || 0
 
+  const eanActivo = equivalenteSel?.codigo_barra ?? codigoBarra
+
   return (
     <div className="cf-page">
 
@@ -177,9 +230,14 @@ export function ConfirmarExtraccionOlaPage() {
         </div>
         <div className="cf-context-block cf-context-block--producto">
           <span className="cf-block-label"><IcoBox /> PRODUCTO</span>
-          <span className="cf-prod-desc">{tarea.descripcion || '—'}</span>
+          <span className="cf-prod-desc">
+            {equivalenteSel
+              ? `${equivalenteSel.sku}${equivalenteSel.nombre && equivalenteSel.nombre !== equivalenteSel.sku ? ` — ${equivalenteSel.nombre}` : ''}`
+              : (tarea.descripcion || '—')
+            }
+          </span>
           <div className="cf-prod-codes">
-            {codigoBarra && <span className="cf-ean-tag">EAN: {codigoBarra}</span>}
+            {eanActivo && <span className="cf-ean-tag">EAN: {eanActivo}</span>}
           </div>
         </div>
       </div>
@@ -192,74 +250,171 @@ export function ConfirmarExtraccionOlaPage() {
 
       {error && <div className="cf-error-banner"><IcoWarn /> {error}</div>}
 
-      {/* ── Escáner ── */}
-      {!barcodeOk && (
-        <div className="cf-scanner-section">
-          <div className="cf-scanner-header">
-            <span className="cf-scanner-label">Escanea el código de barra del producto</span>
-          </div>
-          <div className="cf-scanner-input-row">
-            <input
-              ref={barcodeRef}
-              type="text"
-              inputMode="numeric"
-              className={`cf-scanner-input ${error && !barcodeOk ? 'cf-scanner-input--error' : ''}`}
-              placeholder="Pistolear EAN / Código de Barra aquí…"
-              value={barcode}
-              onChange={e => handleScan(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && validarBarcode(barcode)}
-              autoComplete="off"
-            />
-            <BarcodeScanner
-              title="Escanear con cámara"
-              onDetected={codigo => { setBarcode(codigo); validarBarcode(codigo) }}
-            />
-          </div>
+      {/* ── Modo sin stock ── */}
+      {sinStockMode ? (
+        <div className="cf-acciones">
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 8 }}>
+            Se registrará <strong>0 unidades extraídas</strong> para este SKU.
+          </p>
           <button
-            className="cf-btn cf-btn--verify"
-            disabled={!barcode.trim()}
-            onClick={() => validarBarcode(barcode)}
+            className="cf-btn cf-btn--sinstock cf-btn--xl"
+            disabled={confirmando}
+            onClick={handleSinStock}
           >
-            Verificar código
+            <IcoWarn /> {confirmando ? 'Registrando…' : 'CONFIRMAR SIN STOCK'}
+          </button>
+          <button
+            className="cf-btn cf-btn--secondary"
+            disabled={confirmando}
+            onClick={() => { setSinStockMode(false); setError(null) }}
+          >
+            Cancelar
           </button>
         </div>
-      )}
+      ) : (
+        <>
+          {/* ── Panel de equivalentes ── */}
+          {equivalenteActivo && (
+            <div className="cf-equivalente-panel">
+              <div className="cf-equivalente-panel-header">
+                <span className="cf-equivalente-panel-titulo">Selecciona el equivalente</span>
+                <button className="cf-equivalente-panel-cerrar" onClick={() => setEquivalenteActivo(false)}>✕</button>
+              </div>
+              {loadingEq && <p className="cargando" style={{ padding: '12px 0' }}>Buscando equivalentes…</p>}
+              {!loadingEq && opcionesEq.length === 0 && (
+                <p className="cf-equivalente-vacio">Sin equivalentes registrados para este SKU</p>
+              )}
+              {!loadingEq && opcionesEq.map(p => (
+                <button
+                  key={p.id}
+                  className={`cf-eq-card ${equivalenteSel?.id === p.id ? 'cf-eq-card--sel' : ''}`}
+                  onClick={() => {
+                    setEquivalenteSel(p)
+                    setEquivalenteActivo(false)
+                    setBarcodeOk(false)
+                    setBarcode('')
+                    setError(null)
+                    setTimeout(() => barcodeRef.current?.focus(), 100)
+                  }}
+                >
+                  <span className="cf-eq-sku">{p.sku}</span>
+                  {p.nombre && p.nombre !== p.sku && <span className="cf-eq-nombre">{p.nombre}</span>}
+                  {p.codigo_barra && <span className="cf-eq-ean">EAN: {p.codigo_barra}</span>}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {barcodeOk && (
-        <div className="cf-scan-ok"><IcoCheck /> Producto escaneado correctamente</div>
-      )}
+          {/* Banner: equivalente activo */}
+          {equivalenteSel && (
+            <div className="cf-equivalente-activo-banner">
+              <IcoTool />
+              <span>Equivalente: <strong>{equivalenteSel.sku}</strong></span>
+              <button
+                className="cf-equivalente-quitar"
+                onClick={() => {
+                  setEquivalenteSel(null)
+                  setBarcodeOk(false)
+                  setBarcode('')
+                  setTimeout(() => barcodeRef.current?.focus(), 100)
+                }}
+              >
+                Quitar
+              </button>
+            </div>
+          )}
 
-      {/* ── Control de cantidad ── */}
-      {barcodeOk && (
-        <div className="cf-cantidad-section">
-          <p className="cf-cantidad-label">Ingrese cantidad:</p>
-          <div className="cf-qty-control">
-            <button className="cf-qty-btn" disabled={cantNum <= 0}
-              onClick={() => setCantidad(String(Math.max(0, cantNum - 1)))}>−</button>
-            <input
-              type="number"
-              className="cf-qty-input"
-              inputMode="numeric"
-              min={0}
-              max={cantTotal}
-              value={cantidad}
-              onChange={e => { setCantidad(e.target.value.replace(/\D/g, '')); setError(null) }}
-              onKeyDown={e => e.key === 'Enter' && handleConfirmar()}
-            />
-            <button className="cf-qty-btn" disabled={cantNum >= cantTotal}
-              onClick={() => setCantidad(String(Math.min(cantTotal, cantNum + 1)))}>+</button>
-            <button className="cf-qty-btn cf-qty-btn--max" disabled={cantNum === cantTotal}
-              onClick={() => setCantidad(String(cantTotal))}>Max</button>
+          {/* ── Escáner ── */}
+          {!barcodeOk && (
+            <div className="cf-scanner-section">
+              <div className="cf-scanner-header">
+                <span className="cf-scanner-label">Escanea el código de barra del producto</span>
+              </div>
+              <div className="cf-scanner-input-row">
+                <input
+                  ref={barcodeRef}
+                  type="text"
+                  inputMode="numeric"
+                  className={`cf-scanner-input ${error && !barcodeOk ? 'cf-scanner-input--error' : ''}`}
+                  placeholder="Pistolear EAN / Código de Barra aquí…"
+                  value={barcode}
+                  onChange={e => handleScan(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && validarBarcode(barcode)}
+                  autoComplete="off"
+                />
+                <BarcodeScanner
+                  title="Escanear con cámara"
+                  onDetected={codigo => { setBarcode(codigo); validarBarcode(codigo) }}
+                />
+              </div>
+              <button
+                className="cf-btn cf-btn--verify"
+                disabled={!barcode.trim()}
+                onClick={() => validarBarcode(barcode)}
+              >
+                Verificar código
+              </button>
+            </div>
+          )}
+
+          {barcodeOk && (
+            <div className="cf-scan-ok"><IcoCheck /> Producto escaneado correctamente</div>
+          )}
+
+          {/* ── Control de cantidad ── */}
+          {barcodeOk && (
+            <div className="cf-cantidad-section">
+              <p className="cf-cantidad-label">Ingrese cantidad:</p>
+              <div className="cf-qty-control">
+                <button className="cf-qty-btn" disabled={cantNum <= 0}
+                  onClick={() => setCantidad(String(Math.max(0, cantNum - 1)))}>−</button>
+                <input
+                  type="number"
+                  className="cf-qty-input"
+                  inputMode="numeric"
+                  min={0}
+                  max={cantTotal}
+                  value={cantidad}
+                  onChange={e => { setCantidad(e.target.value.replace(/\D/g, '')); setError(null) }}
+                  onKeyDown={e => e.key === 'Enter' && handleConfirmar()}
+                />
+                <button className="cf-qty-btn" disabled={cantNum >= cantTotal}
+                  onClick={() => setCantidad(String(Math.min(cantTotal, cantNum + 1)))}>+</button>
+                <button className="cf-qty-btn cf-qty-btn--max" disabled={cantNum === cantTotal}
+                  onClick={() => setCantidad(String(cantTotal))}>Max</button>
+              </div>
+
+              <button
+                className="cf-carga-total-btn cf-carga-total-btn--confirm"
+                disabled={confirmando || !cantidad}
+                onClick={handleConfirmar}
+              >
+                {confirmando ? 'Guardando…' : 'Confirmar'}
+              </button>
+            </div>
+          )}
+
+          {/* ── Acciones secundarias ── */}
+          <div className="cf-acciones">
+            <button
+              className={`cf-btn cf-btn--equivalente ${equivalenteActivo ? 'cf-btn--equivalente-activo' : ''}`}
+              onClick={() => {
+                setEquivalenteActivo(v => !v)
+                if (equivalenteActivo) return
+                setEquivalenteSel(null)
+                setOpcionesEq([])
+              }}
+            >
+              <IcoScan /> {equivalenteActivo ? 'Cerrar equivalente' : 'Ver equivalente'}
+            </button>
+            <button
+              className="cf-btn cf-btn--warn"
+              onClick={() => { setSinStockMode(true); setError(null) }}
+            >
+              <IcoWarn /> Reportar sin stock
+            </button>
           </div>
-
-          <button
-            className="cf-carga-total-btn cf-carga-total-btn--confirm"
-            disabled={confirmando || !cantidad}
-            onClick={handleConfirmar}
-          >
-            {confirmando ? 'Guardando…' : 'Confirmar'}
-          </button>
-        </div>
+        </>
       )}
     </div>
   )
