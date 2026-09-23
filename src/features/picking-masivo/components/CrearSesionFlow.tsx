@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { parsearExcelPicking, type FilaExcelPicking } from '../utils/parsearExcelPicking'
 import { parsearExcelConstrumart, consolidarSkusConstrumart, type OrdenConstrumart } from '../utils/parsearExcelConstrumart'
+import { parsearExcelImperial } from '../utils/parsearExcelImperial'
 import { useActivarSesion, useCrearSesion, useValidarExcel } from '../hooks/usePickingMasivo'
 import { useCrearOla, useActivarOla } from '../hooks/useOlas'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
@@ -13,8 +14,8 @@ type Paso      = 'proveedor' | 'upload' | 'preview' | 'validado'
 type Proveedor = 'sodimac' | 'imperial' | 'construmart'
 
 type DatosParseo =
-  | { tipo: 'sodimac' | 'imperial'; filas: FilaExcelPicking[] }
-  | { tipo: 'construmart'; ordenes: OrdenConstrumart[] }
+  | { tipo: 'sodimac'; filas: FilaExcelPicking[] }
+  | { tipo: 'imperial' | 'construmart'; ordenes: OrdenConstrumart[] }
 
 const ALERTA_LABELS: Record<string, string> = {
   sin_catalogo:       'Sin catálogo',
@@ -23,8 +24,8 @@ const ALERTA_LABELS: Record<string, string> = {
 }
 
 const COLUMNAS_PROVEEDOR: Record<Proveedor, string[]> = {
-  sodimac:    ['UPC', 'VIN', 'DESCRIPCIÓN', 'CANTIDAD'],
-  imperial:   ['UPC', 'LPN', 'CÓDIGO', 'DESCRIPCIÓN', 'CANTIDAD'],
+  sodimac:     ['UPC', 'VIN', 'DESCRIPCIÓN', 'CANTIDAD'],
+  imperial:    ['OC', 'TIENDA', 'EAN13', 'Cod Proveedor', 'Cantidad', 'LPN'],
   construmart: ['Núm. Orden', 'Guia', 'LPN', 'Cód. Empaque', 'Cod. PLU SAP', 'Cod. Proveedor', 'Nombre Local Destino', 'Unidades Solicitadas'],
 }
 
@@ -82,6 +83,14 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
         }
         if (res.errores.length > 0) setError(res.errores.join(' — '))
         setDatos({ tipo: 'construmart', ordenes: res.ordenes })
+      } else if (proveedor === 'imperial') {
+        const res = await parsearExcelImperial(file)
+        if (res.errores.length > 0 && res.totalLineas === 0) {
+          setError(res.errores.join(' — '))
+          return
+        }
+        if (res.errores.length > 0) setError(res.errores.join(' — '))
+        setDatos({ tipo: 'imperial', ordenes: res.ordenes })
       } else {
         const res = await parsearExcelPicking(file)
         if (res.errores.length > 0) {
@@ -103,9 +112,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
     setError(null)
 
     try {
-      if (datos.tipo === 'construmart') {
-        // Wave picking — flujo separado (Cloudflare function /olas en construcción)
-        // Por ahora avanzamos al paso 'validado' con resumen de SKUs
+      if (datos.tipo === 'construmart' || datos.tipo === 'imperial') {
         setPaso('validado')
         return
       }
@@ -140,7 +147,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           proveedor:    datos.tipo,
           fechaEntrega: numeroOc.trim(),
           archivoNombre: archivo?.name ?? 'excel.xlsx',
-          ordenes:      datos.tipo === 'construmart' ? datos.ordenes : [],
+          ordenes:      datos.ordenes,
         })
         await activarOla.mutateAsync({ olaId, usuarioId: adminId })
         navigate(`/picking-masivo/ola/${olaId}`)
@@ -174,9 +181,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
   }
 
   const totalLineas = datos
-    ? datos.tipo === 'construmart'
-      ? datos.ordenes.reduce((s, o) => s + o.lineas.length, 0)
-      : datos.filas.length
+    ? datos.tipo === 'sodimac'
+      ? datos.filas.length
+      : datos.ordenes.reduce((s, o) => s + o.lineas.length, 0)
     : 0
 
   return (
@@ -250,32 +257,19 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       {/* ── Paso 3: Preview ── */}
       {paso === 'preview' && datos && (
         <div className="paso">
-          {/* Datos de la sesión — Sodimac/Imperial */}
-          {(datos.tipo === 'sodimac' || datos.tipo === 'imperial') && (
+          {/* Datos de la sesión — Sodimac */}
+          {datos.tipo === 'sodimac' && (
             <>
-              {datos.tipo === 'sodimac' && (
-                <div className="ing-filtro-grupo">
-                  <span className="ing-filtro-label">Número de OC <span style={{ color: 'var(--danger)' }}>*</span></span>
-                  <input
-                    className="ing-filtro-select"
-                    value={numeroOcPedido}
-                    onChange={(e) => setNumeroOcPedido(e.target.value)}
-                    placeholder="Ej: 4500012345"
-                    autoFocus
-                  />
-                </div>
-              )}
-              {datos.tipo === 'imperial' && (
-                <div className="ing-filtro-grupo">
-                  <span className="ing-filtro-label">Número de OC <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>(opcional)</span></span>
-                  <input
-                    className="ing-filtro-select"
-                    value={numeroOcPedido}
-                    onChange={(e) => setNumeroOcPedido(e.target.value)}
-                    placeholder="Ej: 718"
-                  />
-                </div>
-              )}
+              <div className="ing-filtro-grupo">
+                <span className="ing-filtro-label">Número de OC <span style={{ color: 'var(--danger)' }}>*</span></span>
+                <input
+                  className="ing-filtro-select"
+                  value={numeroOcPedido}
+                  onChange={(e) => setNumeroOcPedido(e.target.value)}
+                  placeholder="Ej: 4500012345"
+                  autoFocus
+                />
+              </div>
               <div className="ing-filtro-grupo">
                 <span className="ing-filtro-label">Fecha de entrega</span>
                 <input
@@ -309,6 +303,52 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                         {datos.filas.some((f2) => f2.tienda)      && <td className="excel-td">{f.tienda ?? '—'}</td>}
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* Preview Imperial — agrupado por OC */}
+          {datos.tipo === 'imperial' && (
+            <>
+              <p className="pm-prev-titulo">Detalle completo de planilla Imperial</p>
+              <div className="pm-prev-fecha-wrap">
+                <label className="pm-prev-fecha-label">Fecha de entrega</label>
+                <div className="pm-prev-fecha-input-wrap">
+                  <input
+                    className="pm-prev-fecha-input"
+                    value={numeroOc}
+                    onChange={(e) => setNumeroOc(e.target.value)}
+                    placeholder="Ej: 28-09-2026"
+                    autoFocus
+                  />
+                  <span className="pm-prev-fecha-ico">📅</span>
+                </div>
+              </div>
+              <div className="excel-tabla-wrap">
+                <table className="excel-tabla">
+                  <thead>
+                    <tr>
+                      <th className="excel-th">OC</th>
+                      <th className="excel-th">LPN</th>
+                      <th className="excel-th">SKU Proveedor</th>
+                      <th className="excel-th">Tienda</th>
+                      <th className="excel-th excel-th--derecha">Uds.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datos.ordenes.flatMap((o, oi) =>
+                      o.lineas.map((l, li) => (
+                        <tr key={`${oi}-${li}`} className={`${oi % 2 === 0 ? 'excel-tr--par' : 'excel-tr--impar'}${li === 0 ? ' excel-tr--orden-inicio' : ''}`}>
+                          {li === 0 && <td className="excel-td excel-td--orden" rowSpan={o.lineas.length}>{o.numeroOrden}</td>}
+                          <td className="excel-td" style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{l.lpn}</td>
+                          <td className="excel-td">{l.skuProveedor}</td>
+                          <td className="excel-td">{l.tienda}</td>
+                          <td className="excel-td excel-td--derecha">{l.cantidadSolicitada}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -403,12 +443,12 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
             </>
           )}
 
-          {/* Construmart — resumen wave */}
-          {datos?.tipo === 'construmart' && (
+          {/* Construmart / Imperial — resumen wave */}
+          {(datos?.tipo === 'construmart' || datos?.tipo === 'imperial') && (
             <div className="pm-validado-resumen">
-              <p>Sesión lista para crear</p>
+              <p>Ola lista para crear</p>
               <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: 4 }}>
-                {datos.ordenes.length} órdenes · {totalLineas} LPNs ·{' '}
+                {datos.ordenes.length} OC{datos.ordenes.length !== 1 ? 's' : ''} · {totalLineas} LPNs ·{' '}
                 {consolidarSkusConstrumart(datos.ordenes).length} SKUs consolidados
               </p>
             </div>
