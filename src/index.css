@@ -1635,6 +1635,72 @@ label {
 /* Skeleton header */
 .ola-skeleton-header { height: 36px; background: var(--surface); border-radius: var(--radius-sm); width: 60%; margin-bottom: 1.25rem; animation: pulse 1.4s ease-in-out infinite; }
 
+/* ── Monitoreo admin ── */
+.ola-monitor-banner {
+  display: flex;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.ola-monitor-col {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ola-monitor-col--ops  { flex: 1; border-right: 1px solid var(--border); }
+.ola-monitor-col--prog { flex: 1; }
+.ola-monitor-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.ola-monitor-vacio { font-size: 0.85rem; color: var(--text-secondary); }
+.ola-monitor-ops   { display: flex; flex-direction: column; gap: 8px; }
+.ola-monitor-op-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ola-monitor-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,160,223,0.15);
+  color: #00A0DF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ola-monitor-op-info  { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.ola-monitor-op-nombre { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+.ola-monitor-op-sku    { font-size: 0.75rem; color: var(--text-secondary); }
+.ola-monitor-op-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+.ola-monitor-barra-bg {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.ola-monitor-barra-fill {
+  height: 100%;
+  background: #00A0DF;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.ola-monitor-uds { font-size: 0.85rem; color: var(--text-secondary); }
+
 /* Pasos del picking */
 .ola-pasos-seccion { margin-top: 0.25rem; }
 .ola-pasos-titulo  { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; }

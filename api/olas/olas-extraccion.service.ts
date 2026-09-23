@@ -24,7 +24,10 @@ export const olasExtraccionService = {
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
 
-    const ids = [...new Set((data ?? []).filter(t => t.completado_por).map(t => t.completado_por))]
+    const ids = [...new Set((data ?? [])
+      .flatMap(t => [t.completado_por, t.bloqueado_por])
+      .filter(Boolean)
+    )]
     let nombresMap: Record<string, string> = {}
     if (ids.length > 0) {
       const { data: usuarios } = await supabase.from('usuarios').select('id, nombre').in('id', ids)
@@ -33,6 +36,7 @@ export const olasExtraccionService = {
     const result = (data ?? []).map(t => ({
       ...t,
       completado_por_nombre: t.completado_por ? (nombresMap[t.completado_por] ?? null) : null,
+      bloqueado_por_nombre:  t.bloqueado_por  ? (nombresMap[t.bloqueado_por]  ?? null) : null,
     }))
     return { ok: true, data: result }
   },

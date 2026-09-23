@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useOla } from '../hooks/useOlas'
+import { useOla, useColaExtraccion } from '../hooks/useOlas'
 import { useAuth } from '../../auth/hooks/useAuth'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -32,6 +32,13 @@ function IcoBack() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
       <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+    </svg>
+  )
+}
+function IcoUser() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
     </svg>
   )
 }
@@ -134,6 +141,9 @@ export function OlaDetallePage() {
   const navigate    = useNavigate()
   const { sesion }  = useAuth()
   const { data: ola, isLoading, error } = useOla(id ?? null)
+  const { data: tareas } = useColaExtraccion(
+    sesion.rol === 'admin' && (ola?.estado === 'en_extraccion' || ola?.estado === 'en_preparacion') ? (id ?? null) : null
+  )
 
   if (isLoading) {
     return (
@@ -151,6 +161,7 @@ export function OlaDetallePage() {
   }
 
   const esOperador = sesion.rol === 'operador'
+  const esAdmin    = sesion.rol === 'admin'
   const proveedor  = ola.proveedor.charAt(0).toUpperCase() + ola.proveedor.slice(1)
   const titulo     = `Entrega ${proveedor}`
 
@@ -192,12 +203,59 @@ export function OlaDetallePage() {
           <span className="ola-kpi-label">LPNs</span>
           <span className="ola-kpi-valor">{ola.total_lineas}</span>
         </div>
-        <div className="ola-kpi-card ola-kpi-card--archivo">
-          <div className="ola-kpi-icon"><IcoExcel /></div>
-          <span className="ola-kpi-label">Archivo</span>
-          <span className="ola-kpi-archivo-nombre">{fmt(ola.archivo_nombre)}</span>
-        </div>
+        {!esOperador && sesion.rol !== 'supervisor' && (
+          <div className="ola-kpi-card ola-kpi-card--archivo">
+            <div className="ola-kpi-icon"><IcoExcel /></div>
+            <span className="ola-kpi-label">Archivo</span>
+            <span className="ola-kpi-archivo-nombre">{fmt(ola.archivo_nombre)}</span>
+          </div>
+        )}
       </div>
+
+      {/* ── Monitoreo (solo admin, ola en proceso) ── */}
+      {esAdmin && (ola.estado === 'en_extraccion' || ola.estado === 'en_preparacion') && (() => {
+        const lista = (tareas ?? []) as import('../services/olas.api').TareaExtraccion[]
+        const enProceso = lista.filter(t => t.estado === 'bloqueado')
+        const opIds = [...new Set(enProceso.map(t => t.bloqueado_por).filter(Boolean) as string[])]
+        const cntComp = lista.filter(t => t.estado === 'completado').length
+        const pct = lista.length > 0 ? Math.round((cntComp / lista.length) * 100) : 0
+
+        return (
+          <div className="ola-monitor-banner">
+            <div className="ola-monitor-col ola-monitor-col--ops">
+              <span className="ola-monitor-titulo">👥 OPERADORES EN ZONA ({opIds.length})</span>
+              {opIds.length === 0 ? (
+                <span className="ola-monitor-vacio">Sin operadores activos</span>
+              ) : (
+                <div className="ola-monitor-ops">
+                  {opIds.map(opId => {
+                    const tarea = enProceso.find(t => t.bloqueado_por === opId)
+                    return (
+                      <div key={opId} className="ola-monitor-op-row">
+                        <span className="ola-monitor-avatar"><IcoUser /></span>
+                        <div className="ola-monitor-op-info">
+                          <span className="ola-monitor-op-nombre">{(tarea as any)?.bloqueado_por_nombre ?? opId.slice(0, 8)}</span>
+                          {tarea && <span className="ola-monitor-op-sku">Extrayendo: {tarea.descripcion}</span>}
+                        </div>
+                        <span className="ola-monitor-op-dot" />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="ola-monitor-col ola-monitor-col--prog">
+              <span className="ola-monitor-titulo">AVANCE FASE 1</span>
+              <div className="ola-monitor-barra-bg">
+                <div className="ola-monitor-barra-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="ola-monitor-uds">
+                <strong>{cntComp}</strong> / {lista.length} SKUs · {pct}%
+              </span>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Pasos del picking ── */}
       {ola.estado !== 'cancelada' && (

@@ -33,6 +33,7 @@ export type TareaExtraccion = {
   completado_por:        string | null
   completado_en:         string | null
   completado_por_nombre: string | null
+  bloqueado_por_nombre:  string | null
 }
 
 export type LineaLpn = {
