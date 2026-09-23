@@ -102,6 +102,9 @@ export const olasApi = {
     apiClient.post<{ lineasMarcadas: number; lpn: string }>('/olas?accion=escanear-lpn-f2', { olaId, lpn, usuarioId }),
 
   // Fase 3 — Despacho
+  lineasDespacho: (olaId: string) =>
+    apiClient.get<any[]>(`/olas?accion=lineas-despacho&id=${olaId}`),
+
   resumenDespacho: (olaId: string) =>
     apiClient.get<{ totalLineas: number; validadas: number; pendientes: number; porcentaje: number }>(
       `/olas?accion=resumen-despacho&id=${olaId}`,

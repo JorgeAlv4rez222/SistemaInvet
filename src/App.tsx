@@ -29,6 +29,7 @@ import { ExtraccionOlaPage }           from './features/picking-masivo/pages/Ext
 import { ConfirmarExtraccionOlaPage }  from './features/picking-masivo/pages/ConfirmarExtraccionOlaPage'
 import { PreparacionOlaPage }          from './features/picking-masivo/pages/PreparacionOlaPage'
 import { ConfirmarLpnPage }            from './features/picking-masivo/pages/ConfirmarLpnPage'
+import { DespachoOlaPage }             from './features/picking-masivo/pages/DespachoOlaPage'
 import { UsuariosPage }          from './features/usuarios/pages/UsuariosPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -70,6 +71,7 @@ export default function App() {
       <Route path="/picking-masivo/ola/:id/extraccion/:tareaId"    element={<Protected><ConfirmarExtraccionOlaPage /></Protected>} />
       <Route path="/picking-masivo/ola/:id/preparacion"            element={<Protected><PreparacionOlaPage /></Protected>} />
       <Route path="/picking-masivo/ola/:id/preparacion/:lpn"      element={<Protected><ConfirmarLpnPage /></Protected>} />
+      <Route path="/picking-masivo/ola/:id/despacho"             element={<Protected><DespachoOlaPage /></Protected>} />
       <Route path="/picking-masivo/:id"    element={<Protected><SesionDetallePage /></Protected>} />
 
       {/* Picking masivo — operador */}

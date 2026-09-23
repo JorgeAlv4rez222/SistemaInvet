@@ -107,6 +107,22 @@ export const olasDespachoService = {
     return { ok: true, data: { olaId } }
   },
 
+  // ── Líneas con estado Fase 3 ─────────────────────────────────────────────
+  async lineasDespacho(olaId: string): Promise<ServiceResult<unknown[]>> {
+    const { data, error } = await supabase
+      .from('ola_lineas')
+      .select(`
+        id, lpn, tienda, descripcion, cantidad_solicitada,
+        fase2_escaneado, fase3_validado, fase3_en,
+        ola_ordenes ( numero_orden )
+      `)
+      .eq('ola_id', olaId)
+      .order('lpn', { ascending: true })
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: data ?? [] }
+  },
+
   // ── Resumen de progreso Fase 3 ────────────────────────────────────────────
   async resumenDespacho(olaId: string): Promise<ServiceResult<{
     totalLineas:    number

@@ -82,6 +82,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const result = await olasPreparacionService.lineasPendientes(id)
       return result.ok ? res.json(result.data) : res.status(500).json({ error: result.error })
     }
+    if (accion === 'lineas-despacho') {
+      if (!id) return res.status(400).json({ error: 'Falta id de ola' })
+      const result = await olasDespachoService.lineasDespacho(id)
+      return result.ok ? res.json(result.data) : res.status(500).json({ error: result.error })
+    }
     if (accion === 'resumen-despacho') {
       if (!id) return res.status(400).json({ error: 'Falta id de ola' })
       const result = await olasDespachoService.resumenDespacho(id)

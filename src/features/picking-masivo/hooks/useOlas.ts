@@ -109,6 +109,16 @@ export function useEscanearLpnF2(olaId: string) {
 
 // ─── Fase 3 — Despacho ───────────────────────────────────────────────────────
 
+export function useLineasDespacho(olaId: string | null) {
+  return useQuery({
+    queryKey:        ['olas', 'despacho-lineas', olaId],
+    queryFn:         () => olasApi.lineasDespacho(olaId!),
+    enabled:         !!olaId,
+    staleTime:       0,
+    refetchInterval: 4000,
+  })
+}
+
 export function useResumenDespacho(olaId: string | null) {
   return useQuery({
     queryKey:        ['olas', 'despacho', olaId],

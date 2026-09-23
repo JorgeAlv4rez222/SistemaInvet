@@ -229,7 +229,7 @@ export function OlaDetallePage() {
                 activo={ola.estado === 'completada'}
                 hecho={ola.estado === 'despachada'}
                 onIr={() => navigate(`/picking-masivo/ola/${id}/despacho`)}
-                btnLabel="Ir a despacho (Fase 3)"
+                btnLabel="Validar Carga"
               />
             )}
           </div>
