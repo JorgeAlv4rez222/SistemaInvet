@@ -13479,6 +13479,21 @@ input[type="radio"] {
   }
 }
 
+.clpn-col-derecha {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.clpn-sub-card {
+  flex: 1;
+}
+.clpn-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
 .clpn-productos {
   margin: 0 auto;
   max-width: 640px;

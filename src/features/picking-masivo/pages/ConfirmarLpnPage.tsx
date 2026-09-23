@@ -94,22 +94,25 @@ export function ConfirmarLpnPage() {
           <span className="cf-block-label"><IcoStore /> TIENDA DESTINO</span>
           <span className="cf-prod-desc">{tienda}</span>
         </div>
-        <div className="cf-context-block cf-context-block--producto">
-          <span className="cf-block-label">CÓDIGO</span>
+        <div className="clpn-col-derecha">
           {lineas.length === 1 ? (
             <>
-              <span className="cf-prod-desc" style={{ fontSize: '0.85rem' }}>{lineas[0].descripcion}</span>
-              <div className="cf-prod-codes" style={{ marginTop: 8 }}>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Cantidad: {lineas[0].cantidad_solicitada}
-                </span>
+              <div className="cf-context-block cf-context-block--producto clpn-sub-card">
+                <span className="cf-block-label">CÓDIGO</span>
+                <span className="clpn-val">{lineas[0].descripcion}</span>
+              </div>
+              <div className="cf-context-block cf-context-block--producto clpn-sub-card">
+                <span className="cf-block-label">CANTIDAD</span>
+                <span className="clpn-val">{lineas[0].cantidad_solicitada}</span>
               </div>
             </>
           ) : (
             lineas.map(l => (
-              <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.descripcion}</span>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>Cantidad: {l.cantidad_solicitada}</span>
+              <div key={l.id} className="cf-context-block cf-context-block--producto clpn-sub-card">
+                <span className="cf-block-label">CÓDIGO</span>
+                <span className="clpn-val" style={{ fontSize: '0.9rem' }}>{l.descripcion}</span>
+                <span className="cf-block-label" style={{ marginTop: 6 }}>CANTIDAD</span>
+                <span className="clpn-val">{l.cantidad_solicitada}</span>
               </div>
             ))
           )}
