@@ -78,7 +78,7 @@ export function ConfirmarLpnPage() {
       </div>
 
       {/* ── Bloque LPN ── */}
-      <div className="cf-context-grid clpn-context-grid">
+      <div className="clpn-context-grid">
         <div className="cf-context-block cf-context-block--rack">
           <span className="cf-block-label"><IcoBox /> LPN</span>
           <span className="cf-rack-codigo" style={{ fontSize: '0.9rem', letterSpacing: '0.02em', color: 'var(--text-primary)' }}>

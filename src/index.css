@@ -13312,11 +13312,31 @@ input[type="radio"] {
 }
 
 /* ── ConfirmarLpnPage (clpn-*) ──────────────────────────────── */
+/* LPN arriba full-width, luego 2 cols */
 .clpn-context-grid {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "lpn"
+    "tienda"
+    "codigo";
 }
-@media (min-width: 600px) {
-  .clpn-context-grid { grid-template-columns: repeat(3, 1fr); }
+.clpn-context-grid > :nth-child(1) { grid-area: lpn; }
+.clpn-context-grid > :nth-child(2) { grid-area: tienda; }
+.clpn-context-grid > :nth-child(3) { grid-area: codigo; }
+
+@media (min-width: 500px) {
+  .clpn-context-grid {
+    max-width: 800px;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "lpn    lpn"
+      "tienda codigo";
+  }
 }
 
 .clpn-productos {
