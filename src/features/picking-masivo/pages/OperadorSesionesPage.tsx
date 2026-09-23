@@ -148,7 +148,11 @@ function FilaOp({ fila }: { fila: FilaOp }) {
 
       {/* Acciones */}
       <td className="pm-t-td pm-t-td--acciones">
-        <button className="pm-t-btn pm-t-btn--monitor" onClick={handleUnirse}>
+        <button
+          className="pm-t-btn pm-t-btn--monitor"
+          disabled={fila.estado === 'completada' || fila.estado === 'despachada'}
+          onClick={handleUnirse}
+        >
           <IcoJoin /> Unirse a Picking
         </button>
       </td>

@@ -87,7 +87,7 @@ function normalizarOla(o: OlaResumen): FilaUnificada {
 const ESTADO_CFG: Record<EstadoAdmin, { label: string; cls: string; dot: string }> = {
   libre:      { label: 'EN PROCESO',    cls: 'pm-badge--proceso',    dot: '#22c55e' },
   en_proceso: { label: 'EN PROCESO',    cls: 'pm-badge--proceso',    dot: '#22c55e' },
-  completada: { label: 'COMPLETADA',    cls: 'pm-badge--completada', dot: '#38bdf8' },
+  completada: { label: 'REQUIERE VALIDACIÓN', cls: 'pm-badge--validacion', dot: '#f59e0b' },
   despachada: { label: 'DESPACHADA',    cls: 'pm-badge--despachada', dot: '#a78bfa' },
   cancelada:  { label: 'CANCELADA',     cls: 'pm-badge--cancelada',  dot: '#f87171' },
   validando:  { label: 'VALIDANDO',     cls: 'pm-badge--validando',  dot: '#94a3b8' },

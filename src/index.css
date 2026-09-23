@@ -11807,7 +11807,8 @@ input[type="radio"] {
 }
 .pm-badge--libre      { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
 .pm-badge--proceso    { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
-.pm-badge--completada { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); }
+.pm-badge--completada  { background: rgba(56,189,248,0.12);  color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); }
+.pm-badge--validacion  { background: rgba(245,158,11,0.15);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); font-weight: 700; }
 .pm-badge--despachada { background: rgba(167,139,250,0.12);color: #a78bfa; border: 1px solid rgba(167,139,250,0.35); }
 .pm-badge--cancelada  { background: rgba(248,113,113,0.12);color: #f87171; border: 1px solid rgba(248,113,113,0.35); }
 .pm-badge--validando  { background: rgba(148,163,184,0.12);color: #94a3b8; border: 1px solid rgba(148,163,184,0.35); }
