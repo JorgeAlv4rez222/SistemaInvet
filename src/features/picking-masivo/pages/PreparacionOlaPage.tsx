@@ -22,6 +22,16 @@ function IcoStore() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
 }
 
+function fmtDt(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dd = d.getDate().toString().padStart(2, '0')
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0')
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mi = d.getMinutes().toString().padStart(2, '0')
+  return `${dd}-${mm} ${hh}:${mi}`
+}
+
 // ── Tarjeta LPN ───────────────────────────────────────────────────────────────
 
 function LpnCard({ lpn, lineas, resaltado }: { lpn: string; lineas: LineaLpn[]; resaltado: boolean }) {
@@ -29,6 +39,8 @@ function LpnCard({ lpn, lineas, resaltado }: { lpn: string; lineas: LineaLpn[]; 
   const tienda      = lineas[0]?.tienda ?? '—'
   const orden       = lineas[0]?.ola_ordenes?.numero_orden ?? null
   const totalUds    = lineas.reduce((s, l) => s + l.cantidad_solicitada, 0)
+  const auditNombre = escaneado ? (lineas[0]?.fase2_por_nombre ?? null) : null
+  const auditEn     = escaneado ? (lineas[0]?.fase2_en ?? null) : null
 
   return (
     <div className={`prep-lpn-card ${escaneado ? 'prep-lpn-card--done' : ''} ${resaltado ? 'prep-lpn-card--highlight' : ''}`}>
@@ -50,6 +62,14 @@ function LpnCard({ lpn, lineas, resaltado }: { lpn: string; lineas: LineaLpn[]; 
       <div className="prep-lpn-tienda">
         <IcoStore /> {tienda}
       </div>
+
+      {/* ── Auditoría ── */}
+      {escaneado && (auditNombre || auditEn) && (
+        <div className="ext-audit">
+          {auditNombre && <span className="ext-audit-quien">{auditNombre}</span>}
+          {auditEn && <span className="ext-audit-cuando">{fmtDt(auditEn)}</span>}
+        </div>
+      )}
 
       {/* ── Líneas de producto ── */}
       <div className="prep-lpn-lineas">

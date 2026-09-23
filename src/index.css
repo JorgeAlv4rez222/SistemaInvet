@@ -1746,6 +1746,9 @@ label {
 /* Resultado completada */
 .ext-extraida         { font-size: 0.8rem; color: var(--text-secondary); }
 .ext-extraida-parcial { color: var(--warning, #f59e0b); font-weight: 600; }
+.ext-audit            { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.ext-audit-quien      { font-size: 0.78rem; color: var(--accent, #00A0DF); font-weight: 600; }
+.ext-audit-cuando     { font-size: 0.78rem; color: var(--text-secondary); }
 
 /* ── PreparacionOlaPage (prep-) ──────────────────────────────────────────── */
 

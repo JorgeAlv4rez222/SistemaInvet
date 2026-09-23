@@ -33,7 +33,17 @@ export const olasPreparacionService = {
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
 
-    return { ok: true, data: data ?? [] }
+    const ids = [...new Set((data ?? []).filter(l => l.fase2_por).map(l => l.fase2_por))]
+    let nombresMap: Record<string, string> = {}
+    if (ids.length > 0) {
+      const { data: usuarios } = await supabase.from('usuarios').select('id, nombre').in('id', ids)
+      for (const u of usuarios ?? []) nombresMap[u.id] = u.nombre
+    }
+    const result = (data ?? []).map(l => ({
+      ...l,
+      fase2_por_nombre: l.fase2_por ? (nombresMap[l.fase2_por] ?? null) : null,
+    }))
+    return { ok: true, data: result }
   },
 
   // ── Escanear LPN (Fase 2) ─────────────────────────────────────────────────

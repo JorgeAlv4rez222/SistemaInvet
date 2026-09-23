@@ -17,13 +17,24 @@ export const olasExtraccionService = {
 
     const { data, error } = await supabase
       .from('ola_tareas_extraccion')
-      .select('id, descripcion, codigo_barra, cantidad_total, cantidad_extraida, estado, ruta_sugerida, bloqueado_por, bloqueado_en')
+      .select('id, descripcion, codigo_barra, cantidad_total, cantidad_extraida, estado, ruta_sugerida, bloqueado_por, bloqueado_en, completado_por, completado_en')
       .eq('ola_id', olaId)
       .in('estado', ['libre', 'bloqueado', 'completado'])
       .order('descripcion', { ascending: true })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
-    return { ok: true, data: data ?? [] }
+
+    const ids = [...new Set((data ?? []).filter(t => t.completado_por).map(t => t.completado_por))]
+    let nombresMap: Record<string, string> = {}
+    if (ids.length > 0) {
+      const { data: usuarios } = await supabase.from('usuarios').select('id, nombre').in('id', ids)
+      for (const u of usuarios ?? []) nombresMap[u.id] = u.nombre
+    }
+    const result = (data ?? []).map(t => ({
+      ...t,
+      completado_por_nombre: t.completado_por ? (nombresMap[t.completado_por] ?? null) : null,
+    }))
+    return { ok: true, data: result }
   },
 
   // ── Tomar tarea (bloqueo optimista) ───────────────────────────────────────

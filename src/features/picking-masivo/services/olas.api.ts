@@ -30,6 +30,9 @@ export type TareaExtraccion = {
   ruta_sugerida:    { posicion_codigo: string; lote_id: string; cantidad: number }[] | null
   bloqueado_por:    string | null
   bloqueado_en:     string | null
+  completado_por:        string | null
+  completado_en:         string | null
+  completado_por_nombre: string | null
 }
 
 export type LineaLpn = {
@@ -40,6 +43,7 @@ export type LineaLpn = {
   cantidad_solicitada: number
   fase2_escaneado:    boolean
   fase2_en:           string | null
+  fase2_por_nombre:   string | null
   ola_ordenes:        { numero_orden: string; numero_guia: string | null } | null
 }
 

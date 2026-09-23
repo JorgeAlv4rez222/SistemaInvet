@@ -27,6 +27,16 @@ function IcoPin() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
 }
 
+function fmtDt(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dd = d.getDate().toString().padStart(2, '0')
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0')
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mi = d.getMinutes().toString().padStart(2, '0')
+  return `${dd}-${mm} ${hh}:${mi}`
+}
+
 // ─── Tarjeta de tarea ─────────────────────────────────────────────────────────
 
 function TareaCard({
@@ -134,6 +144,12 @@ function TareaCard({
               <span className="ext-extraida-parcial"> · diferencia: {tarea.cantidad_total - tarea.cantidad_extraida}</span>
             )}
           </div>
+          {(tarea.completado_por_nombre || tarea.completado_en) && (
+            <div className="ext-audit">
+              {tarea.completado_por_nombre && <span className="ext-audit-quien">{tarea.completado_por_nombre}</span>}
+              {tarea.completado_en && <span className="ext-audit-cuando">{fmtDt(tarea.completado_en)}</span>}
+            </div>
+          )}
         </div>
       )}
     </div>
