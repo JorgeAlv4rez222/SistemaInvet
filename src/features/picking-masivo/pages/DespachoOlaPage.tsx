@@ -79,15 +79,16 @@ export function DespachoOlaPage() {
   const escanear                      = useEscanearLpnF3(olaId)
   const despachar                     = useDespacharOla()
 
-  const [scanInput, setScanInput]     = useState('')
-  const [error, setError]             = useState<string | null>(null)
-  const [scanOk, setScanOk]           = useState<string | null>(null)
-  const [filtro, setFiltro]           = useState<'pendientes' | 'validados' | 'todos'>('pendientes')
-  const [mostrarChofer, setChofer]    = useState(false)
-  const [chofer, setChoferNombre]     = useState('')
-  const [errorDespacho, setErrDesp]   = useState<string | null>(null)
-  const [despachando, setDespachando] = useState(false)
-  const inputRef                      = useRef<HTMLInputElement>(null)
+  const [scanInput, setScanInput]         = useState('')
+  const [error, setError]                 = useState<string | null>(null)
+  const [filtro, setFiltro]               = useState<'pendientes' | 'validados' | 'todos'>('pendientes')
+  const [lpnPendiente, setLpnPendiente]   = useState<{ lpn: string; lineas: LineaDespacho[] } | null>(null)
+  const [confirmando, setConfirmando]     = useState(false)
+  const [mostrarChofer, setChofer]        = useState(false)
+  const [chofer, setChoferNombre]         = useState('')
+  const [errorDespacho, setErrDesp]       = useState<string | null>(null)
+  const [despachando, setDespachando]     = useState(false)
+  const inputRef                          = useRef<HTMLInputElement>(null)
 
   const lineas = (data ?? []) as LineaDespacho[]
 
@@ -109,20 +110,39 @@ export function DespachoOlaPage() {
     return true
   })
 
-  async function handleEscanear(valor: string) {
+  function handleEscanear(valor: string) {
     const lpn = valor.trim()
     if (!lpn) return
     setError(null)
-    setScanOk(null)
-    try {
-      await escanear.mutateAsync({ lpn, supervisorId })
-      setScanOk(`LPN ${lpn} validado`)
-      setScanInput('')
-      setTimeout(() => { setScanOk(null); inputRef.current?.focus() }, 1800)
-    } catch (e) {
-      setError(e instanceof ApiResponseError ? e.message : 'Error al validar LPN')
+    const lineasLpn = porLpn[lpn]
+    if (!lineasLpn) {
+      setError(`LPN ${lpn} no encontrado en esta ola`)
       setScanInput('')
       setTimeout(() => inputRef.current?.focus(), 50)
+      return
+    }
+    if (lineasLpn.every(l => l.fase3_validado)) {
+      setError(`LPN ${lpn} ya fue validado`)
+      setScanInput('')
+      setTimeout(() => inputRef.current?.focus(), 50)
+      return
+    }
+    setLpnPendiente({ lpn, lineas: lineasLpn })
+    setScanInput('')
+  }
+
+  async function handleConfirmarLpn() {
+    if (!lpnPendiente) return
+    setConfirmando(true)
+    try {
+      await escanear.mutateAsync({ lpn: lpnPendiente.lpn, supervisorId })
+      setLpnPendiente(null)
+      setTimeout(() => inputRef.current?.focus(), 50)
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al confirmar LPN')
+      setLpnPendiente(null)
+    } finally {
+      setConfirmando(false)
     }
   }
 
@@ -198,8 +218,7 @@ export function DespachoOlaPage() {
           >
             {escanear.isPending ? 'Validando…' : 'Validar LPN'}
           </button>
-          {error   && <div className="cf-error-banner"><IcoWarn /> {error}</div>}
-          {scanOk  && <div className="cf-scan-ok"><IcoCheck /> {scanOk}</div>}
+          {error && <div className="cf-error-banner"><IcoWarn /> {error}</div>}
         </div>
       )}
 
@@ -256,6 +275,43 @@ export function DespachoOlaPage() {
         >
           <IcoTruck /> Despachar Carga
         </button>
+      )}
+
+      {/* ── Modal: confirmar LPN ── */}
+      {lpnPendiente && (
+        <div className="modal-overlay" onClick={() => setLpnPendiente(null)}>
+          <div className="desp-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="desp-modal-titulo">Confirmar bulto</h3>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">LPN</span>
+              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--accent">{lpnPendiente.lpn}</span>
+            </div>
+            <div className="desp-modal-fila">
+              <span className="desp-modal-label">Tienda destino</span>
+              <span className="desp-modal-valor">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
+            </div>
+            <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+              {lpnPendiente.lineas.map(l => (
+                <div key={l.id} className="desp-modal-fila">
+                  <span className="desp-modal-label" style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--accent)' }}>{l.descripcion}</span>
+                  <span className="desp-modal-valor desp-modal-valor--xl">{l.cantidad_solicitada} Uds</span>
+                </div>
+              ))}
+            </div>
+            <div className="desp-modal-acciones">
+              <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setLpnPendiente(null)}>
+                Volver
+              </button>
+              <button
+                className="desp-modal-btn desp-modal-btn--primary"
+                disabled={confirmando}
+                onClick={handleConfirmarLpn}
+              >
+                {confirmando ? 'Confirmando…' : 'Confirmar carga'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modal chofer ── */}
