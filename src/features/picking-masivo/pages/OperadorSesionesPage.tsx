@@ -163,13 +163,13 @@ function OlaCard({ o, rol }: { o: OlaResumen; rol: string }) {
   const navigate   = useNavigate()
   const [open, setOpen] = useState(false)
   const proveedor  = o.proveedor.charAt(0).toUpperCase() + o.proveedor.slice(1)
-  const fase       = o.estado === 'en_preparacion' ? 'Preparación LPN' : 'Extracción'
-  const faseRuta   = o.estado === 'en_preparacion'
-    ? `/picking-masivo/ola/${o.id}/preparacion`
-    : `/picking-masivo/ola/${o.id}/extraccion`
+  const fase       = o.estado === 'en_preparacion' ? 'Preparación LPN'
+    : o.estado === 'completada' ? 'Completada'
+    : 'Extracción'
+  const completada = o.estado === 'completada'
 
   return (
-    <div className="ops-card ops-card--proceso">
+    <div className={`ops-card ${completada ? 'ops-card--completada' : 'ops-card--proceso'}`}>
       <div className="ops-card-row" onClick={() => setOpen(v => !v)} role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && setOpen(v => !v)}>
 
@@ -194,9 +194,9 @@ function OlaCard({ o, rol }: { o: OlaResumen; rol: string }) {
 
         <div className="ops-card-right">
           <div className="ops-meta-pills-v">
-            <div className="ops-badge ops-badge--proceso">
+            <div className={`ops-badge ${completada ? 'ops-badge--completada' : 'ops-badge--proceso'}`}>
               <span className="ops-badge-dot" />
-              EN PROCESO
+              {completada ? 'COMPLETADA' : 'EN PROCESO'}
             </div>
           </div>
           <span className="ops-chevron"><IcoChevron open={open} /></span>
@@ -239,7 +239,7 @@ export function OperadorSesionesPage() {
 
   const rol      = ROL()
   const sesiones = dataSes  ?? []
-  const olas     = (dataOlas ?? []).filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion')
+  const olas     = (dataOlas ?? []).filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion' || o.estado === 'completada')
 
   const isLoading = loadSes || loadOlas
   const isError   = errSes  || errOlas
@@ -262,7 +262,7 @@ export function OperadorSesionesPage() {
 
       {/* ── Cabecera ── */}
       <div className="ops-header">
-        <h1 className="ops-titulo">📦 Picking Masivo — Sesiones activas</h1>
+        <h1 className="ops-titulo">Sesiones de Picking Masivo</h1>
       </div>
 
       {/* ── Búsqueda full width ── */}
@@ -290,6 +290,8 @@ export function OperadorSesionesPage() {
 
       {/* ── Lista ── */}
       {!isLoading && !isError && total > 0 && (
+        <>
+        <h2 className="ops-subtitulo">Listado de Proveedores</h2>
         <div className="ops-lista">
           {filtOlas.map(o => (
             <OlaCard key={o.id} o={o} rol={rol} />
@@ -298,6 +300,7 @@ export function OperadorSesionesPage() {
             <SesionCard key={s.id} s={s} rol={rol} />
           ))}
         </div>
+        </>
       )}
     </div>
   )
