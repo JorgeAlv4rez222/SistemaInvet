@@ -118,7 +118,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       }
 
       const res = await validarExcel.mutateAsync({
-        items: datos.filas.map((f) => ({
+        items: datos.tipo === 'sodimac' ? datos.filas.map((f) => ({
           codigo:         f.codigo,
           descripcion:    f.descripcion,
           cantidadPedida: f.cantidadPedida,
@@ -126,7 +126,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           lpn:            f.lpn,
           tienda:         f.tienda,
           skuProveedor:   f.skuProveedor,
-        })),
+        })) : [],
       })
       setResultado(res)
       setPaso('validado')

@@ -206,7 +206,7 @@ export function DespachoOlaPage() {
               value={scanInput}
               autoFocus
               autoComplete="off"
-              onChange={e => { setScanInput(e.target.value); setError(null); setScanOk(null) }}
+              onChange={e => { setScanInput(e.target.value); setError(null) }}
               onKeyDown={e => e.key === 'Enter' && handleEscanear(scanInput)}
             />
             <BarcodeScanner title="Escanear con cámara" onDetected={handleEscanear} />
