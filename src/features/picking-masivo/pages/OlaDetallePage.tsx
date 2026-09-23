@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useOla, useColaExtraccion } from '../hooks/useOlas'
+import { useOla, useColaExtraccion, useLineasPreparacion } from '../hooks/useOlas'
 import { useAuth } from '../../auth/hooks/useAuth'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -141,9 +141,11 @@ export function OlaDetallePage() {
   const navigate    = useNavigate()
   const { sesion }  = useAuth()
   const { data: ola, isLoading, error } = useOla(id ?? null)
-  const { data: tareas } = useColaExtraccion(
-    sesion.rol === 'admin' && (ola?.estado === 'en_extraccion' || ola?.estado === 'en_preparacion') ? (id ?? null) : null
-  )
+  const esAdmin = sesion.rol === 'admin'
+  const enFase  = ola?.estado === 'en_extraccion' || ola?.estado === 'en_preparacion'
+
+  const { data: tareas }       = useColaExtraccion(esAdmin && enFase ? (id ?? null) : null)
+  const { data: lineasF2 }     = useLineasPreparacion(esAdmin && ola?.estado === 'en_preparacion' ? (id ?? null) : null)
 
   if (isLoading) {
     return (
@@ -161,7 +163,6 @@ export function OlaDetallePage() {
   }
 
   const esOperador = sesion.rol === 'operador'
-  const esAdmin    = sesion.rol === 'admin'
   const proveedor  = ola.proveedor.charAt(0).toUpperCase() + ola.proveedor.slice(1)
   const titulo     = `Entrega ${proveedor}`
 
@@ -214,28 +215,47 @@ export function OlaDetallePage() {
 
       {/* ── Monitoreo (solo admin, ola en proceso) ── */}
       {esAdmin && (ola.estado === 'en_extraccion' || ola.estado === 'en_preparacion') && (() => {
-        const lista = (tareas ?? []) as import('../services/olas.api').TareaExtraccion[]
-        const enProceso = lista.filter(t => t.estado === 'bloqueado')
-        const opIds = [...new Set(enProceso.map(t => t.bloqueado_por).filter(Boolean) as string[])]
-        const cntComp = lista.filter(t => t.estado === 'completado').length
-        const pct = lista.length > 0 ? Math.round((cntComp / lista.length) * 100) : 0
+        const esFase2 = ola.estado === 'en_preparacion'
+
+        // Fase 1 — operadores con tarea bloqueada
+        const listaF1 = (tareas ?? []) as import('../services/olas.api').TareaExtraccion[]
+        const enProceso = listaF1.filter(t => t.estado === 'bloqueado')
+        const opIdsF1 = [...new Set(enProceso.map(t => t.bloqueado_por).filter(Boolean) as string[])]
+        const cntCompF1 = listaF1.filter(t => t.estado === 'completado').length
+        const pctF1 = listaF1.length > 0 ? Math.round((cntCompF1 / listaF1.length) * 100) : 0
+
+        // Fase 2 — operadores que escanearon al menos un LPN
+        const listaF2 = lineasF2 ?? []
+        const nombresF2 = [...new Set(
+          listaF2
+            .filter(l => l.fase2_escaneado && l.fase2_por_nombre)
+            .map(l => l.fase2_por_nombre as string)
+        )]
+        const cntCompF2 = listaF2.filter(l => l.fase2_escaneado).length
+        const pctF2 = listaF2.length > 0 ? Math.round((cntCompF2 / listaF2.length) * 100) : 0
+
+        const opNames = esFase2 ? nombresF2 : opIdsF1.map(id => {
+          const t = enProceso.find(t => t.bloqueado_por === id)
+          return (t as any)?.bloqueado_por_nombre ?? id.slice(0, 8)
+        })
 
         return (
           <div className="ola-monitor-banner">
             <div className="ola-monitor-col ola-monitor-col--ops">
-              <span className="ola-monitor-titulo">👥 OPERADORES EN ZONA ({opIds.length})</span>
-              {opIds.length === 0 ? (
+              <span className="ola-monitor-titulo">👥 OPERADORES EN ZONA ({opNames.length})</span>
+              {opNames.length === 0 ? (
                 <span className="ola-monitor-vacio">Sin operadores activos</span>
               ) : (
                 <div className="ola-monitor-ops">
-                  {opIds.map(opId => {
-                    const tarea = enProceso.find(t => t.bloqueado_por === opId)
+                  {opNames.map((nombre, i) => {
+                    const tarea = !esFase2 ? enProceso.find(t => (t as any).bloqueado_por_nombre === nombre || t.bloqueado_por === opIdsF1[i]) : null
                     return (
-                      <div key={opId} className="ola-monitor-op-row">
+                      <div key={nombre} className="ola-monitor-op-row">
                         <span className="ola-monitor-avatar"><IcoUser /></span>
                         <div className="ola-monitor-op-info">
-                          <span className="ola-monitor-op-nombre">{(tarea as any)?.bloqueado_por_nombre ?? opId.slice(0, 8)}</span>
+                          <span className="ola-monitor-op-nombre">{nombre}</span>
                           {tarea && <span className="ola-monitor-op-sku">Extrayendo: {tarea.descripcion}</span>}
+                          {esFase2 && <span className="ola-monitor-op-sku">Asignando LPNs</span>}
                         </div>
                         <span className="ola-monitor-op-dot" />
                       </div>
@@ -245,12 +265,15 @@ export function OlaDetallePage() {
               )}
             </div>
             <div className="ola-monitor-col ola-monitor-col--prog">
-              <span className="ola-monitor-titulo">AVANCE FASE 1</span>
+              <span className="ola-monitor-titulo">{esFase2 ? 'AVANCE FASE 2' : 'AVANCE FASE 1'}</span>
               <div className="ola-monitor-barra-bg">
-                <div className="ola-monitor-barra-fill" style={{ width: `${pct}%` }} />
+                <div className="ola-monitor-barra-fill" style={{ width: `${esFase2 ? pctF2 : pctF1}%` }} />
               </div>
               <span className="ola-monitor-uds">
-                <strong>{cntComp}</strong> / {lista.length} SKUs · {pct}%
+                {esFase2
+                  ? <><strong>{cntCompF2}</strong> / {listaF2.length} LPNs · {pctF2}%</>
+                  : <><strong>{cntCompF1}</strong> / {listaF1.length} SKUs · {pctF1}%</>
+                }
               </span>
             </div>
           </div>
