@@ -106,6 +106,8 @@ export function ConfirmarExtraccionOlaPage() {
     }
   }
 
+  const esMia = tarea?.estado === 'bloqueado' && tarea?.bloqueado_por === operadorId
+
   // ── Early returns ──
   if (autoTomando) return <div className="cf-page"><p className="cargando">Tomando tarea…</p></div>
   if (autoTomadoError) return (
@@ -122,6 +124,30 @@ export function ConfirmarExtraccionOlaPage() {
   )
   if (isLoading) return <div className="cf-page"><p className="cargando">Cargando…</p></div>
   if (!tarea)    return <div className="cf-page"><p className="error-msg">Tarea no encontrada</p></div>
+  if (tarea.estado === 'completado') return (
+    <div className="cf-page">
+      <div className="cf-error-banner" style={{ margin: '2rem auto', maxWidth: 480, background: 'var(--color-ok-bg, #d1fae5)', borderColor: 'var(--color-ok, #10b981)', color: 'var(--color-ok, #065f46)' }}>
+        <IcoCheck /> Esta tarea ya fue completada.
+      </div>
+      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <button className="cf-volver-btn" onClick={() => navigate(`/picking-masivo/ola/${olaId}/extraccion`)}>
+          <IcoBack /> Volver
+        </button>
+      </div>
+    </div>
+  )
+  if (tarea.estado === 'bloqueado' && !esMia) return (
+    <div className="cf-page">
+      <div className="cf-error-banner" style={{ margin: '2rem auto', maxWidth: 480 }}>
+        <IcoWarn /> Esta tarea está siendo procesada por otro operador.
+      </div>
+      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <button className="cf-volver-btn" onClick={() => navigate(`/picking-masivo/ola/${olaId}/extraccion`)}>
+          <IcoBack /> Volver
+        </button>
+      </div>
+    </div>
+  )
 
   const cantTotal = tarea.cantidad_total
   const cantNum   = parseInt(cantidad, 10) || 0

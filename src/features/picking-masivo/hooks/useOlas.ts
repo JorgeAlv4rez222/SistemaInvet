@@ -57,7 +57,7 @@ export function useColaExtraccion(olaId: string | null) {
     queryFn:         () => olasApi.colaExtraccion(olaId!),
     enabled:         !!olaId,
     staleTime:       0,
-    refetchInterval: 3000,
+    refetchInterval: 1500,
   })
 }
 
@@ -66,7 +66,7 @@ export function useTomarTarea(olaId: string) {
   return useMutation({
     mutationFn: ({ tareaId, usuarioId }: { tareaId: string; usuarioId: string }) =>
       olasApi.tomarTarea(tareaId, usuarioId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['olas', 'extraccion', olaId] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['olas', 'extraccion', olaId] }),
   })
 }
 
