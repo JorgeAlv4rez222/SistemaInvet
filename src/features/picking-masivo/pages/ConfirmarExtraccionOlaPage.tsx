@@ -206,6 +206,7 @@ export function ConfirmarExtraccionOlaPage() {
       {/* ── Control de cantidad ── */}
       {barcodeOk && (
         <div className="cf-cantidad-section">
+          <p className="cf-cantidad-label">Ingrese cantidad:</p>
           <div className="cf-qty-control">
             <button className="cf-qty-btn" disabled={cantNum <= 0}
               onClick={() => setCantidad(String(Math.max(0, cantNum - 1)))}>−</button>
