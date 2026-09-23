@@ -6,12 +6,81 @@ import { useRealtimeSesiones } from '../hooks/useRealtimePicking'
 import type { SesionResumen } from '../services/picking-masivo.api'
 import type { OlaResumen } from '../services/olas.api'
 
-const ROL = () => localStorage.getItem('user_rol') ?? ''
+// ── Tipos ─────────────────────────────────────────────────────────────────────
 
-function fmtFecha(iso: string | null) {
-  if (!iso) return '—'
-  return iso.slice(0, 10).split('-').reverse().join('-')
+type EstadoOp = 'en_proceso' | 'completada' | 'despachada'
+
+type FilaOp = {
+  id:          string
+  tipo:        'sesion' | 'ola'
+  cliente:     string
+  oc:          string | null
+  entrega:     string
+  completados: number
+  total:       number
+  unidad:      string
+  estado:      EstadoOp
 }
+
+const ESTADO_CFG: Record<EstadoOp, { label: string; cls: string; dot: string }> = {
+  en_proceso: { label: 'EN PROCESO', cls: 'pm-badge--proceso',    dot: '#22c55e' },
+  completada: { label: 'COMPLETADA', cls: 'pm-badge--completada', dot: '#38bdf8' },
+  despachada: { label: 'DESPACHADA', cls: 'pm-badge--despachada', dot: '#a78bfa' },
+}
+
+// ── Normalización ─────────────────────────────────────────────────────────────
+
+function normalizarSesion(s: SesionResumen): FilaOp {
+  return {
+    id:          s.id,
+    tipo:        'sesion',
+    cliente:     s.nombre_cliente ?? '—',
+    oc:          s.numero_oc_pedido ?? null,
+    entrega:     s.numero_oc,
+    completados: s.items_completados,
+    total:       s.total_items,
+    unidad:      'Uds',
+    estado:      'en_proceso',
+  }
+}
+
+function normalizarOla(o: OlaResumen): FilaOp {
+  const proveedor   = o.proveedor.charAt(0).toUpperCase() + o.proveedor.slice(1)
+  const completados = o.estado === 'completada' || o.estado === 'despachada' ? o.total_lineas : 0
+  let entrega = '—'
+  if (o.fecha_entrega) {
+    const parts = o.fecha_entrega.split('-')
+    entrega = parts.length === 3 && parts[0].length === 4
+      ? `${parts[2]}-${parts[1]}-${parts[0]}`
+      : o.fecha_entrega
+  }
+  const estado: EstadoOp = o.estado === 'despachada' ? 'despachada'
+    : o.estado === 'completada' ? 'completada'
+    : 'en_proceso'
+  return {
+    id: o.id,
+    tipo: 'ola',
+    cliente: proveedor,
+    oc: null,
+    entrega,
+    completados,
+    total: o.total_lineas,
+    unidad: 'líneas',
+    estado,
+  }
+}
+
+// ── Barra de progreso ─────────────────────────────────────────────────────────
+
+function ProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="pm-t-barra-bg">
+      <div className="pm-t-barra-fill" style={{ width: `${Math.min(100, pct)}%`, background: '#00A0DF' }} />
+    </div>
+  )
+}
+
+// ── Íconos ────────────────────────────────────────────────────────────────────
 
 function IcoBuscar() {
   return (
@@ -21,211 +90,69 @@ function IcoBuscar() {
   )
 }
 
-function IcoUsers() {
+function IcoJoin() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+      <polyline points="10 17 15 12 10 7"/>
+      <line x1="15" y1="12" x2="3" y2="12"/>
     </svg>
   )
 }
 
-function IcoClock() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  )
-}
+// ── Fila de tabla ─────────────────────────────────────────────────────────────
 
-function IcoBox() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-    </svg>
-  )
-}
+function FilaOp({ fila }: { fila: FilaOp }) {
+  const navigate = useNavigate()
+  const pct      = fila.total > 0 ? Math.round((fila.completados / fila.total) * 100) : 0
+  const cfg      = ESTADO_CFG[fila.estado]
+  const udsTxt   = `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} ${fila.unidad}`
 
-function IcoZap() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-    </svg>
-  )
-}
-
-function IcoEye() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-    </svg>
-  )
-}
-
-function IcoChevron({ open }: { open: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}
-      style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
-  )
-}
-
-function SesionCard({ s, rol }: { s: SesionResumen; rol: string }) {
-  const navigate   = useNavigate()
-  const [open, setOpen] = useState(false)
-  const pct        = s.total_items > 0 ? Math.round((s.items_completados / s.total_items) * 100) : 0
-  const enProceso  = s.items_completados > 0
-  const esImperial = (s.nombre_cliente ?? '').trim().toLowerCase().includes('imperial')
-  const oc         = s.numero_oc_pedido ?? s.numero_oc
-  const fechaEnt   = s.numero_oc
-  const fillColor  = enProceso ? '#22c55e' : '#f59e0b'
+  function handleUnirse() {
+    if (fila.tipo === 'ola') navigate(`/picking-masivo/ola/${fila.id}`)
+    else navigate(`/picking-masivo/operador/${fila.id}`)
+  }
 
   return (
-    <div className={`ops-card ${enProceso ? 'ops-card--proceso' : 'ops-card--libre'}`}>
+    <tr className={`pm-t-fila pm-t-fila--${fila.estado === 'en_proceso' ? 'en_proceso' : fila.estado}`}>
 
-      {/* ── Fila principal (siempre visible) ── */}
-      <div className="ops-card-row" onClick={() => setOpen(o => !o)} role="button" tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && setOpen(o => !o)}>
+      {/* Cliente / Proveedor */}
+      <td className="pm-t-td pm-t-td--id">
+        <span className="pm-t-cliente">{fila.cliente}</span>
+        {fila.oc && <span className="pm-t-oc">OC {fila.oc}</span>}
+      </td>
 
-        <div className="ops-card-main">
-          <span className="ops-card-cliente">{s.nombre_cliente ?? oc}</span>
-          <div className="ops-card-meta">
-            {esImperial ? (
-              <span className="ops-meta-item ops-meta-item--lg">
-                Entrega: <strong>{(() => {
-                  const d = new Date(fechaEnt)
-                  return isNaN(d.getTime()) ? fechaEnt
-                    : d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
-                })()}</strong>
-              </span>
-            ) : (
-              <>
-                <span className="ops-meta-item ops-meta-item--lg">OC: <strong>{oc}</strong></span>
-                <span className="ops-meta-sep">·</span>
-                <span className="ops-meta-item ops-meta-item--lg">Entrega: <strong>{fmtFecha(fechaEnt)}</strong></span>
-              </>
-            )}
+      {/* Progreso */}
+      <td className="pm-t-td pm-t-td--prog">
+        <div className="pm-t-prog-wrap">
+          <div className="pm-t-prog-header">
+            <span className="pm-t-uds">{udsTxt}</span>
+            <span className="pm-t-pct">{pct}%</span>
           </div>
-          <div className="ops-progreso-inline">
-            <div className="ops-barra-bg">
-              <div className="ops-barra-fill" style={{ width: `${pct}%`, background: fillColor }} />
-            </div>
-            <span className="ops-progreso-inline-txt">
-              {s.items_completados}/{s.total_items} Uds · {pct}%
-            </span>
-          </div>
+          <ProgressBar pct={pct} />
         </div>
+      </td>
 
-        <div className="ops-card-right">
-          <div className="ops-meta-pills-v">
-            <div className={`ops-badge ${enProceso ? 'ops-badge--proceso' : 'ops-badge--libre'}`}>
-              <span className="ops-badge-dot" />
-              EN PROCESO
-            </div>
-            <span className="ops-meta-pill"><IcoUsers /> {enProceso ? '1 Op. en zona' : 'Sin operador'}</span>
-          </div>
-          <span className="ops-chevron"><IcoChevron open={open} /></span>
-        </div>
-      </div>
+      {/* Entrega */}
+      <td className="pm-t-td pm-t-td--entrega">
+        <span className="pm-t-fecha-entrega">{fila.entrega}</span>
+      </td>
 
-      {/* ── Panel expandido ── */}
-      {open && (
-        <>
-          <div className="ops-divider" />
-          <div className="ops-card-expand">
-            <button
-              className="ops-btn ops-btn--tomar"
-              onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/operador/${s.id}`) }}
-            >
-              {enProceso ? 'UNIRSE A PICKING' : 'TOMAR SESIÓN'}
-            </button>
-            {(rol === 'supervisor' || rol === 'admin') && (
-              <button
-                className="ops-btn ops-btn--auditar"
-                onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/${s.id}`) }}
-              >
-                <IcoEye />
-                AUDITAR EN VIVO
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
+      {/* Estado */}
+      <td className="pm-t-td pm-t-td--estado">
+        <span className={`pm-admin-badge ${cfg.cls}`}>
+          <span className="pm-admin-badge-dot" style={{ background: cfg.dot }} />
+          {cfg.label}
+        </span>
+      </td>
 
-// ── Card de ola wave (Construmart / Imperial) ─────────────────────────────────
-
-function OlaCard({ o, rol }: { o: OlaResumen; rol: string }) {
-  const navigate   = useNavigate()
-  const [open, setOpen] = useState(false)
-  const proveedor  = o.proveedor.charAt(0).toUpperCase() + o.proveedor.slice(1)
-  const fase       = o.estado === 'en_preparacion' ? 'Preparación LPN'
-    : o.estado === 'completada' ? 'Completada'
-    : 'Extracción'
-  const completada = o.estado === 'completada'
-
-  return (
-    <div className={`ops-card ${completada ? 'ops-card--completada' : 'ops-card--proceso'}`}>
-      <div className="ops-card-row" onClick={() => setOpen(v => !v)} role="button" tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && setOpen(v => !v)}>
-
-        <div className="ops-card-main">
-          <span className="ops-card-cliente">{proveedor}</span>
-          <div className="ops-card-meta">
-            {o.fecha_entrega && (
-              <span className="ops-meta-item ops-meta-item--lg">
-                Entrega: <strong>{o.fecha_entrega}</strong>
-              </span>
-            )}
-            <span className="ops-meta-sep">·</span>
-            <span className="ops-meta-item">Fase: <strong>{fase}</strong></span>
-          </div>
-          <div className="ops-progreso-inline">
-            <div className="ops-barra-bg">
-              <div className="ops-barra-fill" style={{ width: '0%', background: '#22c55e' }} />
-            </div>
-            <span className="ops-progreso-inline-txt">{o.total_lineas} líneas</span>
-          </div>
-        </div>
-
-        <div className="ops-card-right">
-          <div className="ops-meta-pills-v">
-            <div className={`ops-badge ${completada ? 'ops-badge--completada' : 'ops-badge--proceso'}`}>
-              <span className="ops-badge-dot" />
-              {completada ? 'COMPLETADA' : 'EN PROCESO'}
-            </div>
-          </div>
-          <span className="ops-chevron"><IcoChevron open={open} /></span>
-        </div>
-      </div>
-
-      {open && (
-        <>
-          <div className="ops-divider" />
-          <div className="ops-card-expand">
-            <button
-              className="ops-btn ops-btn--tomar"
-              onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/ola/${o.id}`) }}
-            >
-              UNIRSE A PICKING
-            </button>
-            {(rol === 'supervisor' || rol === 'admin') && (
-              <button
-                className="ops-btn ops-btn--auditar"
-                onClick={e => { e.stopPropagation(); navigate(`/picking-masivo/ola/${o.id}`) }}
-              >
-                <IcoEye />
-                VER DETALLE
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+      {/* Acciones */}
+      <td className="pm-t-td pm-t-td--acciones">
+        <button className="pm-t-btn pm-t-btn--monitor" onClick={handleUnirse}>
+          <IcoJoin /> Unirse a Picking
+        </button>
+      </td>
+    </tr>
   )
 }
 
@@ -237,70 +164,76 @@ export function OperadorSesionesPage() {
   const { data: dataOlas, isLoading: loadOlas, isError: errOlas } = useOlas()
   useRealtimeSesiones()
 
-  const rol      = ROL()
-  const sesiones = dataSes  ?? []
-  const olas     = (dataOlas ?? []).filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion' || o.estado === 'completada')
-
   const isLoading = loadSes || loadOlas
   const isError   = errSes  || errOlas
 
-  const q = busqueda.toLowerCase()
-  const filtSes = !q ? sesiones : sesiones.filter(s =>
-    (s.nombre_cliente ?? '').toLowerCase().includes(q) ||
-    (s.numero_oc_pedido ?? '').toLowerCase().includes(q) ||
-    s.numero_oc.toLowerCase().includes(q)
-  )
-  const filtOlas = !q ? olas : olas.filter(o =>
-    o.proveedor.toLowerCase().includes(q) ||
-    (o.fecha_entrega ?? '').includes(q)
-  )
+  const sesiones = (dataSes ?? []).map(normalizarSesion)
+  const olas     = (dataOlas ?? [])
+    .filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion' || o.estado === 'completada')
+    .map(normalizarOla)
 
-  const total = filtSes.length + filtOlas.length
+  const filas: FilaOp[] = [...olas, ...sesiones]
+
+  const q = busqueda.toLowerCase()
+  const filtradas = !q ? filas : filas.filter(f =>
+    f.cliente.toLowerCase().includes(q) ||
+    (f.oc ?? '').toLowerCase().includes(q) ||
+    f.entrega.includes(q)
+  )
 
   return (
-    <div className="ops-wrap">
+    <div className="pm-admin-wrap">
 
       {/* ── Cabecera ── */}
-      <div className="ops-header">
-        <h1 className="ops-titulo">Sesiones de Picking Masivo</h1>
+      <div className="pm-admin-header">
+        <h1 className="pm-admin-titulo">Sesiones de Picking Masivo</h1>
       </div>
 
-      {/* ── Búsqueda full width ── */}
-      <div className="ops-search-full-wrap">
-        <span className="ops-search-ico"><IcoBuscar /></span>
-        <input
-          className="ops-search-full"
-          placeholder="Buscar por cliente o LPN…"
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-        {busqueda && (
-          <button className="ops-search-clear" onClick={() => setBusqueda('')}>✕</button>
-        )}
+      {/* ── Búsqueda ── */}
+      <div className="pm-admin-toolbar">
+        <div className="pm-t-search-wrap">
+          <span className="pm-t-search-ico"><IcoBuscar /></span>
+          <input
+            className="pm-t-search"
+            placeholder="Buscar por cliente o proveedor…"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+          {busqueda && (
+            <button className="pm-t-search-clear" onClick={() => setBusqueda('')}>✕</button>
+          )}
+        </div>
       </div>
 
       {/* ── Estados ── */}
       {isLoading && <p className="cargando">Cargando sesiones…</p>}
       {isError   && <p className="error-msg">Error al cargar sesiones</p>}
-      {!isLoading && !isError && total === 0 && (
+      {!isLoading && !isError && filtradas.length === 0 && (
         <div className="notas-vacio">
           <p>{busqueda ? 'Sin resultados para esa búsqueda' : 'No hay sesiones activas en este momento'}</p>
         </div>
       )}
 
-      {/* ── Lista ── */}
-      {!isLoading && !isError && total > 0 && (
-        <>
-        <h2 className="ops-subtitulo">Listado de Proveedores</h2>
-        <div className="ops-lista">
-          {filtOlas.map(o => (
-            <OlaCard key={o.id} o={o} rol={rol} />
-          ))}
-          {filtSes.map(s => (
-            <SesionCard key={s.id} s={s} rol={rol} />
-          ))}
+      {/* ── Tabla ── */}
+      {!isLoading && !isError && filtradas.length > 0 && (
+        <div className="pm-t-tabla-wrap">
+          <table className="pm-t-tabla">
+            <thead>
+              <tr className="pm-t-thead-tr">
+                <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
+                <th className="pm-t-th pm-t-th--prog">Progreso</th>
+                <th className="pm-t-th pm-t-th--entrega">Entrega</th>
+                <th className="pm-t-th pm-t-th--estado">Estado</th>
+                <th className="pm-t-th pm-t-th--acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtradas.map(f => (
+                <FilaOp key={`${f.tipo}-${f.id}`} fila={f} />
+              ))}
+            </tbody>
+          </table>
         </div>
-        </>
       )}
     </div>
   )
