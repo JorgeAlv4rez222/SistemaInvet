@@ -93,9 +93,6 @@ export function ConfirmarLpnPage() {
         <div className="cf-context-block cf-context-block--producto">
           <span className="cf-block-label"><IcoStore /> TIENDA DESTINO</span>
           <span className="cf-prod-desc">{tienda}</span>
-          <div className="cf-prod-codes">
-            <span className="cf-sku-tag">{lineas.length} producto{lineas.length !== 1 ? 's' : ''} · {totalUds} Uds totales</span>
-          </div>
         </div>
         <div className="cf-context-block cf-context-block--producto">
           <span className="cf-block-label">CÓDIGO / CANTIDAD</span>

@@ -150,6 +150,44 @@ export function DespachoSesionPage() {
     setInicializado(true)
   }, [sesion, inicializado, items, sesionTieneLpn])
 
+  // Auto-validar como sin_stock los items Imperial (LPN) con cantidad despachada = 0
+  useEffect(() => {
+    if (!inicializado || !sesionTieneLpn || !items) return
+
+    const sinStockNoValidados = items.filter(i => {
+      if (i.lpn_validado || !i.lpn) return false
+      const subs = i.subtareas_picking_masivo ?? []
+      if (subs.length === 0) return false
+      return subs.every(s => (s.cantidad_despachada ?? 0) === 0)
+    })
+
+    if (sinStockNoValidados.length === 0) return
+
+    Promise.all(
+      sinStockNoValidados.map(async i => {
+        try {
+          await validarLpn.mutateAsync({ sesionId, lpn: i.lpn! })
+          return {
+            itemId:         i.id,
+            codigo:         i.codigo,
+            descripcion:    i.descripcion,
+            cantidadPedida: i.cantidad_pedida,
+            tienda:         i.tienda ?? null,
+            lpn:            i.lpn!,
+          } as ItemValidadoLpn
+        } catch { return null }
+      })
+    ).then(resultados => {
+      const validos = resultados.filter(Boolean) as ItemValidadoLpn[]
+      if (validos.length > 0) {
+        setValidadosLpn(prev => {
+          const ids = new Set(prev.map(v => v.itemId))
+          return [...prev, ...validos.filter(v => !ids.has(v.itemId))]
+        })
+      }
+    })
+  }, [inicializado]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-validar como sin_stock los items Sodimac con cantidad despachada = 0
   useEffect(() => {
     if (!inicializado || sesionTieneLpn || !items) return
@@ -199,6 +237,14 @@ export function DespachoSesionPage() {
     scanCooldownRef.current = true
     setTimeout(() => { scanCooldownRef.current = false }, 500)
     setErrorScan(null)
+
+    if (validadosLpn.some(v => v.lpn === lpnTrimmed)) {
+      setErrorScan(`LPN "${lpnTrimmed}" ya fue validado`)
+      setScanInput('')
+      setTimeout(() => inputRef.current?.focus(), 50)
+      return
+    }
+
     try {
       const res = await buscarLpn.mutateAsync({ sesionId, lpn: lpnTrimmed })
       setItemPendienteLpn({ ...res, lpn: lpnTrimmed })
