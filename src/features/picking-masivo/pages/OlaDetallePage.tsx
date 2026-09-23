@@ -359,6 +359,22 @@ export function OlaDetallePage() {
         )
       })()}
 
+      {/* ── Fecha y hora de despacho ── */}
+      {esAdmin && ola.estado === 'despachada' && ola.despachada_en && (() => {
+        const d = new Date(ola.despachada_en)
+        const fecha = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        const hora  = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+        return (
+          <div className="ola-despacho-fecha-card">
+            <span className="ola-despacho-fecha-label">FECHA Y HORA DE DESPACHO</span>
+            <span className="ola-despacho-fecha-val">{fecha} — {hora}</span>
+            {ola.nombre_chofer && (
+              <span className="ola-despacho-fecha-chofer">Chofer: {ola.nombre_chofer}</span>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── Pasos del picking ── */}
       {ola.estado !== 'cancelada' && (
         <section className="ola-pasos-seccion">
