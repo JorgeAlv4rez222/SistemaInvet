@@ -171,12 +171,13 @@ export function ExtraccionOlaPage() {
 
   const [tomandoId, setTomandoId] = useState<string | null>(null)
   const [error, setError]         = useState<string | null>(null)
-  const [filtro, setFiltro]       = useState<'pendientes' | 'mias' | 'completas'>('pendientes')
+  const [filtro, setFiltro]       = useState<'pendientes' | 'mias' | 'ocupadas' | 'completas'>('pendientes')
 
   const tareas = data ?? []
 
   const cntPend  = tareas.filter(t => t.estado !== 'completado').length
   const cntMias  = tareas.filter(t => t.estado === 'bloqueado' && t.bloqueado_por === operadorId).length
+  const cntOcup  = tareas.filter(t => t.estado === 'bloqueado' && t.bloqueado_por !== operadorId).length
   const cntComp  = tareas.filter(t => t.estado === 'completado').length
   const total    = tareas.length
   const pct      = total > 0 ? Math.round((cntComp / total) * 100) : 0
@@ -186,6 +187,7 @@ export function ExtraccionOlaPage() {
     .filter(t => {
       if (filtro === 'pendientes') return t.estado !== 'completado'
       if (filtro === 'mias')      return t.estado === 'bloqueado' && t.bloqueado_por === operadorId
+      if (filtro === 'ocupadas')  return t.estado === 'bloqueado' && t.bloqueado_por !== operadorId
       if (filtro === 'completas') return t.estado === 'completado'
       return true
     })
@@ -265,6 +267,7 @@ export function ExtraccionOlaPage() {
           {([
             ['pendientes', `Pendientes (${cntPend})`],
             ['mias',       `Mis tareas (${cntMias})`],
+            ['ocupadas',   `Ocupadas (${cntOcup})`],
             ['completas',  `Completadas (${cntComp})`],
           ] as const).map(([key, label]) => (
             <button
