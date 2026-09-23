@@ -188,7 +188,7 @@ export function OlaDetallePage() {
 
       {/* ── KPI grid ── */}
       <div className="ola-kpi-grid">
-        <div className="ola-kpi-card">
+        <div className="ola-kpi-card ola-kpi-card--entrega">
           <div className="ola-kpi-icon"><IcoCalendar /></div>
           <span className="ola-kpi-label">Entrega</span>
           <span className="ola-kpi-valor">{fmt(ola.fecha_entrega)}</span>
