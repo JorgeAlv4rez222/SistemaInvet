@@ -483,22 +483,15 @@ export function SesionDetallePage() {
       </div>
 
       {/* Botones de fase (completada/despachado) — solo admin */}
-      {esAdmin && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
+      {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
         <div className="sd-fase-btns">
-          {sesion.estado === 'completada' && (
-            <button className="sd-btn sd-btn--primary" onClick={() => navigate(`/picking-masivo/${sesionId}/despacho`)}>
-              Validar Entrega →
-            </button>
-          )}
-          {!sesionTieneLpn && (
-            <button
-              className="sd-btn sd-btn--primary"
-              disabled={!todosProductosValidados || lpnCount === 0}
-              onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
-            >
-              Validar LPN →
-            </button>
-          )}
+          <button
+            className="sd-btn sd-btn--primary"
+            disabled={!todosProductosValidados || lpnCount === 0}
+            onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
+          >
+            Validar LPN →
+          </button>
         </div>
       )}
 
