@@ -49,7 +49,7 @@ export function useNotificacionesAlIngreso(
       const desde = (rol === 'operador' && !esInicial) ? leerUltimaVisita() : null
 
       try {
-        const { notasCount, sesionesCount } = await fetchCounts(rol, desde)
+        const { notasCount, sesionesCount } = await fetchCounts(rol as string, desde)
 
         if (rol === 'operador') {
           if (notasCount > 0) {
