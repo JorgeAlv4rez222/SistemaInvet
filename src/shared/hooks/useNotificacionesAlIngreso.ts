@@ -18,7 +18,7 @@ type NotifCounts = { notasCount: number; sesionesCount: number }
 
 async function fetchCounts(rol: string, desde: string | null): Promise<NotifCounts> {
   const params = new URLSearchParams({ accion: 'notif-counts', rol })
-  if (desde) params.set('desde', desde)
+  if (desde != null) params.set('desde', desde)
   return apiClient.get<NotifCounts>(`/notas?${params.toString()}`)
 }
 
