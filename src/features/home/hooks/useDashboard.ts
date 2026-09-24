@@ -46,6 +46,15 @@ export function useDespachosSemana() {
   })
 }
 
+export function useDespachosDia(fecha: string | null) {
+  return useQuery({
+    queryKey:  ['dashboard', 'despachos-dia', fecha],
+    queryFn:   () => dashboardApi.despachosDia(fecha!),
+    enabled:   !!fecha,
+    staleTime: 2 * 60_000,
+  })
+}
+
 export function useClientesNotas() {
   return useQuery({
     queryKey:  ['dashboard', 'clientes'],

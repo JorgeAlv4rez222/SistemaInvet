@@ -48,6 +48,8 @@ export const dashboardApi = {
     apiClient.get<DespachosSemana>('/dashboard?vista=despachos-semana'),
   kpisBi: () =>
     apiClient.get<KpisBi>('/dashboard?vista=kpis-bi'),
+  despachosDia: (fecha: string) =>
+    apiClient.get<{ id: string; referencia: string; nombreCliente: string; fechaDespacho: string; tipo: 'nv' | 'sesion' | 'ola' }[]>(`/dashboard?vista=despachos-dia&fecha=${fecha}`),
   clientes: () => apiClient.get<string[]>('/dashboard?vista=clientes'),
   equipoBodega: () => apiClient.get<EquipoBodega>('/dashboard?vista=equipo-bodega'),
 }

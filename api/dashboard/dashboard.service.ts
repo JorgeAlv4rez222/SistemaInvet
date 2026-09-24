@@ -323,4 +323,42 @@ export const dashboardService = {
     const clientes = Array.from(new Set((data ?? []).map((r) => r.nombre_cliente))).sort((a, b) => a.localeCompare(b))
     return { ok: true, data: clientes }
   },
+
+  async obtenerDespachosDia(fecha: string): Promise<ServiceResult<{ id: string; referencia: string; nombreCliente: string; fechaDespacho: string; tipo: 'nv' | 'sesion' | 'ola' }[]>> {
+    const inicio = new Date(`${fecha}T00:00:00.000Z`)
+    const fin    = new Date(`${fecha}T23:59:59.999Z`)
+
+    const [nvR, sesionR, olaR] = await Promise.all([
+      supabase.from('notas_venta')
+        .select('id, numero_nota, nombre_cliente, fecha_despacho')
+        .gte('fecha_despacho', inicio.toISOString())
+        .lte('fecha_despacho', fin.toISOString()),
+      supabase.from('sesiones_picking_masivo')
+        .select('id, numero_oc, nombre_cliente, despachado_en')
+        .gte('despachado_en', inicio.toISOString())
+        .lte('despachado_en', fin.toISOString()),
+      supabase.from('olas_picking')
+        .select('id, proveedor, despachado_en')
+        .gte('despachado_en', inicio.toISOString())
+        .lte('despachado_en', fin.toISOString()),
+    ])
+
+    const nvs = (nvR.data ?? []).map(r => ({
+      id: r.id, referencia: r.numero_nota, nombreCliente: r.nombre_cliente,
+      fechaDespacho: r.fecha_despacho, tipo: 'nv' as const,
+    }))
+    const sesiones = (sesionR.data ?? []).map(r => ({
+      id: r.id, referencia: r.numero_oc ?? '—', nombreCliente: r.nombre_cliente ?? 'Sodimac',
+      fechaDespacho: r.despachado_en, tipo: 'sesion' as const,
+    }))
+    const olas = (olaR.data ?? []).map(r => ({
+      id: r.id, referencia: '—', nombreCliente: r.proveedor,
+      fechaDespacho: r.despachado_en, tipo: 'ola' as const,
+    }))
+
+    const todos = [...nvs, ...sesiones, ...olas]
+      .sort((a, b) => new Date(a.fechaDespacho).getTime() - new Date(b.fechaDespacho).getTime())
+
+    return { ok: true, data: todos }
+  },
 }

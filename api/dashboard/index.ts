@@ -31,6 +31,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(result.data)
   }
 
+  if (vista === 'despachos-dia') {
+    const fecha = typeof req.query.fecha === 'string' ? req.query.fecha : ''
+    if (!fecha) return res.status(400).json({ error: 'Falta parámetro fecha' })
+    const result = await dashboardService.obtenerDespachosDia(fecha)
+    if (!result.ok) return res.status(500).json({ error: result.error })
+    return res.status(200).json(result.data)
+  }
+
   if (vista === 'clientes') {
     const result = await dashboardService.obtenerClientes()
     if (!result.ok) return res.status(500).json({ error: result.error })
