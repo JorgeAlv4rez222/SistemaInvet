@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDashboard, useDespachosMensuales, useDespachosSemana, useKpisBi } from '../hooks/useDashboard'
+import { useDashboard, useDespachosMensuales, useDespachosSemana, useDespachosDia } from '../hooks/useDashboard'
 import type { DiaDespacho } from '../hooks/useDashboard'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
@@ -15,14 +15,6 @@ const PERIODOS: { key: Periodo; label: string }[] = [
 ]
 
 // ── Datos mock — sustituir con queries reales ──────────────────────────────
-
-type TurnoTab = 'hoy' | 'semana' | 'mes'
-
-const TURNO_DATA: Record<TurnoTab, { completadas: number; enProceso: number; pendientes: number }> = {
-  hoy:    { completadas: 12, enProceso: 1, pendientes: 3  },
-  semana: { completadas: 58, enProceso: 4, pendientes: 11 },
-  mes:    { completadas: 214, enProceso: 9, pendientes: 32 },
-}
 
 
 const ACTIVIDAD_MOCK = [
@@ -138,7 +130,7 @@ function KpiExec({
 
 // ── Gráfico barras diarias (SVG) ──────────────────────────────────────────
 
-function GraficoDiario({ data }: { data: DiaDespacho[] }) {
+function GraficoDiario({ data, diaActivo, onClickDia }: { data: DiaDespacho[]; diaActivo: string | null; onClickDia: (dia: string) => void }) {
   if (data.length === 0) return <div style={{ height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-muted)' }}>Cargando…</div>
   const maxV  = Math.max(1, ...data.map(d => d.cant))
   const W = 340; const H = 110; const PAD_B = 24; const PAD_L = 28
@@ -147,7 +139,7 @@ function GraficoDiario({ data }: { data: DiaDespacho[] }) {
   const gap   = areaW / data.length
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet" style={{ cursor: 'pointer' }}>
       {[0, 50, 100].map(pct => {
         const y = 8 + areaH - (pct / 100) * areaH
         return (
@@ -160,15 +152,16 @@ function GraficoDiario({ data }: { data: DiaDespacho[] }) {
         )
       })}
       {data.map((d, i) => {
+        const activo = diaActivo === d.dia
         const alt = Math.max(3, (d.cant / maxV) * areaH)
         const x   = PAD_L + i * gap + (gap - barW) / 2
         const y   = 8 + areaH - alt
         return (
-          <g key={d.dia}>
-            <title>{d.label}: {d.cant} despachos</title>
-            <rect x={x} y={y} width={barW} height={alt} rx={3} fill="#0ea5e9"/>
+          <g key={d.dia} onClick={() => d.cant > 0 && onClickDia(d.dia)} style={{ cursor: d.cant > 0 ? 'pointer' : 'default' }}>
+            <title>{d.label}: {d.cant} despachos — {d.cant > 0 ? 'click para ver detalle' : ''}</title>
+            <rect x={x} y={y} width={barW} height={alt} rx={3} fill={activo ? '#38bdf8' : '#0ea5e9'} opacity={activo ? 1 : 0.75}/>
             <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="rgba(148,163,184,0.7)">{d.cant}</text>
-            <text x={x + barW / 2} y={H - 8}  textAnchor="middle" fontSize={8} fill="rgba(148,163,184,0.6)">{d.label}</text>
+            <text x={x + barW / 2} y={H - 8}  textAnchor="middle" fontSize={8} fill={activo ? 'var(--text-primary)' : 'rgba(148,163,184,0.6)'} fontWeight={activo ? 700 : 400}>{d.label}</text>
           </g>
         )
       })}
@@ -204,19 +197,26 @@ function BarraOcupacion({ nombre, pct, alerta }: { nombre: string; pct: number; 
 
 export function DashboardBI() {
   const navigate = useNavigate()
-  const [periodo, setPeriodo]   = useState<Periodo>('mes')
-  const [dropOpen, setDropOpen] = useState(false)
-  const [turnoTab, setTurnoTab] = useState<TurnoTab>('hoy')
+  const [periodo, setPeriodo]       = useState<Periodo>('mes')
+  const [dropOpen, setDropOpen]     = useState(false)
+  const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null)
 
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
-  useDespachosMensuales({})  // prefetch para posible uso futuro
+  useDespachosMensuales({})
   const { data: semanaData } = useDespachosSemana()
-  const { data: biData }     = useKpisBi()
+  const { data: notasDia, isLoading: cargandoDia } = useDespachosDia(diaSeleccionado)
 
   const mesActual    = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
   const periodoLabel = PERIODOS.find(p => p.key === periodo)?.label ?? ''
 
-  const turnoReal = biData?.turno[turnoTab]
+  function toggleDia(dia: string) {
+    setDiaSeleccionado(prev => prev === dia ? null : dia)
+  }
+
+  function labelFecha(dia: string) {
+    const d = new Date(`${dia}T12:00:00`)
+    return d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+  }
 
   return (
     <div className="bi-wrap">
@@ -290,56 +290,49 @@ export function DashboardBI() {
         {/* ── Columna izquierda (60%) ─────────────────────────────────── */}
         <div className="bi-col-left">
 
-          {/* Rendimiento del turno */}
+          {/* Tarjeta: Despachos de la semana */}
           <div className="bi-panel">
             <div className="bi-panel-header">
               <div>
-                <h2 className="bi-panel-titulo"><IcoChart /> Rendimiento del Turno</h2>
-                <p className="bi-panel-sub">Estado actual de NVs por período</p>
+                <h2 className="bi-panel-titulo"><IcoTruck /> Despachos de la Semana</h2>
+                <p className="bi-panel-sub">Click en una barra para ver el detalle del día</p>
               </div>
-              {/* Tabs Hoy / Semana / Mes */}
-              <div className="bi-turno-tabs">
-                {(['hoy', 'semana', 'mes'] as TurnoTab[]).map(t => (
-                  <button
-                    key={t}
-                    className={`bi-turno-tab ${turnoTab === t ? 'active' : ''}`}
-                    onClick={() => setTurnoTab(t)}
-                  >
-                    {t === 'hoy' ? 'HOY' : t === 'semana' ? 'Esta Semana' : 'Este Mes'}
-                  </button>
-                ))}
-              </div>
+              {diaSeleccionado && (
+                <button className="bi-dia-cerrar" onClick={() => setDiaSeleccionado(null)}>✕</button>
+              )}
             </div>
+            <GraficoDiario data={semanaData?.dias ?? []} diaActivo={diaSeleccionado} onClickDia={toggleDia} />
 
-            {/* Contadores por estado */}
-            <div className="bi-turno-contadores">
-              <div className="bi-turno-contador">
-                <span className="bi-turno-dot" style={{ background: '#34d399' }}/>
-                <span className="bi-turno-contador-label">Completadas</span>
-                <span className="bi-turno-contador-num" style={{ color: '#34d399' }}>{turnoReal?.completadas ?? '—'}</span>
+            {/* Panel detalle notas del día */}
+            {diaSeleccionado && (
+              <div className="bi-dia-detalle">
+                <p className="bi-dia-detalle-titulo">
+                  {labelFecha(diaSeleccionado)}
+                  <span className="bi-dia-detalle-count">
+                    {cargandoDia ? '…' : `${notasDia?.length ?? 0} NV`}
+                  </span>
+                </p>
+                {cargandoDia && <p className="bi-dia-detalle-loading">Cargando…</p>}
+                {!cargandoDia && notasDia?.length === 0 && (
+                  <p className="bi-dia-detalle-vacio">Sin notas despachadas ese día</p>
+                )}
+                {!cargandoDia && (notasDia ?? []).map(n => {
+                  const ruta = n.tipo === 'nv' ? `/notas/${n.id}` : n.tipo === 'sesion' ? `/picking-masivo/${n.id}` : `/picking-masivo/ola/${n.id}`
+                  const tipoBadge = n.tipo === 'nv' ? 'NV' : n.tipo === 'sesion' ? 'PM' : 'OLA'
+                  const badgeColor = n.tipo === 'nv' ? '#34d399' : n.tipo === 'sesion' ? '#f59e0b' : '#a78bfa'
+                  return (
+                    <button key={n.id} className="bi-dia-nota-row" onClick={() => navigate(ruta)}>
+                      <span className="bi-dia-nota-tipo" style={{ color: badgeColor }}>{tipoBadge}</span>
+                      <span className="bi-dia-nota-num">{n.referencia}</span>
+                      <span className="bi-dia-nota-cliente">{n.nombreCliente}</span>
+                      <span className="bi-dia-nota-hora">
+                        {new Date(n.fechaDespacho).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
-              <div className="bi-turno-contador">
-                <span className="bi-turno-dot" style={{ background: '#38bdf8' }}/>
-                <span className="bi-turno-contador-label">En Proceso</span>
-                <span className="bi-turno-contador-num" style={{ color: '#38bdf8' }}>{turnoReal?.enProceso ?? '—'}</span>
-              </div>
-              <div className="bi-turno-contador">
-                <span className="bi-turno-dot" style={{ background: '#fbbf24' }}/>
-                <span className="bi-turno-contador-label">Pendientes</span>
-                <span className="bi-turno-contador-num" style={{ color: '#fbbf24' }}>{turnoReal?.pendientes ?? '—'}</span>
-              </div>
-            </div>
-
-            {/* Separador */}
-            <div className="bi-turno-sep"/>
-
-            {/* Mini gráfico diario */}
-            <div className="bi-panel-header" style={{ marginBottom: 8 }}>
-              <h3 className="bi-panel-sub" style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>
-                Despachos de la Semana
-              </h3>
-            </div>
-            <GraficoDiario data={semanaData?.dias ?? []} />
+            )}
           </div>
 
         </div>
