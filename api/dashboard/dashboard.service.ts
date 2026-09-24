@@ -331,12 +331,15 @@ export const dashboardService = {
   },
 
   async obtenerDespachosDia(fecha: string): Promise<ServiceResult<{ id: string; referencia: string; nombreCliente: string; fechaDespacho: string; tipo: 'nv' | 'sesion' | 'ola' }[]>> {
+    // Ampliar rango ±12h para cubrir timezone Chile (UTC-3/UTC-4)
     const inicio = new Date(`${fecha}T00:00:00.000Z`)
-    const fin    = new Date(`${fecha}T23:59:59.999Z`)
+    inicio.setHours(inicio.getHours() - 12)
+    const fin = new Date(`${fecha}T23:59:59.999Z`)
+    fin.setHours(fin.getHours() + 12)
 
     const [despR, sesionR, olaR] = await Promise.all([
       supabase.from('despachos')
-        .select('id, fecha_despacho, notas_venta!inner(id, numero_nota, nombre_cliente)')
+        .select('id, fecha_despacho, nota_venta_id, notas_venta(id, numero_nota, nombre_cliente)')
         .gte('fecha_despacho', inicio.toISOString())
         .lte('fecha_despacho', fin.toISOString()),
       supabase.from('sesiones_picking_masivo')
@@ -349,21 +352,27 @@ export const dashboardService = {
         .lte('despachado_en', fin.toISOString()),
     ])
 
-    const nvs = ((despR.data ?? []) as any[]).map(r => ({
-      id: r.notas_venta?.id ?? r.id,
-      referencia: r.notas_venta?.numero_nota ?? '—',
-      nombreCliente: r.notas_venta?.nombre_cliente ?? '—',
-      fechaDespacho: r.fecha_despacho,
-      tipo: 'nv' as const,
-    }))
-    const sesiones = (sesionR.data ?? []).map(r => ({
-      id: r.id, referencia: r.numero_oc ?? '—', nombreCliente: r.nombre_cliente ?? 'Sodimac',
-      fechaDespacho: r.despachado_en, tipo: 'sesion' as const,
-    }))
-    const olas = (olaR.data ?? []).map(r => ({
-      id: r.id, referencia: '—', nombreCliente: r.proveedor,
-      fechaDespacho: r.despachado_en, tipo: 'ola' as const,
-    }))
+    const nvs = ((despR.data ?? []) as any[])
+      .filter(r => (r.fecha_despacho ?? '').slice(0, 10) === fecha)
+      .map(r => ({
+        id: r.notas_venta?.id ?? r.id,
+        referencia: r.notas_venta?.numero_nota ?? '—',
+        nombreCliente: r.notas_venta?.nombre_cliente ?? '—',
+        fechaDespacho: r.fecha_despacho,
+        tipo: 'nv' as const,
+      }))
+    const sesiones = (sesionR.data ?? [])
+      .filter((r: any) => (r.despachado_en ?? '').slice(0, 10) === fecha)
+      .map((r: any) => ({
+        id: r.id, referencia: r.numero_oc ?? '—', nombreCliente: r.nombre_cliente ?? 'Sodimac',
+        fechaDespacho: r.despachado_en, tipo: 'sesion' as const,
+      }))
+    const olas = (olaR.data ?? [])
+      .filter((r: any) => (r.despachado_en ?? '').slice(0, 10) === fecha)
+      .map((r: any) => ({
+        id: r.id, referencia: '—', nombreCliente: r.proveedor,
+        fechaDespacho: r.despachado_en, tipo: 'ola' as const,
+      }))
 
     const todos = [...nvs, ...sesiones, ...olas]
       .sort((a, b) => new Date(a.fechaDespacho).getTime() - new Date(b.fechaDespacho).getTime())

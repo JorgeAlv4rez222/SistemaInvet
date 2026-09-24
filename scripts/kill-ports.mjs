@@ -1,7 +1,4 @@
-/**
- * Mata cualquier proceso que ocupe los puertos 3000, 5173 o 5174.
- * Funciona en Windows (PowerShell/cmd) y Unix sin dependencias externas.
- */
+/*mata cualquier puerto en los numeros mencionados*/ 
 import { execSync } from 'child_process'
 import { platform }  from 'os'
 

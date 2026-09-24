@@ -83,30 +83,36 @@ function box(pasillo: string, numero: number, x: number, y: number, bandStartY: 
  * los números 7-12 ya se usaron en la fila superior).
  */
 function filaSuperiorP1(y: number): Record<string, RackLayout> {
-  const numeros = [6, 7, 8, 9, 10, 11, 12, 13]
-  // Fila alineada con el ancho del bloque de abajo (no con las columnas):
-  // arranca en LEFT_X0 y termina en RIGHT_X0 + BLOQUE_ANCHO, más adentro
-  // que las columnas — R6 queda más a la derecha, R13 más a la izquierda.
-  const x0 = LEFT_X0
-  const xFin = RIGHT_X0 + BLOQUE_ANCHO
-  const gap = (xFin - x0 - BOX_W) / (numeros.length - 1)
-  return Object.fromEntries(numeros.map((n, i) => box('A', n, x0 + i * gap, y, 0)))
+  // R5 ligeramente corrido a la derecha (desde LEFT_X0), R6-R13 distribuidos hasta COL_RIGHT_X
+  const r5: [string, RackLayout] = box('A', 5, LEFT_X0, y, 0)
+  const numerosResto = [6, 7, 8, 9, 10, 11, 12, 13]
+  const x0   = LEFT_X0 + GAP_X
+  const xFin = COL_RIGHT_X
+  const gap  = (xFin - x0 - BOX_W) / (numerosResto.length - 1)
+  const resto = numerosResto.map((n, i) => box('A', n, x0 + i * gap, y, 0))
+  return Object.fromEntries([r5, ...resto])
 }
 
 function pasillo1(bandStartY: number): Record<string, RackLayout> {
+  // R4 con altura extendida hasta tocar la esquina superior de R3
+  const r4: [string, RackLayout] = [
+    'A-R4',
+    { codigo: 'A-R4', x: COL_LEFT_X, y: bandStartY, width: BOX_W, height: BLOCK_P1_Y },
+  ]
   return Object.fromEntries([
-    // columna lateral (solo 2 — el resto ya está en la fila superior)
-    box('A', 5, COL_LEFT_X, 0, bandStartY),
-    box('A', 4, COL_LEFT_X, GAP_Y, bandStartY),
+    r4,
+    // columna lateral derecha: R14, R15
     box('A', 14, COL_RIGHT_X, 0, bandStartY),
     box('A', 15, COL_RIGHT_X, GAP_Y, bandStartY),
-    // único bloque de esta franja (después de la columna)
+    // bloque inferior izquierdo
     box('A', 3, LEFT_X0, BLOCK_P1_Y, bandStartY),
     box('A', 2, LEFT_X0 + GAP_X, BLOCK_P1_Y, bandStartY),
     box('A', 1, LEFT_X0 + GAP_X * 2, BLOCK_P1_Y, bandStartY),
-    box('A', 18, RIGHT_X0, BLOCK_P1_Y, bandStartY),
-    box('A', 17, RIGHT_X0 + GAP_X, BLOCK_P1_Y, bandStartY),
-    box('A', 16, RIGHT_X0 + GAP_X * 2, BLOCK_P1_Y, bandStartY),
+    // bloque inferior derecho: misma X que el bloque superior de B/C/D
+    box('A', 19, COL_RIGHT_X - GAP_X * 4, BLOCK_P1_Y, bandStartY),
+    box('A', 18, COL_RIGHT_X - GAP_X * 3, BLOCK_P1_Y, bandStartY),
+    box('A', 17, COL_RIGHT_X - GAP_X * 2, BLOCK_P1_Y, bandStartY),
+    box('A', 16, COL_RIGHT_X - GAP_X,     BLOCK_P1_Y, bandStartY),
   ])
 }
 
@@ -121,16 +127,16 @@ function pasilloGrande(pasillo: string, bandStartY: number): Record<string, Rack
   const R_DER4_X0 = COL_RIGHT_X - GAP_X * 3  // 330 - 90 = 240
 
   return Object.fromEntries([
-    // bloque superior izquierdo (3 racks desde el muro)
-    box(pasillo, 3, COL_LEFT_X, 0, bandStartY),
-    box(pasillo, 2, COL_LEFT_X + GAP_X, 0, bandStartY),
-    box(pasillo, 1, COL_LEFT_X + GAP_X * 2, 0, bandStartY),
+    // bloque superior izquierdo (3 racks, alineado con A)
+    box(pasillo, 3, LEFT_X0, 0, bandStartY),
+    box(pasillo, 2, LEFT_X0 + GAP_X, 0, bandStartY),
+    box(pasillo, 1, LEFT_X0 + GAP_X * 2, 0, bandStartY),
 
-    // bloque superior derecho (4 racks, R15 pegado al muro)
-    box(pasillo, 18, R_DER4_X0, 0, bandStartY),
-    box(pasillo, 17, R_DER4_X0 + GAP_X, 0, bandStartY),
-    box(pasillo, 16, R_DER4_X0 + GAP_X * 2, 0, bandStartY),
-    box(pasillo, 15, COL_RIGHT_X, 0, bandStartY),
+    // bloque superior derecho (4 racks, un cuadro más a la izquierda)
+    box(pasillo, 18, R_DER4_X0 - GAP_X,     0, bandStartY),
+    box(pasillo, 17, R_DER4_X0,              0, bandStartY),
+    box(pasillo, 16, R_DER4_X0 + GAP_X,     0, bandStartY),
+    box(pasillo, 15, R_DER4_X0 + GAP_X * 2, 0, bandStartY),
 
     // columna lateral (2 filas)
     box(pasillo, 4, COL_LEFT_X, COL_Y0_GRANDE, bandStartY),
@@ -143,11 +149,11 @@ function pasilloGrande(pasillo: string, bandStartY: number): Record<string, Rack
     box(pasillo, 7, LEFT_X0 + GAP_X, BLOCK_INF_Y_CHICA, bandStartY),
     box(pasillo, 8, LEFT_X0 + GAP_X * 2, BLOCK_INF_Y_CHICA, bandStartY),
 
-    // bloque inferior derecho (4 racks, R12 pegado al muro)
-    box(pasillo, 9, R_DER4_X0, BLOCK_INF_Y_CHICA, bandStartY),
-    box(pasillo, 10, R_DER4_X0 + GAP_X, BLOCK_INF_Y_CHICA, bandStartY),
-    box(pasillo, 11, R_DER4_X0 + GAP_X * 2, BLOCK_INF_Y_CHICA, bandStartY),
-    box(pasillo, 12, COL_RIGHT_X, BLOCK_INF_Y_CHICA, bandStartY),
+    // bloque inferior derecho (4 racks, un cuadro más a la izquierda que el bloque superior)
+    box(pasillo, 9,  R_DER4_X0 - GAP_X,     BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 10, R_DER4_X0,              BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 11, R_DER4_X0 + GAP_X,     BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 12, R_DER4_X0 + GAP_X * 2, BLOCK_INF_Y_CHICA, bandStartY),
   ])
 }
 
@@ -229,7 +235,7 @@ export const MAPA_CONTENIDO = {
 // termina la bodega en esa zona, no hay racks a la derecha (a diferencia
 // de P1-P4). Puramente visual, como en el plano.
 export const LIMITE_PASILLOS_CHICOS = {
-  x: RIGHT_X0 - 5 + CHICA_OFFSET_X,
+  x: COL_RIGHT_X - GAP_X * 4 + CHICA_OFFSET_X,
   y1: bandStart(4),
   y2: bandStart(5) + BAND_HEIGHTS[5],
 }

@@ -79,54 +79,49 @@ export function useNotificacionesAlIngreso(
 ) {
   const cbRef  = useRef(onNotificacion)
   cbRef.current = onNotificacion
-  const checkedRef = useRef(false)
-
-  async function check() {
-    if (!rol) return
-    const desde = leerUltimaVisita()
-
-    if (rol === 'operador') {
-      const [notas, sesiones] = await Promise.all([
-        checkNotasOperador(desde),
-        checkSesionesOperador(desde),
-      ])
-      if (notas)    cbRef.current(notas)
-      if (sesiones) cbRef.current(sesiones)
-    } else if (rol === 'supervisor' || rol === 'admin') {
-      const [notas, sesiones] = await Promise.all([
-        checkNotasSupervisor(),
-        checkSesionesSupervisor(),
-      ])
-      if (notas)    cbRef.current(notas)
-      if (sesiones) cbRef.current(sesiones)
-    }
-  }
 
   useEffect(() => {
     if (!rol) return
 
-    // Check al montar (primera vez que abre la app)
-    if (!checkedRef.current) {
-      checkedRef.current = true
-      check()
+    async function check() {
+      const desde = leerUltimaVisita()
+      console.log('[Notif al ingreso] rol:', rol, 'desde:', desde)
+
+      if (rol === 'operador') {
+        const [notas, sesiones] = await Promise.all([
+          checkNotasOperador(desde),
+          checkSesionesOperador(desde),
+        ])
+        console.log('[Notif al ingreso] operador → notas:', notas, 'sesiones:', sesiones)
+        if (notas)    cbRef.current(notas)
+        if (sesiones) cbRef.current(sesiones)
+      } else {
+        const [notas, sesiones] = await Promise.all([
+          checkNotasSupervisor(),
+          checkSesionesSupervisor(),
+        ])
+        console.log('[Notif al ingreso] supervisor → notas:', notas, 'sesiones:', sesiones)
+        if (notas)    cbRef.current(notas)
+        if (sesiones) cbRef.current(sesiones)
+      }
     }
 
-    // Guardar timestamp al salir / ocultar
-    function onHide() {
-      if (document.visibilityState === 'hidden') guardarUltimaVisita()
-    }
-    // Check al volver a ser visible
-    function onVisible() {
-      if (document.visibilityState === 'visible') check()
+    // Check al montar por primera vez con este rol
+    check()
+
+    // Guardar timestamp al ocultar; re-chequear al volver a ser visible
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        guardarUltimaVisita()
+      } else {
+        check()
+      }
     }
 
-    document.addEventListener('visibilitychange', onHide)
-    document.addEventListener('visibilitychange', onVisible)
-
+    document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       guardarUltimaVisita()
-      document.removeEventListener('visibilitychange', onHide)
-      document.removeEventListener('visibilitychange', onVisible)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [rol])
 }

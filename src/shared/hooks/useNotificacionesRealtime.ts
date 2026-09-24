@@ -52,7 +52,10 @@ export function useNotificacionesRealtime(
           sonarOperador()
           cbRef.current({ tipo: 'nueva_nota', mensaje: 'Se ha cargado una nueva nota' })
         })
-        .subscribe()
+        .subscribe((status, err) => {
+          if (err) console.error('[Realtime operador] error:', err)
+          else console.log('[Realtime operador] estado:', status)
+        })
       return () => { supabase.removeChannel(canal) }
     }
 
@@ -65,7 +68,10 @@ export function useNotificacionesRealtime(
             cbRef.current({ tipo: 'nota_completa', mensaje: 'Una nota ha sido completada y está lista para validación' })
           }
         })
-        .subscribe()
+        .subscribe((status, err) => {
+          if (err) console.error('[Realtime supervisor] error:', err)
+          else console.log('[Realtime supervisor] estado:', status)
+        })
       return () => { supabase.removeChannel(canal) }
     }
   }, [rol])
