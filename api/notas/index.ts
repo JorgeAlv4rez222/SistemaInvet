@@ -75,6 +75,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { accion, id, estado, usuarioId } = req.query
 
   if (req.method === 'GET') {
+    if (accion === 'notif-counts') {
+      const rol   = typeof req.query.rol   === 'string' ? req.query.rol   : 'operador'
+      const desde = typeof req.query.desde === 'string' ? req.query.desde : null
+      const result = await notasService.contarParaNotificaciones(rol, desde)
+      if (!result.ok) return res.status(500).json({ error: result.error })
+      return res.status(200).json(result.data)
+    }
+
     if (typeof id === 'string') {
       const result = await notasService.obtenerDetalleNota(id, typeof usuarioId === 'string' ? usuarioId : undefined)
       if (!result.ok) return res.status(404).json({ error: result.error })

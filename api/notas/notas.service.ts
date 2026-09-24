@@ -1172,4 +1172,33 @@ export const notasService = {
 
     return { ok: true, data: { notaId: input.notaId } }
   },
+
+  async contarParaNotificaciones(rol: string, desde: string | null): Promise<ServiceResult<{
+    notasCount: number
+    sesionesCount: number
+  }>> {
+    if (rol === 'operador') {
+      let qNotas = supabase
+        .from('notas_venta')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado', 'pendiente')
+      if (desde) qNotas = qNotas.gt('created_at', desde)
+
+      let qSesiones = supabase
+        .from('sesiones_picking_masivo')
+        .select('id', { count: 'exact', head: true })
+        .in('estado', ['validando', 'en_proceso'])
+      if (desde) qSesiones = qSesiones.gt('created_at', desde)
+
+      const [rNotas, rSesiones] = await Promise.all([qNotas, qSesiones])
+      return { ok: true, data: { notasCount: rNotas.count ?? 0, sesionesCount: rSesiones.count ?? 0 } }
+    }
+
+    // supervisor / admin
+    const [rNotas, rSesiones] = await Promise.all([
+      supabase.from('notas_venta').select('id', { count: 'exact', head: true }).eq('estado', 'completa'),
+      supabase.from('sesiones_picking_masivo').select('id', { count: 'exact', head: true }).eq('estado', 'completada'),
+    ])
+    return { ok: true, data: { notasCount: rNotas.count ?? 0, sesionesCount: rSesiones.count ?? 0 } }
+  },
 }
