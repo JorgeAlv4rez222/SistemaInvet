@@ -193,6 +193,14 @@ export function Layout({ children }: Props) {
 
   useNotificacionesRealtime(rol, agregarToast)
   const { recheck } = useNotificacionesAlIngreso(rol, agregarToast)
+
+  function togglePanel() {
+    setPanelNotifs(p => {
+      if (!p) recheck()
+      return !p
+    })
+  }
+
   const itemsVisibles = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
   )
@@ -278,7 +286,7 @@ export function Layout({ children }: Props) {
         )}
         {/* Campana */}
         <button
-          onClick={() => setPanelNotifs(p => !p)}
+          onClick={togglePanel}
           title="Notificaciones"
           className={`relative flex items-center gap-3 rounded-lg text-[#94a3b8] hover:text-[#00A0DF] hover:bg-[rgba(0,160,223,0.1)] transition-all duration-150 ${expandido ? 'px-3 py-2.5' : 'justify-center p-2.5'}`}
         >
@@ -340,7 +348,7 @@ export function Layout({ children }: Props) {
       </div>
       <div className="shrink-0 border-t border-[rgba(255,255,255,0.06)] p-1.5 flex flex-col gap-1">
         {nombre && <div className="flex items-center justify-center py-1.5 text-[#94a3b8]"><IconUser /></div>}
-        <button onClick={() => setPanelNotifs(p => !p)} title="Notificaciones"
+        <button onClick={togglePanel} title="Notificaciones"
           className="relative flex items-center justify-center w-full p-2.5 rounded-lg text-[#94a3b8] hover:text-[#00A0DF] hover:bg-[rgba(0,160,223,0.1)] transition-all duration-150 [&_svg]:w-5 [&_svg]:h-5">
           <IcoBell />
           {noLeidas > 0 && (
@@ -455,7 +463,7 @@ export function Layout({ children }: Props) {
       {esOperador && (
         <button
           className="notif-fab tablet:hidden"
-          onClick={() => setPanelNotifs(p => !p)}
+          onClick={togglePanel}
           title="Notificaciones"
         >
           <IcoBell />

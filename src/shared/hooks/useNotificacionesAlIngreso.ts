@@ -91,8 +91,8 @@ export function useNotificacionesAlIngreso(
           }
           lastSesionesRef.current = sesionesCount
         }
-      } catch {
-        // Sin conexión o error de API — silencioso
+      } catch (err) {
+        console.warn('[notif]', err)
       }
     }
 
