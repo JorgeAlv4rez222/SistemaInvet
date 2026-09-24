@@ -445,11 +445,14 @@ export function Layout({ children }: Props) {
                 <p className="notif-panel-empty">Sin notificaciones</p>
               ) : (
                 notifs.map(n => (
-                  <div key={n.id} className={`notif-panel-item notif-panel-item--${n.tipo}`}>
+                  <div key={n.id} className={`notif-panel-item notif-panel-item--${n.tipo}`}
+                    onClick={() => setNotifs(prev => prev.filter(x => x.id !== n.id))}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="notif-panel-item-msg">{n.mensaje}</div>
                     <div className="notif-panel-item-footer">
                       <span className="notif-panel-item-time">{new Date(n.ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <button className="notif-panel-item-del" onClick={() => setNotifs(prev => prev.filter(x => x.id !== n.id))}>✕</button>
+                      <span className="notif-panel-item-del">✕</span>
                     </div>
                   </div>
                 ))

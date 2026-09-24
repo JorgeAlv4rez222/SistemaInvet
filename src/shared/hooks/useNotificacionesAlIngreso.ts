@@ -54,7 +54,6 @@ export function useNotificacionesAlIngreso(
         const data = await fetchItems(rol as string, desde)
         const notas    = Array.isArray(data.notas)    ? data.notas    : []
         const sesiones = Array.isArray(data.sesiones) ? data.sesiones : []
-        console.log(`[notif] rol=${rol} notas=${notas.length} sesiones=${sesiones.length} rawKeys=${Object.keys(data).join(',')}`)
 
         if (rol === 'operador') {
           for (const nota of notas) {
@@ -62,7 +61,7 @@ export function useNotificacionesAlIngreso(
               notifiedRef.current.add(nota.id)
               cbRef.current({
                 tipo:    'nueva_nota',
-                mensaje: `+1 nota ${nota.numero_nota} pendiente de preparar`,
+                mensaje: `Se ha agregado la nota ${nota.numero_nota}`,
               })
             }
           }
@@ -71,7 +70,7 @@ export function useNotificacionesAlIngreso(
               notifiedRef.current.add(sesion.id)
               cbRef.current({
                 tipo:    'nueva_nota',
-                mensaje: `Sesión ${labelSesion(sesion)} asignada`,
+                mensaje: `Se ha asignado sesión ${labelSesion(sesion)}`,
               })
             }
           }
