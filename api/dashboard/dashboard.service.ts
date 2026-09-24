@@ -208,12 +208,11 @@ export const dashboardService = {
     inicio.setDate(inicio.getDate() - 6)
     inicio.setHours(0, 0, 0, 0)
 
-    const { data, error } = await supabase
-      .from('despachos')
-      .select('fecha_despacho')
-      .gte('fecha_despacho', inicio.toISOString())
-
-    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    const [despR, sesionR, olaR] = await Promise.all([
+      supabase.from('despachos').select('fecha_despacho').gte('fecha_despacho', inicio.toISOString()),
+      supabase.from('sesiones_picking_masivo').select('despachado_en').gte('despachado_en', inicio.toISOString()).not('despachado_en', 'is', null),
+      supabase.from('olas_picking').select('despachado_en').gte('despachado_en', inicio.toISOString()).not('despachado_en', 'is', null),
+    ])
 
     const dias = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(inicio)
@@ -221,11 +220,17 @@ export const dashboardService = {
       return { dia: d.toISOString().slice(0, 10), label: DIAS_LABEL[d.getDay()], cant: 0 }
     })
 
-    for (const row of (data as { fecha_despacho: string }[] ?? [])) {
-      const key = row.fecha_despacho.slice(0, 10)
-      const found = dias.find((d) => d.dia === key)
-      if (found) found.cant++
+    const sumarFechas = (rows: { fecha_despacho?: string; despachado_en?: string }[]) => {
+      for (const row of rows) {
+        const key = (row.fecha_despacho ?? row.despachado_en ?? '').slice(0, 10)
+        const found = dias.find((d) => d.dia === key)
+        if (found) found.cant++
+      }
     }
+
+    sumarFechas((despR.data ?? []) as any[])
+    sumarFechas((sesionR.data ?? []) as any[])
+    sumarFechas((olaR.data ?? []) as any[])
 
     return { ok: true, data: { dias, total: dias.reduce((s, d) => s + d.cant, 0) } }
   },
@@ -328,9 +333,9 @@ export const dashboardService = {
     const inicio = new Date(`${fecha}T00:00:00.000Z`)
     const fin    = new Date(`${fecha}T23:59:59.999Z`)
 
-    const [nvR, sesionR, olaR] = await Promise.all([
-      supabase.from('notas_venta')
-        .select('id, numero_nota, nombre_cliente, fecha_despacho')
+    const [despR, sesionR, olaR] = await Promise.all([
+      supabase.from('despachos')
+        .select('id, fecha_despacho, notas_venta!inner(id, numero_nota, nombre_cliente)')
         .gte('fecha_despacho', inicio.toISOString())
         .lte('fecha_despacho', fin.toISOString()),
       supabase.from('sesiones_picking_masivo')
@@ -343,9 +348,12 @@ export const dashboardService = {
         .lte('despachado_en', fin.toISOString()),
     ])
 
-    const nvs = (nvR.data ?? []).map(r => ({
-      id: r.id, referencia: r.numero_nota, nombreCliente: r.nombre_cliente,
-      fechaDespacho: r.fecha_despacho, tipo: 'nv' as const,
+    const nvs = ((despR.data ?? []) as any[]).map(r => ({
+      id: r.notas_venta?.id ?? r.id,
+      referencia: r.notas_venta?.numero_nota ?? '—',
+      nombreCliente: r.notas_venta?.nombre_cliente ?? '—',
+      fechaDespacho: r.fecha_despacho,
+      tipo: 'nv' as const,
     }))
     const sesiones = (sesionR.data ?? []).map(r => ({
       id: r.id, referencia: r.numero_oc ?? '—', nombreCliente: r.nombre_cliente ?? 'Sodimac',
