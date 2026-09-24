@@ -213,6 +213,7 @@ export const dashboardService = {
       supabase.from('sesiones_picking_masivo').select('despachado_en').gte('despachado_en', inicio.toISOString()).not('despachado_en', 'is', null),
       supabase.from('olas_picking').select('despachado_en').gte('despachado_en', inicio.toISOString()).not('despachado_en', 'is', null),
     ])
+    if (despR.error && sesionR.error && olaR.error) return { ok: false, error: { code: 'DB_ERROR', message: despR.error.message } }
 
     const dias = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(inicio)

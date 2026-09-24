@@ -1,7 +1,7 @@
 import { useState, Component } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDashboard, useDespachosSemana, useDespachosDia } from '../hooks/useDashboard'
+import { useDashboard, useDespachosSemana, useDespachosDia, useKpisBi } from '../hooks/useDashboard'
 import type { DiaDespacho } from '../hooks/useDashboard'
 
 // ── Error boundary ────────────────────────────────────────────────────────
@@ -58,36 +58,42 @@ function KpiOp({ icon, label, valor, sub, alerta, onClick }: {
 
 // ── Gráfico barras (HTML/CSS) ─────────────────────────────────────────────
 
+const CHART_H = 90  // px área de barras
+
 function GraficoDiario({ data, diaActivo, onClickDia }: {
   data: DiaDespacho[]; diaActivo: string | null; onClickDia: (dia: string) => void
 }) {
-  if (data.length === 0) {
+  const rows = Array.isArray(data) ? data : []
+  if (rows.length === 0) {
     return <div className="bi-chart-empty">Cargando…</div>
   }
 
-  const maxV = Math.max(1, ...data.map(d => d.cant))
+  const maxV = Math.max(1, ...rows.map(d => d.cant))
 
   return (
-    <div className="bi-chart-wrap">
-      {data.map(d => {
-        const pct     = Math.max(4, Math.round((d.cant / maxV) * 100))
-        const activo  = diaActivo === d.dia
-        const clicable = d.cant > 0
-
-        return (
-          <div key={d.dia} className="bi-chart-col">
-            <span className="bi-chart-val">{d.cant > 0 ? d.cant : ''}</span>
-            <button
-              type="button"
-              className={`bi-chart-bar ${activo ? 'bi-chart-bar--activo' : ''} ${clicable ? 'bi-chart-bar--clicable' : 'bi-chart-bar--vacio'}`}
-              style={{ height: `${pct}%` }}
-              onClick={() => { if (clicable) onClickDia(d.dia) }}
-              title={clicable ? `${d.label}: ${d.cant} despachos` : undefined}
-            />
-            <span className={`bi-chart-label ${activo ? 'bi-chart-label--activo' : ''}`}>{d.label}</span>
-          </div>
-        )
-      })}
+    <div className="bi-chart-outer">
+      <div className="bi-chart-area">
+        {rows.map(d => {
+          const px      = d.cant > 0 ? Math.max(6, Math.round((d.cant / maxV) * CHART_H)) : 3
+          const activo  = diaActivo === d.dia
+          const clicable = d.cant > 0
+          return (
+            <div key={d.dia} className="bi-chart-col">
+              <div className="bi-chart-bar-track">
+                <span className="bi-chart-val">{d.cant > 0 ? d.cant : ''}</span>
+                <button
+                  type="button"
+                  className={`bi-chart-bar ${activo ? 'bi-chart-bar--activo' : ''} ${clicable ? 'bi-chart-bar--clicable' : 'bi-chart-bar--vacio'}`}
+                  style={{ height: px }}
+                  onClick={() => { if (clicable) onClickDia(d.dia) }}
+                  title={clicable ? `${d.label}: ${d.cant} despachos` : undefined}
+                />
+              </div>
+              <span className={`bi-chart-label ${activo ? 'bi-chart-label--activo' : ''}`}>{d.label}</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -101,8 +107,14 @@ function DashboardBIInner() {
   const { data: kpis, isLoading: kpisLoading } = useDashboard()
   const { data: semanaData } = useDespachosSemana()
   const { data: notasDia, isLoading: cargandoDia } = useDespachosDia(diaSeleccionado)
+  const { data: biData } = useKpisBi()
 
   const mesActual = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
+
+  function fmtHora(hora: string) {
+    // "09:30 a. m." → "09:30" para que quepa en el panel estrecho
+    return hora.replace(/\s*(a\.|p\.)\s*m\./i, '').trim()
+  }
 
   function toggleDia(dia: string) {
     setDiaSeleccionado(prev => prev === dia ? null : dia)
@@ -182,7 +194,7 @@ function DashboardBIInner() {
             </div>
 
             <GraficoDiario
-              data={semanaData?.dias ?? []}
+              data={Array.isArray(semanaData?.dias) ? semanaData!.dias : []}
               diaActivo={diaSeleccionado}
               onClickDia={toggleDia}
             />
@@ -192,14 +204,14 @@ function DashboardBIInner() {
                 <p className="bi-dia-detalle-titulo">
                   {labelFecha(diaSeleccionado)}
                   <span className="bi-dia-detalle-count">
-                    {cargandoDia ? '…' : `${notasDia?.length ?? 0} despachos`}
+                    {cargandoDia ? '…' : `${Array.isArray(notasDia) ? notasDia.length : 0} despachos`}
                   </span>
                 </p>
                 {cargandoDia && <p className="bi-dia-detalle-loading">Cargando…</p>}
-                {!cargandoDia && (notasDia?.length ?? 0) === 0 && (
+                {!cargandoDia && (Array.isArray(notasDia) ? notasDia.length : 0) === 0 && (
                   <p className="bi-dia-detalle-vacio">Sin despachos ese día</p>
                 )}
-                {!cargandoDia && (notasDia ?? []).map(n => {
+                {!cargandoDia && (Array.isArray(notasDia) ? notasDia : []).map(n => {
                   const ruta =
                     n.tipo === 'nv'     ? `/notas/${n.id}` :
                     n.tipo === 'sesion' ? `/picking-masivo/${n.id}` :
@@ -230,7 +242,15 @@ function DashboardBIInner() {
               </div>
             </div>
             <div className="bi-actividad-list">
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '8px 0' }}>Sin actividad reciente</p>
+              {(biData?.actividadReciente ?? []).length === 0
+                ? <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '8px 0' }}>Sin actividad reciente</p>
+                : (biData?.actividadReciente ?? []).map((ev, i) => (
+                    <div key={i} className={`bi-actividad-item bi-actividad-item--${ev.tipo}`}>
+                      <span className="bi-actividad-hora">{fmtHora(ev.hora)}</span>
+                      <span className="bi-actividad-texto">{ev.texto}</span>
+                    </div>
+                  ))
+              }
             </div>
           </div>
         </div>
