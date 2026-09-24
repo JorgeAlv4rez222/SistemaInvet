@@ -118,7 +118,7 @@ function RevisionConDetalle({
     codigoBarraAlternativo:  p.codigoBaRalternativo ?? null,
     cantidadSolicitada:      p.cantidadSolicitada,
     cantidadDespachada:      p.cantidadDespachada,
-    revisadoAdmin:           p.revisadoAdmin,
+    revisadoAdmin:           p.revisadoAdmin || p.estado === 'sin_stock',
     estado:                  p.estado,
     skuEquivalente:          p.skuEquivalente ?? null,
   }))

@@ -173,13 +173,14 @@ export const salidasService = {
     })
 
     // Verificar si todos los ítems de la nota ya fueron revisados
+    // Los sin_stock se cuentan como revisados automáticamente
     const { data: todosItems } = await supabase
       .from('nota_productos')
-      .select('id, revisado_admin')
+      .select('id, revisado_admin, estado')
       .eq('nota_venta_id', notaRef.id)
 
     const todosRevisados = (todosItems ?? []).every(
-      (item) => item.revisado_admin || item.id === input.notaProductoId
+      (item) => item.revisado_admin || item.id === input.notaProductoId || item.estado === 'sin_stock'
     )
 
     return {
