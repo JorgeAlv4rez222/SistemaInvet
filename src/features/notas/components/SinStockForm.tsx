@@ -27,7 +27,7 @@ export function SinStockForm({ notaProductoId, sku, usuarioId, onCompletado, onC
 
   return (
     <div className="paso sin-stock-form">
-      <h4>Sin stock — {sku}</h4>
+      <h4>Producto sin Stock</h4>
       <p>Explica por qué no se puede despachar este producto.</p>
 
       <label>
@@ -44,11 +44,11 @@ export function SinStockForm({ notaProductoId, sku, usuarioId, onCompletado, onC
       {error && <div className="error-banner">{error}</div>}
 
       <div className="paso-acciones">
-        <button className="btn-secundario" onClick={onCancelar} disabled={sinStock.isPending}>
+        <button className="btn-secundario btn-secundario--accion" onClick={onCancelar} disabled={sinStock.isPending}>
           Cancelar
         </button>
         <button
-          className="btn-peligro"
+          className="btn-secundario btn-secundario--accion"
           disabled={sinStock.isPending || !comentario.trim()}
           onClick={handleConfirmar}
         >

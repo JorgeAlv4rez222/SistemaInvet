@@ -567,6 +567,9 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             >
               ← Volver
             </button>
+            <button className="btn-secundario" onClick={() => setPaso({ tipo: 'sin_stock' })}>
+              Sin stock
+            </button>
             <button className="btn-primario" onClick={() => handleEscanearProducto(productoInputRef.current?.value ?? '')}>
               Confirmar
             </button>
