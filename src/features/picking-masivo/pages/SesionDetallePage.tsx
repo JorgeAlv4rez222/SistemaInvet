@@ -147,7 +147,7 @@ export function SesionDetallePage() {
   const [skuMapLabel, setSkuMapLabel]   = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
-  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'libre' | 'en_progreso' | 'parcial' | 'sin_stock' | 'completado'>('todos')
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'libre' | 'parcial' | 'sin_stock' | 'completado'>('todos')
   const [productosConfirmados, setProductosConfirmados] = useState(false)
   const [lpnCount, setLpnCount]     = useState(0)
   const [lpnSubiendo, setLpnSubiendo] = useState(false)
@@ -317,12 +317,13 @@ export function SesionDetallePage() {
 
   // ── Filtros de items ──
   const FILTROS = [
-    { key: 'todos',       label: 'Todos',      count: sesion.items.length },
-    { key: 'libre',       label: 'Pendiente',  count: sesion.items.filter(i => i.estado === 'libre').length },
-    { key: 'en_progreso', label: 'En Proceso', count: sesion.items.filter(i => i.estado === 'en_progreso').length },
-    { key: 'completado',  label: 'Completas',  count: sesion.items.filter(i => i.estado === 'completado').length },
-    { key: 'parcial',     label: 'Parcial',    count: sesion.items.filter(i => i.estado === 'parcial').length },
+    { key: 'libre',      label: 'Pendiente', count: sesion.items.filter(i => i.estado === 'libre').length },
+    { key: 'completado', label: 'Completas', count: sesion.items.filter(i => i.estado === 'completado').length },
+    { key: 'parcial',    label: 'Parcial',   count: sesion.items.filter(i => i.estado === 'parcial').length },
+    { key: 'sin_stock',  label: 'Sin Stock', count: sesion.items.filter(i => i.estado === 'sin_stock').length },
   ] as const
+
+  const ESTADO_ORDEN: Record<string, number> = { en_progreso: 0, libre: 1, parcial: 2, sin_stock: 3, completado: 4 }
 
   const itemsFiltrados = sesion.items
     .filter(item => {
@@ -333,6 +334,9 @@ export function SesionDetallePage() {
       return matchQ && matchF
     })
     .sort((a, b) => {
+      const oa = ESTADO_ORDEN[a.estado] ?? 99
+      const ob = ESTADO_ORDEN[b.estado] ?? 99
+      if (oa !== ob) return oa - ob
       if (a.lpn && b.lpn) return a.lpn.localeCompare(b.lpn)
       return 0
     })
@@ -373,15 +377,6 @@ export function SesionDetallePage() {
             <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
               <IcoDownload /> Excel
             </button>
-          )}
-          {esAdmin && (
-            <>
-              <input ref={skuFileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleSkuFile} />
-              <button className="sd-btn sd-btn--secondary" onClick={() => skuFileInputRef.current?.click()}
-                title={skuMapLabel ?? 'Sube un Excel con columnas SKU y Código para incluirlo en la descarga'}>
-                {skuMap.size > 0 ? `SKU cargado (${skuMap.size})` : 'Cargar SKU'}
-              </button>
-            </>
           )}
           {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
             <>
@@ -523,7 +518,7 @@ export function SesionDetallePage() {
             <button
               key={f.key}
               className={`sd-filtro-btn sd-filtro-btn--${f.key.replace('_', '-')} ${filtroEstado === f.key ? 'sd-filtro-btn--activo' : ''}`}
-              onClick={() => setFiltroEstado(f.key as typeof filtroEstado)}
+              onClick={() => setFiltroEstado(prev => prev === f.key ? 'todos' : f.key as typeof filtroEstado)}
             >
               {f.label}
               <span className="sd-filtro-count">{f.count}</span>
