@@ -527,6 +527,8 @@ export function SesionDetallePage() {
         </div>
       </div>
 
+      <h2 className="sd-lista-titulo">Listado de productos {sesion.nombre_cliente ?? sesion.numero_oc}</h2>
+
       {/* ── Lista de productos ── */}
       <div className="sd-items-lista">
         {itemsFiltrados.length === 0 && (
