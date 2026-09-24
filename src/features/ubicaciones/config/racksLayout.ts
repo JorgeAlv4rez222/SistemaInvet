@@ -29,7 +29,7 @@ export type PasilloLayout = {
   direccion: 'down' | 'up' | 'left' | 'right'
 }
 
-export const BODEGA_VIEWBOX = { width: 400, height: 840 }
+export const BODEGA_VIEWBOX = { width: 400, height: 750 }
 
 const BOX_W = 28
 const BOX_H = 26
@@ -47,9 +47,9 @@ const BLOCK_P1_Y    = GAP_Y + BOX_H + AISLE_GAP                      // 54 — t
 
 // Alto de cada franja (P1..P6): P1 no tiene bloque superior propio (sus
 // racks 6-13 están en la fila especial contra el muro, ver
-// `filaSuperiorP1`); P5-P6 son más bajas porque su columna solo tiene 2
-// filas (R4,R5), no 3.
-const BAND_HEIGHTS = [80, 134, 134, 134, 106, 106]
+// `filaSuperiorP1`); P2-P6 tienen columna de 2 filas (R4,R5), por eso
+// todas miden 106.
+const BAND_HEIGHTS = [80, 106, 106, 106, 106, 106]
 const BAND_GAP = 6 // pequeña separación entre el bloque de un pasillo y el bloque del siguiente
 
 function bandStart(index: number): number {
@@ -111,38 +111,43 @@ function pasillo1(bandStartY: number): Record<string, RackLayout> {
 }
 
 /**
- * Pasillos 2, 3 y 4 (18 racks c/u) — estructura "sándwich" completa:
- * bloque superior propio (3-2-1/18-17-16) + columna propia + etiqueta +
- * bloque inferior propio (7-8-9/10-11-12).
- * P4 muestra en el plano solo una fila del bloque inferior derecho, pero
- * sus 18 racks existen igual en Supabase — se ubica R10-12 igual que en
- * P2/P3 para no dejarlos sin coordenada.
+ * Pasillos 2, 3 y 4 (18 racks c/u) — estructura:
+ *   [bloque superior: R3-R2-R1 (muro izq) | R18-R17-R16-R15 (muro der, 4 racks)]
+ *   [columna 2 filas: R4,R5 (izq) | R14,R13 (der)]
+ *   [bloque inferior: R6-R7-R8 (ligeramente desde muro izq) | R9-R10-R11-R12 (hasta muro der, 4 racks)]
  */
 function pasilloGrande(pasillo: string, bandStartY: number): Record<string, RackLayout> {
-  return Object.fromEntries([
-    // bloque superior (pegado al pasillo anterior)
-    box(pasillo, 3, LEFT_X0, 0, bandStartY),
-    box(pasillo, 2, LEFT_X0 + GAP_X, 0, bandStartY),
-    box(pasillo, 1, LEFT_X0 + GAP_X * 2, 0, bandStartY),
-    box(pasillo, 18, RIGHT_X0, 0, bandStartY),
-    box(pasillo, 17, RIGHT_X0 + GAP_X, 0, bandStartY),
-    box(pasillo, 16, RIGHT_X0 + GAP_X * 2, 0, bandStartY),
+  // Bloque de 4 racks derecho: R15 pegado al muro der, R18 más al centro
+  const R_DER4_X0 = COL_RIGHT_X - GAP_X * 3  // 330 - 90 = 240
 
-    // columna lateral + etiqueta de este pasillo
+  return Object.fromEntries([
+    // bloque superior izquierdo (3 racks desde el muro)
+    box(pasillo, 3, COL_LEFT_X, 0, bandStartY),
+    box(pasillo, 2, COL_LEFT_X + GAP_X, 0, bandStartY),
+    box(pasillo, 1, COL_LEFT_X + GAP_X * 2, 0, bandStartY),
+
+    // bloque superior derecho (4 racks, R15 pegado al muro)
+    box(pasillo, 18, R_DER4_X0, 0, bandStartY),
+    box(pasillo, 17, R_DER4_X0 + GAP_X, 0, bandStartY),
+    box(pasillo, 16, R_DER4_X0 + GAP_X * 2, 0, bandStartY),
+    box(pasillo, 15, COL_RIGHT_X, 0, bandStartY),
+
+    // columna lateral (2 filas)
     box(pasillo, 4, COL_LEFT_X, COL_Y0_GRANDE, bandStartY),
     box(pasillo, 5, COL_LEFT_X, COL_Y0_GRANDE + GAP_Y, bandStartY),
-    box(pasillo, 6, COL_LEFT_X, COL_Y0_GRANDE + GAP_Y * 2, bandStartY),
-    box(pasillo, 15, COL_RIGHT_X, COL_Y0_GRANDE, bandStartY),
-    box(pasillo, 14, COL_RIGHT_X, COL_Y0_GRANDE + GAP_Y, bandStartY),
-    box(pasillo, 13, COL_RIGHT_X, COL_Y0_GRANDE + GAP_Y * 2, bandStartY),
+    box(pasillo, 14, COL_RIGHT_X, COL_Y0_GRANDE, bandStartY),
+    box(pasillo, 13, COL_RIGHT_X, COL_Y0_GRANDE + GAP_Y, bandStartY),
 
-    // bloque inferior (propio de este pasillo, antes del siguiente)
-    box(pasillo, 7, LEFT_X0, BLOCK_INF_Y, bandStartY),
-    box(pasillo, 8, LEFT_X0 + GAP_X, BLOCK_INF_Y, bandStartY),
-    box(pasillo, 9, LEFT_X0 + GAP_X * 2, BLOCK_INF_Y, bandStartY),
-    box(pasillo, 10, RIGHT_X0, BLOCK_INF_Y, bandStartY),
-    box(pasillo, 11, RIGHT_X0 + GAP_X, BLOCK_INF_Y, bandStartY),
-    box(pasillo, 12, RIGHT_X0 + GAP_X * 2, BLOCK_INF_Y, bandStartY),
+    // bloque inferior izquierdo (3 racks, ligeramente alejado del muro)
+    box(pasillo, 6, LEFT_X0, BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 7, LEFT_X0 + GAP_X, BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 8, LEFT_X0 + GAP_X * 2, BLOCK_INF_Y_CHICA, bandStartY),
+
+    // bloque inferior derecho (4 racks, R12 pegado al muro)
+    box(pasillo, 9, R_DER4_X0, BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 10, R_DER4_X0 + GAP_X, BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 11, R_DER4_X0 + GAP_X * 2, BLOCK_INF_Y_CHICA, bandStartY),
+    box(pasillo, 12, COL_RIGHT_X, BLOCK_INF_Y_CHICA, bandStartY),
   ])
 }
 
@@ -197,8 +202,8 @@ export const FRANJAS_PASILLO: Record<string, { yStart: number; height: number }>
   Object.fromEntries(
     PASILLO_CODIGOS.map((codigo, i) => {
       if (i === 0) return [codigo, { yStart: bandStart(i), height: ALTURA_COL_P1 }]
-      if (i >= 4)  return [codigo, { yStart: bandStart(i) + COL_Y0_GRANDE, height: ALTURA_COL_P1 }]
-      return [codigo, { yStart: bandStart(i) + COL_Y0_GRANDE, height: ALTURA_COL_GRANDE }]
+      // P2-P6 tienen columna de 2 filas
+      return [codigo, { yStart: bandStart(i) + COL_Y0_GRANDE, height: ALTURA_COL_P1 }]
     }),
   )
 
@@ -254,9 +259,9 @@ const LABEL_Y_CHICA  = COL_Y0_GRANDE + (GAP_Y + BOX_H) / 2           // centro d
 
 export const PASILLOS_LAYOUT: Record<string, PasilloLayout> = {
   A: { codigo: 'A', labelX: CENTRO_GRANDE, labelY: bandStart(0) + LABEL_Y_P1, direccion: 'down' },
-  B: { codigo: 'B', labelX: CENTRO_GRANDE, labelY: bandStart(1) + LABEL_Y_GRANDE, direccion: 'down' },
-  C: { codigo: 'C', labelX: CENTRO_GRANDE, labelY: bandStart(2) + LABEL_Y_GRANDE, direccion: 'down' },
-  D: { codigo: 'D', labelX: CENTRO_GRANDE, labelY: bandStart(3) + LABEL_Y_GRANDE, direccion: 'down' },
+  B: { codigo: 'B', labelX: CENTRO_GRANDE, labelY: bandStart(1) + LABEL_Y_CHICA, direccion: 'down' },
+  C: { codigo: 'C', labelX: CENTRO_GRANDE, labelY: bandStart(2) + LABEL_Y_CHICA, direccion: 'down' },
+  D: { codigo: 'D', labelX: CENTRO_GRANDE, labelY: bandStart(3) + LABEL_Y_CHICA, direccion: 'down' },
   E: { codigo: 'E', labelX: CENTRO_CHICA,  labelY: bandStart(4) + LABEL_Y_CHICA, direccion: 'down' },
   F: { codigo: 'F', labelX: CENTRO_CHICA,  labelY: bandStart(5) + LABEL_Y_CHICA, direccion: 'down' },
 }
