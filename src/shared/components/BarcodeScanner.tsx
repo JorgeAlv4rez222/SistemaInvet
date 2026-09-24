@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { sonarEscaneoExitoso } from '../utils/sonidos'
 
 interface Props {
   onDetected: (codigo: string) => void
@@ -79,6 +80,7 @@ export function BarcodeScanner({ onDetected, title = 'Escanear con cámara' }: P
           try {
             const resultados = await detector.detect(videoRef.current)
             if (resultados.length > 0) {
+              sonarEscaneoExitoso()
               cerrar()
               onDetected(resultados[0].rawValue)
               return

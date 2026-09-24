@@ -4,6 +4,7 @@ import { SinStockForm } from './SinStockForm'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
+import { sonarEscaneoExitoso } from '../../../shared/utils/sonidos'
 import type { NotaProductoResumen, ProductoConStock, Ubicacion } from '../services/notas.api'
 
 interface Props {
@@ -238,6 +239,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     }
     const parada = plan[paso.paradaIdx]
     setCantidad(parada?.cantidadATomar?.toString() ?? '')
+    sonarEscaneoExitoso()
     setPaso({ tipo: 'ingresar_cantidad', paradaIdx: paso.paradaIdx, codigoProducto: codigo.trim(), equivalenteId: paso.equivalenteId })
     setError(null)
   }

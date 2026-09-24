@@ -1018,6 +1018,32 @@ label {
 .bi-accion-emoji { font-size: 1.4rem; line-height: 1; }
 .bi-accion-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); line-height: 1.3; }
 
+/* ── Notificaciones toast ──────────────────────────────────────────────────── */
+.notif-toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+.notif-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 10px; max-width: 340px;
+  pointer-events: all;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  animation: notif-slide-in 0.25s ease;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+}
+.notif-toast--nueva_nota  { border-left: 4px solid var(--accent); }
+.notif-toast--nota_completa { border-left: 4px solid #34d399; }
+.notif-toast-icon { color: var(--accent); flex-shrink: 0; }
+.notif-toast--nota_completa .notif-toast-icon { color: #34d399; }
+.notif-toast-msg { font-size: 13px; color: var(--text-primary); flex: 1; line-height: 1.4; font-weight: 500; }
+.notif-toast-close { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1; }
+.notif-toast-close:hover { color: var(--text-primary); }
+@keyframes notif-slide-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
 
 /* Responsive */
 /* ── Tablet (≤1024px): una columna, KPIs 2×2 ── */
