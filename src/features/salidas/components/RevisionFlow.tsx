@@ -383,7 +383,7 @@ export function RevisionFlow({
   function renderFila(item: ItemRevision) {
     const revisado     = item.revisadoAdmin
     const esSinStock   = item.estado === 'sin_stock'
-    const puedeRevisar = !revisado && !offline && !yaDespachada
+    const puedeRevisar = !revisado && !esSinStock && !offline && !yaDespachada
     const abierto      = expandidos.has(item.notaProductoId)
 
     const dotClass = revisado
