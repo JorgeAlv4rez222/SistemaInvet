@@ -51,8 +51,10 @@ export function useNotificacionesAlIngreso(
       const desde = (rol === 'operador' && !esInicial) ? leerUltimaVisita() : null
 
       try {
-        const { notas, sesiones } = await fetchItems(rol as string, desde)
-        console.log('[notif] items:', { rol, notas: notas.length, sesiones: sesiones.length })
+        const data = await fetchItems(rol as string, desde)
+        const notas    = Array.isArray(data.notas)    ? data.notas    : []
+        const sesiones = Array.isArray(data.sesiones) ? data.sesiones : []
+        console.log('[notif] items:', { rol, notas: notas.length, sesiones: sesiones.length, data })
 
         if (rol === 'operador') {
           for (const nota of notas) {
