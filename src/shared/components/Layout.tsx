@@ -192,7 +192,7 @@ export function Layout({ children }: Props) {
   }, [])
 
   useNotificacionesRealtime(rol, agregarToast)
-  useNotificacionesAlIngreso(rol, agregarToast)
+  const { recheck } = useNotificacionesAlIngreso(rol, agregarToast)
   const itemsVisibles = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
   )
@@ -425,6 +425,7 @@ export function Layout({ children }: Props) {
             <div className="notif-panel-header">
               <span className="notif-panel-title"><IcoBell /> Notificaciones</span>
               <div className="notif-panel-actions">
+                <button className="notif-panel-refresh" onClick={recheck} title="Revisar ahora">↻</button>
                 {notifs.length > 0 && (
                   <button className="notif-panel-clear" onClick={() => setNotifs([])}>Limpiar todo</button>
                 )}
