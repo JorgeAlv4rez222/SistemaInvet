@@ -1045,6 +1045,118 @@ label {
   to   { transform: translateX(0);    opacity: 1; }
 }
 
+/* ── Panel de notificaciones ──────────────────────────────────────────────── */
+.notif-panel-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+}
+.notif-panel {
+  position: fixed; bottom: 80px; left: 68px; z-index: 1001;
+  width: 320px; max-height: 420px;
+  display: flex; flex-direction: column;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow: hidden;
+  animation: notif-panel-in 0.18s ease;
+}
+@keyframes notif-panel-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.notif-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+.notif-panel-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700; color: var(--text-primary);
+}
+.notif-panel-actions { display: flex; align-items: center; gap: 8px; }
+.notif-panel-clear {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; font-weight: 600;
+  color: var(--accent); padding: 2px 6px; border-radius: 4px;
+}
+.notif-panel-clear:hover { background: rgba(0,160,223,0.12); }
+.notif-panel-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 14px; line-height: 1;
+  padding: 2px 4px; border-radius: 4px;
+}
+.notif-panel-close:hover { color: var(--text-primary); background: var(--border); }
+.notif-panel-body {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px;
+}
+.notif-panel-empty {
+  text-align: center; color: var(--text-muted);
+  font-size: 13px; padding: 24px 0;
+}
+.notif-panel-item {
+  padding: 10px 12px; border-radius: 8px;
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--accent);
+}
+.notif-panel-item--nota_completa { border-left-color: #34d399; }
+.notif-panel-item-msg { font-size: 13px; color: var(--text-primary); font-weight: 500; line-height: 1.4; }
+.notif-panel-item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+.notif-panel-item-time { font-size: 11px; color: var(--text-muted); }
+.notif-panel-item-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 11px; line-height: 1; padding: 1px 4px; border-radius: 3px;
+}
+.notif-panel-item-del:hover { color: var(--text-primary); background: var(--border); }
+
+/* Botón flotante campana — operador mobile */
+.notif-fab {
+  position: fixed; top: 12px; right: 12px; z-index: 900;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #1E2E38; border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  color: #94a3b8; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.notif-fab:hover { background: rgba(0,160,223,0.15); color: #00A0DF; }
+.notif-fab [&_svg] { width: 20px; height: 20px; }
+.notif-fab-badge {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 16px; height: 16px; padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: #00A0DF;
+  color: white; font-size: 9px; font-weight: 700; line-height: 1;
+}
+
+/* Mobile (≤480px): sin sidebar — panel arriba a la derecha, ancho completo */
+@media (max-width: 480px) {
+  .notif-panel {
+    left: auto; right: 12px;
+    bottom: auto; top: 64px;
+    width: calc(100vw - 24px); max-width: 340px;
+  }
+}
+
+/* Tablet (481px–1100px): sidebar visible colapsado (w-16 = 64px) */
+@media (min-width: 481px) and (max-width: 1100px) {
+  .notif-panel {
+    left: 72px;           /* pegado al sidebar w-16 */
+    bottom: 16px;
+    width: min(320px, calc(100vw - 88px));
+  }
+}
+
+/* Desktop (1101px+): sidebar puede estar expandido (w-52 = 208px) o colapsado (w-16) */
+@media (min-width: 1101px) {
+  .notif-panel {
+    left: var(--panel-sidebar-w, 68px);
+    bottom: 80px;
+    width: 320px;
+  }
+}
+
 /* Responsive */
 /* ── Tablet (≤1024px): una columna, KPIs 2×2 ── */
 @media (max-width: 1024px) {
