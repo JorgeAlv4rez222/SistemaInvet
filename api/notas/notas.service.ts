@@ -1174,31 +1174,44 @@ export const notasService = {
   },
 
   async contarParaNotificaciones(rol: string, desde: string | null): Promise<ServiceResult<{
-    notasCount: number
-    sesionesCount: number
+    notas:    { id: string; numero_nota: string; estado: string }[]
+    sesiones: { id: string; numero_oc: string; nombre_cliente: string; estado: string }[]
   }>> {
     if (rol === 'operador') {
-      let qNotas = supabase
-        .from('notas_venta')
-        .select('id', { count: 'exact', head: true })
-        .eq('estado', 'pendiente')
+      let qNotas = supabase.from('notas_venta').select('id, numero_nota, estado').eq('estado', 'pendiente')
       if (desde) qNotas = qNotas.gt('created_at', desde)
 
-      let qSesiones = supabase
-        .from('sesiones_picking_masivo')
-        .select('id', { count: 'exact', head: true })
+      let qSesiones = supabase.from('sesiones_picking_masivo')
+        .select('id, numero_oc, nombre_cliente, estado')
         .in('estado', ['validando', 'en_proceso'])
-      if (desde) qSesiones = qSesiones.gt('created_at', desde)
+      if (desde) qSesiones = qSesiones.gt('creado_en', desde)
 
       const [rNotas, rSesiones] = await Promise.all([qNotas, qSesiones])
-      return { ok: true, data: { notasCount: rNotas.count ?? 0, sesionesCount: rSesiones.count ?? 0 } }
+      return { ok: true, data: { notas: rNotas.data ?? [], sesiones: rSesiones.data ?? [] } }
     }
 
-    // supervisor / admin
+    if (rol === 'supervisor') {
+      const [rNotas, rSesiones] = await Promise.all([
+        supabase.from('notas_venta').select('id, numero_nota, estado').eq('estado', 'completa'),
+        supabase.from('sesiones_picking_masivo').select('id, numero_oc, nombre_cliente, estado').eq('estado', 'completada'),
+      ])
+      return { ok: true, data: { notas: rNotas.data ?? [], sesiones: rSesiones.data ?? [] } }
+    }
+
+    // admin: notas completa (operador terminó) y despachada (supervisor despachó)
+    let qNotas = supabase.from('notas_venta')
+      .select('id, numero_nota, estado')
+      .in('estado', ['completa', 'despachada'])
+    if (desde) qNotas = qNotas.gt('updated_at', desde)
+
     const [rNotas, rSesiones] = await Promise.all([
-      supabase.from('notas_venta').select('id', { count: 'exact', head: true }).eq('estado', 'completa'),
-      supabase.from('sesiones_picking_masivo').select('id', { count: 'exact', head: true }).eq('estado', 'completada'),
+      qNotas,
+      supabase.from('sesiones_picking_masivo')
+        .select('id, numero_oc, nombre_cliente, estado')
+        .in('estado', ['completada', 'despachado'])
+        .order('completada_en', { ascending: false })
+        .limit(20),
     ])
-    return { ok: true, data: { notasCount: rNotas.count ?? 0, sesionesCount: rSesiones.count ?? 0 } }
+    return { ok: true, data: { notas: rNotas.data ?? [], sesiones: rSesiones.data ?? [] } }
   },
 }

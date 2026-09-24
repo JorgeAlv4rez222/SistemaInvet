@@ -14,82 +14,114 @@ function leerUltimaVisita(): string | null {
   try { return localStorage.getItem(STORAGE_KEY) } catch { return null }
 }
 
-type NotifCounts = { notasCount: number; sesionesCount: number }
+type NotifNota    = { id: string; numero_nota: string; estado: string }
+type NotifSesion  = { id: string; numero_oc: string; nombre_cliente: string; estado: string }
+type NotifData    = { notas: NotifNota[]; sesiones: NotifSesion[] }
 
-async function fetchCounts(rol: string, desde: string | null): Promise<NotifCounts> {
+async function fetchItems(rol: string, desde: string | null): Promise<NotifData> {
   const params = new URLSearchParams({ accion: 'notif-counts', rol })
   if (desde != null) params.set('desde', desde)
-  return apiClient.get<NotifCounts>(`/notas?${params.toString()}`)
+  return apiClient.get<NotifData>(`/notas?${params.toString()}`)
+}
+
+function labelSesion(s: NotifSesion) {
+  return s.nombre_cliente ? `OC ${s.numero_oc} — ${s.nombre_cliente}` : `OC ${s.numero_oc}`
 }
 
 export function useNotificacionesAlIngreso(
   rol: UserRole | null,
   onNotificacion: (n: Notificacion) => void,
 ): { recheck: () => void } {
-  const cbRef           = useRef(onNotificacion)
-  cbRef.current         = onNotificacion
-  const lastNotasRef    = useRef(-1)   // -1 = aún no chequeado
-  const lastSesionesRef = useRef(-1)
-  const inicialRef      = useRef(true)
-  const checkRef        = useRef<() => void>(() => {})
+  const cbRef       = useRef(onNotificacion)
+  cbRef.current     = onNotificacion
+  const notifiedRef = useRef<Set<string>>(new Set())
+  const inicialRef  = useRef(true)
+  const checkRef    = useRef<() => void>(() => {})
 
   useEffect(() => {
     if (!rol) return
 
-    inicialRef.current    = true
-    lastNotasRef.current  = -1
-    lastSesionesRef.current = -1
+    inicialRef.current = true
+    notifiedRef.current.clear()
 
     async function check() {
       const esInicial = inicialRef.current
       inicialRef.current = false
 
-      // Operador: inicial sin filtro de fecha; polling con desde
-      // Supervisor/admin: siempre sin filtro de fecha
       const desde = (rol === 'operador' && !esInicial) ? leerUltimaVisita() : null
 
       try {
-        const { notasCount, sesionesCount } = await fetchCounts(rol as string, desde)
+        const { notas, sesiones } = await fetchItems(rol as string, desde)
+        console.log('[notif] items:', { rol, notas: notas.length, sesiones: sesiones.length })
 
         if (rol === 'operador') {
-          if (notasCount > 0) {
-            cbRef.current({
-              tipo: 'nueva_nota',
-              mensaje: notasCount === 1
-                ? 'Hay 1 nota pendiente de preparar'
-                : `Hay ${notasCount} notas pendientes de preparar`,
-            })
+          for (const nota of notas) {
+            if (!notifiedRef.current.has(nota.id)) {
+              notifiedRef.current.add(nota.id)
+              cbRef.current({
+                tipo:    'nueva_nota',
+                mensaje: `+1 nota ${nota.numero_nota} pendiente de preparar`,
+              })
+            }
           }
-          if (sesionesCount > 0) {
-            cbRef.current({
-              tipo: 'nueva_nota',
-              mensaje: sesionesCount === 1
-                ? 'Hay 1 sesión de picking masivo asignada'
-                : `Hay ${sesionesCount} sesiones de picking masivo asignadas`,
-            })
+          for (const sesion of sesiones) {
+            if (!notifiedRef.current.has(sesion.id)) {
+              notifiedRef.current.add(sesion.id)
+              cbRef.current({
+                tipo:    'nueva_nota',
+                mensaje: `Sesión ${labelSesion(sesion)} asignada`,
+              })
+            }
           }
           if (!esInicial) guardarUltimaVisita()
-        } else {
-          // Solo notificar si el count cambió respecto al último
-          if (notasCount !== lastNotasRef.current && notasCount > 0) {
-            cbRef.current({
-              tipo: 'nota_completa',
-              mensaje: notasCount === 1
-                ? 'Hay 1 nota completada pendiente de validación'
-                : `Hay ${notasCount} notas completadas pendientes de validación`,
-            })
-          }
-          lastNotasRef.current = notasCount
+        }
 
-          if (sesionesCount !== lastSesionesRef.current && sesionesCount > 0) {
-            cbRef.current({
-              tipo: 'nota_completa',
-              mensaje: sesionesCount === 1
-                ? 'Hay 1 sesión de picking masivo completada pendiente de despacho'
-                : `Hay ${sesionesCount} sesiones de picking masivo completadas pendientes de despacho`,
-            })
+        if (rol === 'supervisor') {
+          for (const nota of notas) {
+            if (!notifiedRef.current.has(nota.id)) {
+              notifiedRef.current.add(nota.id)
+              cbRef.current({
+                tipo:    'nota_completa',
+                mensaje: `La nota ${nota.numero_nota} está pendiente de revisión`,
+              })
+            }
           }
-          lastSesionesRef.current = sesionesCount
+          for (const sesion of sesiones) {
+            if (!notifiedRef.current.has(sesion.id)) {
+              notifiedRef.current.add(sesion.id)
+              cbRef.current({
+                tipo:    'nota_completa',
+                mensaje: `Sesión ${labelSesion(sesion)} pendiente de revisión`,
+              })
+            }
+          }
+        }
+
+        if (rol === 'admin') {
+          for (const nota of notas) {
+            const key = `${nota.id}_${nota.estado}`
+            if (!notifiedRef.current.has(key)) {
+              notifiedRef.current.add(key)
+              cbRef.current({
+                tipo:    nota.estado === 'despachada' ? 'nota_completa' : 'nueva_nota',
+                mensaje: nota.estado === 'despachada'
+                  ? `Supervisor despachó la nota ${nota.numero_nota}`
+                  : `Operador completó la nota ${nota.numero_nota}`,
+              })
+            }
+          }
+          for (const sesion of sesiones) {
+            const key = `${sesion.id}_${sesion.estado}`
+            if (!notifiedRef.current.has(key)) {
+              notifiedRef.current.add(key)
+              cbRef.current({
+                tipo:    'nota_completa',
+                mensaje: sesion.estado === 'completada'
+                  ? `Operador completó sesión ${labelSesion(sesion)}`
+                  : `Supervisor despachó sesión ${labelSesion(sesion)}`,
+              })
+            }
+          }
         }
       } catch (err) {
         console.warn('[notif]', err)
