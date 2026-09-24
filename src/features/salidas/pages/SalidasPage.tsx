@@ -94,6 +94,11 @@ function tiempoRelativo(fecha: string): string {
   return `hace ${d} día${d !== 1 ? 's' : ''}`
 }
 
+function horaDespacho(fecha: string): string {
+  const d = new Date(fecha)
+  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+}
+
 // ─── RevisionConDetalle ────────────────────────────────────────────────────
 function RevisionConDetalle({
   notaId, estadoNota, nombreChofer, adminId, offline, tieneDev, onCerrar,
@@ -175,19 +180,27 @@ export function SalidasPage() {
     return Array.from(set).sort()
   }, [notas, tabActivo])
 
+  const tieneFiltrFecha = !!(filtroAnio || filtroMes || filtroDia)
+
   const notasFiltradas = useMemo(() => {
     const estadoFiltro = tabActivo === 'revision' ? 'completa' : 'despachada'
     let lista = notas.filter((n) => n.estado === estadoFiltro)
+
+    // En despachadas: mostrar solo hoy cuando no hay filtro de fecha activo
+    if (tabActivo === 'despachadas' && !tieneFiltrFecha) {
+      lista = lista.filter((n) => n.fechaDespacho?.startsWith(hoy))
+    }
+
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter((n) => n.numeroNota.toLowerCase().includes(q) || n.nombreCliente.toLowerCase().includes(q))
     }
     if (filtroCliente) lista = lista.filter((n) => n.nombreCliente === filtroCliente)
-    if (filtroAnio)    lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
-    if (filtroMes)     lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
-    if (filtroDia)     lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
+    if (filtroAnio)    lista = lista.filter((n) => n.fechaDespacho?.slice(0, 4) === filtroAnio)
+    if (filtroMes)     lista = lista.filter((n) => n.fechaDespacho?.slice(5, 7) === filtroMes)
+    if (filtroDia)     lista = lista.filter((n) => n.fechaDespacho?.slice(8, 10) === filtroDia)
     return lista
-  }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia, filtroCliente])
+  }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia, filtroCliente, tieneFiltrFecha, hoy])
 
   const filtrosActivos = [filtroAnio, filtroMes, filtroDia, filtroCliente].filter(Boolean).length
 
@@ -347,12 +360,25 @@ export function SalidasPage() {
       {isLoading && <p className="cargando">Cargando notas…</p>}
       {isError   && <p className="error">Error al cargar notas</p>}
 
+      {/* Indicador: mostrando solo hoy */}
+      {tabActivo === 'despachadas' && !tieneFiltrFecha && (
+        <div className="sal-hoy-banner">
+          Mostrando despachos de hoy
+          <button
+            className="sal-hoy-ver-anteriores"
+            onClick={() => setFiltrosAbiertos(true)}
+          >
+            Ver anteriores
+          </button>
+        </div>
+      )}
+
       {!isLoading && !isError && notasFiltradas.length === 0 && (
         <div className="notas-vacio">
           <p>{filtrosActivos > 0 || busqueda
             ? 'Sin resultados para el filtro aplicado'
             : tabActivo === 'despachadas'
-              ? 'No hay notas despachadas'
+              ? 'No hay notas despachadas hoy'
               : 'No hay notas listas para revisar'
           }</p>
         </div>
@@ -387,10 +413,13 @@ export function SalidasPage() {
                       {nota.totalProductos} ítem{nota.totalProductos !== 1 ? 's' : ''}
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
-                    {/* Tiempo */}
+                    {/* Hora de despacho */}
                     <span className="nota-expand-item">
                       <IcoClock size={14} />
-                      {tiempoRelativo(nota.fechaDespacho ?? nota.actualizadoEn ?? nota.creadoEn)}
+                      {esDespachada && nota.fechaDespacho
+                        ? horaDespacho(nota.fechaDespacho)
+                        : tiempoRelativo(nota.actualizadoEn ?? nota.creadoEn)
+                      }
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
                     {/* Chofer */}

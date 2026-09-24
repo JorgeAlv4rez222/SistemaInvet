@@ -100,6 +100,11 @@ function tiempoRelativo(fecha: string): string {
   return `hace ${d} día${d !== 1 ? 's' : ''}`
 }
 
+function horaCompletada(fecha: string): string {
+  const d = new Date(fecha)
+  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+}
+
 function BarraProgreso({ completados, total }: { completados: number; total: number }) {
   const pct = total > 0 ? Math.round((completados / total) * 100) : 0
   return (
@@ -134,7 +139,7 @@ export function NotasPage() {
   const kpis = useMemo(() => ({
     pendientes:      notas.filter((n) => n.estado === 'pendiente').length,
     enPreparacion:   notas.filter((n) => n.estado === 'preparacion').length,
-    completadasHoy:  notas.filter((n) => n.estado === 'completa' && n.creadoEn?.startsWith(hoy)).length,
+    completadasHoy:  notas.filter((n) => n.estado === 'completa' && n.fechaPreparacion?.startsWith(hoy)).length,
   }), [notas, hoy])
 
   const aniosDisponibles = useMemo(() => {
@@ -142,22 +147,33 @@ export function NotasPage() {
     return Array.from(años).sort().reverse()
   }, [notas])
 
+  const tieneFiltrFecha = !!(filtroAnio || filtroMes || filtroDia)
+
   const notasFiltradas = useMemo(() => {
     let lista = notas
     if (tabActivo === 'pendientes') {
       lista = lista.filter((n) => n.estado === 'pendiente' || n.estado === 'preparacion')
     } else {
       lista = lista.filter((n) => n.estado === 'completa')
+      if (!tieneFiltrFecha) {
+        lista = lista.filter((n) => n.fechaPreparacion?.startsWith(hoy))
+      }
     }
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase()
       lista = lista.filter((n) => n.numeroNota.toLowerCase().includes(q) || n.nombreCliente.toLowerCase().includes(q))
     }
-    if (filtroAnio) lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
-    if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
-    if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
+    if (tabActivo === 'completas') {
+      if (filtroAnio) lista = lista.filter((n) => n.fechaPreparacion?.slice(0, 4) === filtroAnio)
+      if (filtroMes)  lista = lista.filter((n) => n.fechaPreparacion?.slice(5, 7) === filtroMes)
+      if (filtroDia)  lista = lista.filter((n) => n.fechaPreparacion?.slice(8, 10) === filtroDia)
+    } else {
+      if (filtroAnio) lista = lista.filter((n) => n.creadoEn?.slice(0, 4) === filtroAnio)
+      if (filtroMes)  lista = lista.filter((n) => n.creadoEn?.slice(5, 7) === filtroMes)
+      if (filtroDia)  lista = lista.filter((n) => n.creadoEn?.slice(8, 10) === filtroDia)
+    }
     return lista
-  }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia])
+  }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia, tieneFiltrFecha, hoy])
 
   if (importar && ROL === 'admin') {
     return (
@@ -274,6 +290,15 @@ export function NotasPage() {
         </button>
       </div>
 
+      {tabActivo === 'completas' && !tieneFiltrFecha && (
+        <div className="sal-hoy-banner">
+          Mostrando completadas de hoy
+          <button className="sal-hoy-ver-anteriores" onClick={() => setFiltrosAbiertos(true)}>
+            Ver anteriores
+          </button>
+        </div>
+      )}
+
       {filtrosAbiertos && (
         <div className="ing-filtros-panel">
           <div className="ing-filtro-grupo">
@@ -364,7 +389,10 @@ export function NotasPage() {
                     <span className="nota-card-sep" aria-hidden="true">|</span>
                     <span className="nota-expand-item">
                       <IcoClock size={14} />
-                      {tiempoRelativo(nota.creadoEn)}
+                      {nota.estado === 'completa' && nota.fechaPreparacion
+                        ? horaCompletada(nota.fechaPreparacion)
+                        : tiempoRelativo(nota.creadoEn)
+                      }
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
                     <span className="nota-expand-item">
