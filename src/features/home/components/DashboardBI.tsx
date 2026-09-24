@@ -1,7 +1,29 @@
-import { useState } from 'react'
+import { useState, Component } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard, useDespachosSemana, useDespachosDia } from '../hooks/useDashboard'
 import type { DiaDespacho } from '../hooks/useDashboard'
+
+// ── Error boundary ────────────────────────────────────────────────────────
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null }
+  static getDerivedStateFromError(e: Error) { return { error: e.message } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, color: 'var(--text-primary)' }}>
+          <p style={{ fontWeight: 700, marginBottom: 8 }}>Error en Dashboard</p>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{this.state.error}</p>
+          <button style={{ marginTop: 16, padding: '6px 12px', cursor: 'pointer' }} onClick={() => this.setState({ error: null })}>
+            Reintentar
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // ── Íconos ────────────────────────────────────────────────────────────────
 
@@ -11,23 +33,17 @@ function IcoTruck()   { return <svg viewBox="0 0 24 24" fill="none" stroke="curr
 function IcoChart()   { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> }
 function IcoActivity(){ return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> }
 
-// ── Card KPI operacional ──────────────────────────────────────────────────
+// ── KPI operacional ───────────────────────────────────────────────────────
 
-function KpiOp({
-  icon, label, valor, sub, alerta, onClick,
-}: {
-  icon:    React.ReactNode
-  label:   string
-  valor:   number | string
-  sub?:    string
-  alerta?: boolean
-  onClick?: () => void
+function KpiOp({ icon, label, valor, sub, alerta, onClick }: {
+  icon: ReactNode; label: string; valor: number | string
+  sub?: string; alerta?: boolean; onClick?: () => void
 }) {
   return (
     <button
+      type="button"
       className={`bi-kpi-op ${alerta ? 'bi-kpi-op--alerta' : valor === 0 || valor === '0' ? 'bi-kpi-op--inactivo' : 'bi-kpi-op--activo'}`}
       onClick={onClick}
-      type="button"
     >
       <div className="bi-kpi-op-icon">{icon}</div>
       <div className="bi-kpi-op-body">
@@ -40,50 +56,45 @@ function KpiOp({
   )
 }
 
-// ── Gráfico barras diarias (SVG) ──────────────────────────────────────────
+// ── Gráfico barras (HTML/CSS) ─────────────────────────────────────────────
 
-function GraficoDiario({ data, diaActivo, onClickDia }: { data: DiaDespacho[]; diaActivo: string | null; onClickDia: (dia: string) => void }) {
-  if (data.length === 0) return <div style={{ height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-muted)' }}>Cargando…</div>
-  const maxV  = Math.max(1, ...data.map(d => d.cant))
-  const W = 340; const H = 110; const PAD_B = 24; const PAD_L = 28
-  const areaW = W - PAD_L; const areaH = H - PAD_B - 8
-  const barW  = (areaW / data.length) * 0.5
-  const gap   = areaW / data.length
+function GraficoDiario({ data, diaActivo, onClickDia }: {
+  data: DiaDespacho[]; diaActivo: string | null; onClickDia: (dia: string) => void
+}) {
+  if (data.length === 0) {
+    return <div className="bi-chart-empty">Cargando…</div>
+  }
+
+  const maxV = Math.max(1, ...data.map(d => d.cant))
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet" style={{ cursor: 'pointer' }}>
-      {[0, 50, 100].map(pct => {
-        const y = 8 + areaH - (pct / 100) * areaH
+    <div className="bi-chart-wrap">
+      {data.map(d => {
+        const pct     = Math.max(4, Math.round((d.cant / maxV) * 100))
+        const activo  = diaActivo === d.dia
+        const clicable = d.cant > 0
+
         return (
-          <g key={pct}>
-            <line x1={PAD_L} y1={y} x2={W} y2={y} stroke="rgba(148,163,184,0.1)" strokeWidth={0.8}/>
-            <text x={PAD_L - 4} y={y + 3} textAnchor="end" fontSize={7} fill="rgba(148,163,184,0.5)">
-              {Math.round(maxV * pct / 100)}
-            </text>
-          </g>
+          <div key={d.dia} className="bi-chart-col">
+            <span className="bi-chart-val">{d.cant > 0 ? d.cant : ''}</span>
+            <button
+              type="button"
+              className={`bi-chart-bar ${activo ? 'bi-chart-bar--activo' : ''} ${clicable ? 'bi-chart-bar--clicable' : 'bi-chart-bar--vacio'}`}
+              style={{ height: `${pct}%` }}
+              onClick={() => { if (clicable) onClickDia(d.dia) }}
+              title={clicable ? `${d.label}: ${d.cant} despachos` : undefined}
+            />
+            <span className={`bi-chart-label ${activo ? 'bi-chart-label--activo' : ''}`}>{d.label}</span>
+          </div>
         )
       })}
-      {data.map((d, i) => {
-        const activo = diaActivo === d.dia
-        const alt = Math.max(3, (d.cant / maxV) * areaH)
-        const x   = PAD_L + i * gap + (gap - barW) / 2
-        const y   = 8 + areaH - alt
-        return (
-          <g key={d.dia} onClick={() => d.cant > 0 && onClickDia(d.dia)} style={{ cursor: d.cant > 0 ? 'pointer' : 'default' }}>
-            <title>{d.label}: {d.cant} despachos{d.cant > 0 ? ' — click para ver detalle' : ''}</title>
-            <rect x={x} y={y} width={barW} height={alt} rx={3} fill={activo ? '#38bdf8' : '#0ea5e9'} opacity={activo ? 1 : 0.75}/>
-            <text x={x + barW / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="rgba(148,163,184,0.7)">{d.cant}</text>
-            <text x={x + barW / 2} y={H - 8} textAnchor="middle" fontSize={8} fill={activo ? 'var(--text-primary)' : 'rgba(148,163,184,0.6)'} fontWeight={activo ? 700 : 400}>{d.label}</text>
-          </g>
-        )
-      })}
-    </svg>
+    </div>
   )
 }
 
 // ── Componente principal ──────────────────────────────────────────────────
 
-export function DashboardBI() {
+function DashboardBIInner() {
   const navigate = useNavigate()
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null)
 
@@ -98,14 +109,26 @@ export function DashboardBI() {
   }
 
   function labelFecha(dia: string) {
-    const d = new Date(`${dia}T12:00:00`)
-    return d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+    try {
+      const d = new Date(`${dia}T12:00:00`)
+      return d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+    } catch {
+      return dia
+    }
+  }
+
+  function horaDespacho(fechaStr: string) {
+    try {
+      return new Date(fechaStr).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return '—'
+    }
   }
 
   return (
     <div className="bi-wrap">
 
-      {/* ── Cabecera ── */}
+      {/* Cabecera */}
       <div className="bi-header">
         <div className="bi-header-left">
           <h1 className="bi-titulo">
@@ -116,7 +139,7 @@ export function DashboardBI() {
         </div>
       </div>
 
-      {/* ── KPIs operacionales ── */}
+      {/* KPIs */}
       <div className="bi-kpi-op-row">
         <KpiOp
           icon={<IcoBox />}
@@ -142,7 +165,7 @@ export function DashboardBI() {
         />
       </div>
 
-      {/* ── Cuerpo principal ── */}
+      {/* Cuerpo */}
       <div className="bi-body">
 
         {/* Columna izquierda */}
@@ -154,10 +177,15 @@ export function DashboardBI() {
                 <p className="bi-panel-sub">Click en una barra para ver el detalle del día</p>
               </div>
               {diaSeleccionado && (
-                <button className="bi-dia-cerrar" onClick={() => setDiaSeleccionado(null)}>✕</button>
+                <button type="button" className="bi-dia-cerrar" onClick={() => setDiaSeleccionado(null)}>✕</button>
               )}
             </div>
-            <GraficoDiario data={semanaData?.dias ?? []} diaActivo={diaSeleccionado} onClickDia={toggleDia} />
+
+            <GraficoDiario
+              data={semanaData?.dias ?? []}
+              diaActivo={diaSeleccionado}
+              onClickDia={toggleDia}
+            />
 
             {diaSeleccionado && (
               <div className="bi-dia-detalle">
@@ -168,21 +196,22 @@ export function DashboardBI() {
                   </span>
                 </p>
                 {cargandoDia && <p className="bi-dia-detalle-loading">Cargando…</p>}
-                {!cargandoDia && notasDia?.length === 0 && (
+                {!cargandoDia && (notasDia?.length ?? 0) === 0 && (
                   <p className="bi-dia-detalle-vacio">Sin despachos ese día</p>
                 )}
                 {!cargandoDia && (notasDia ?? []).map(n => {
-                  const ruta = n.tipo === 'nv' ? `/notas/${n.id}` : n.tipo === 'sesion' ? `/picking-masivo/${n.id}` : `/picking-masivo/ola/${n.id}`
+                  const ruta =
+                    n.tipo === 'nv'     ? `/notas/${n.id}` :
+                    n.tipo === 'sesion' ? `/picking-masivo/${n.id}` :
+                                         `/picking-masivo/ola/${n.id}`
                   const tipoBadge  = n.tipo === 'nv' ? 'NV' : n.tipo === 'sesion' ? 'PM' : 'OLA'
                   const badgeColor = n.tipo === 'nv' ? '#34d399' : n.tipo === 'sesion' ? '#f59e0b' : '#a78bfa'
                   return (
-                    <button key={n.id} className="bi-dia-nota-row" onClick={() => navigate(ruta)}>
+                    <button type="button" key={`${n.tipo}-${n.id}`} className="bi-dia-nota-row" onClick={() => navigate(ruta)}>
                       <span className="bi-dia-nota-tipo" style={{ color: badgeColor }}>{tipoBadge}</span>
                       <span className="bi-dia-nota-num">{n.referencia}</span>
                       <span className="bi-dia-nota-cliente">{n.nombreCliente}</span>
-                      <span className="bi-dia-nota-hora">
-                        {new Date(n.fechaDespacho).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <span className="bi-dia-nota-hora">{horaDespacho(n.fechaDespacho)}</span>
                     </button>
                   )
                 })}
@@ -207,5 +236,13 @@ export function DashboardBI() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function DashboardBI() {
+  return (
+    <ErrorBoundary>
+      <DashboardBIInner />
+    </ErrorBoundary>
   )
 }

@@ -960,6 +960,19 @@ label {
 .bi-turno-sep { border: none; border-top: 1px solid var(--border-light); margin: 14px 0 10px; }
 
 /* Detalle día despachos */
+/* gráfico barras html */
+.bi-chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 110px; padding: 8px 4px 0; }
+.bi-chart-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; height: 100%; justify-content: flex-end; }
+.bi-chart-val { font-size: 9px; color: var(--text-muted); min-height: 12px; }
+.bi-chart-bar { border: none; border-radius: 4px 4px 0 0; width: 100%; background: rgba(14,165,233,0.75); transition: background .15s, height .2s; padding: 0; }
+.bi-chart-bar--activo { background: #38bdf8; }
+.bi-chart-bar--clicable { cursor: pointer; }
+.bi-chart-bar--clicable:hover { background: #38bdf8; }
+.bi-chart-bar--vacio { background: rgba(148,163,184,0.2); cursor: default; }
+.bi-chart-label { font-size: 10px; color: var(--text-muted); padding-top: 4px; }
+.bi-chart-label--activo { color: var(--text-primary); font-weight: 700; }
+.bi-chart-empty { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); }
+
 .bi-dia-cerrar { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; padding: 2px 6px; border-radius: 4px; }
 .bi-dia-cerrar:hover { color: var(--text-primary); background: var(--bg-hover); }
 .bi-dia-detalle { margin-top: 12px; border-top: 1px solid var(--border-light); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
