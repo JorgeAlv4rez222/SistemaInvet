@@ -4,7 +4,7 @@ import { SinStockForm } from './SinStockForm'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/numericInput'
-import { sonarEscaneoExitoso } from '../../../shared/utils/sonidos'
+import { sonarEscaneoExitoso, sonarEscaneoError } from '../../../shared/utils/sonidos'
 import type { NotaProductoResumen, ProductoConStock, Ubicacion } from '../services/notas.api'
 
 interface Props {
@@ -232,6 +232,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       || codigo.trim() === codigoEsperado
       || (!!codigoAlternativo && codigo.trim() === codigoAlternativo)
     if (!scanValido) {
+      sonarEscaneoError()
       setError(`Producto incorrecto. Escanea el producto ${equivalenteId ? 'equivalente' : item.sku}`)
       if (productoInputRef.current) productoInputRef.current.value = ''
       productoInputRef.current?.focus()

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useConectividad } from '../hooks/useConectividad'
 import { useNotificacionesRealtime } from '../hooks/useNotificacionesRealtime'
+import { useNotificacionesAlIngreso } from '../hooks/useNotificacionesAlIngreso'
 import type { UserRole } from '../types/base'
 import type { Notificacion } from '../hooks/useNotificacionesRealtime'
 
@@ -186,6 +187,7 @@ export function Layout({ children }: Props) {
   }, [])
 
   useNotificacionesRealtime(rol, agregarToast)
+  useNotificacionesAlIngreso(rol, agregarToast)
   const itemsVisibles = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
   )
