@@ -15,8 +15,9 @@ function beepRaw(freq: number, dur: number, vol: number, tipo: OscillatorType = 
 }
 
 export function sonarEscaneoExitoso() {
-  // Sonido tipo pistola lectora de barras: tono agudo corto con square wave
-  beepRaw(1900, 0.09, 0.18, 'square')
+  // Sonido tipo pistola lectora de barras: dos tonos cortos agudos
+  beepRaw(1800, 0.06, 0.6, 'square')
+  setTimeout(() => beepRaw(2200, 0.08, 0.5, 'square'), 70)
 }
 
 export function sonarEscaneoError() {
