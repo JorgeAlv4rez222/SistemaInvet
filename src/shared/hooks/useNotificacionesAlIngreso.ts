@@ -19,9 +19,9 @@ type NotifSesion  = { id: string; numero_oc: string; nombre_cliente: string; est
 type NotifData    = { notas: NotifNota[]; sesiones: NotifSesion[] }
 
 async function fetchItems(rol: string, desde: string | null): Promise<NotifData> {
-  const params = new URLSearchParams({ accion: 'notif-counts', rol })
+  const params = new URLSearchParams({ rol })
   if (desde != null) params.set('desde', desde)
-  return apiClient.get<NotifData>(`/notas?${params.toString()}`)
+  return apiClient.get<NotifData>(`/notificaciones?${params.toString()}`)
 }
 
 function labelSesion(s: NotifSesion) {
@@ -54,7 +54,7 @@ export function useNotificacionesAlIngreso(
         const data = await fetchItems(rol as string, desde)
         const notas    = Array.isArray(data.notas)    ? data.notas    : []
         const sesiones = Array.isArray(data.sesiones) ? data.sesiones : []
-        console.log('[notif] items:', { rol, notas: notas.length, sesiones: sesiones.length, data })
+        console.log(`[notif] rol=${rol} notas=${notas.length} sesiones=${sesiones.length} rawKeys=${Object.keys(data).join(',')}`)
 
         if (rol === 'operador') {
           for (const nota of notas) {
