@@ -12659,6 +12659,15 @@ input[type="radio"] {
 }
 .oc-busqueda-wrap {
   width: 100%;
+  position: relative;
+}
+.oc-busqueda-ico {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none;
+  display: flex; align-items: center;
+}
+.oc-busqueda-con-ico {
+  padding-left: 34px !important;
 }
 .oc-busqueda-wrap .sd-busqueda {
   width: 100%;

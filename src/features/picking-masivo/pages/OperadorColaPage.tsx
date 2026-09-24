@@ -19,6 +19,9 @@ function IcoPin() {
 function IcoScan() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
 }
+function IcoBarcode() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+}
 function IcoCheck() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="20 6 9 17 4 12"/></svg>
 }
@@ -76,12 +79,18 @@ function SubtareaCard({
       <div className="ext-tarea-header" onClick={() => item?.lpn && setExpandido(v => !v)}
         style={{ cursor: item?.lpn ? 'pointer' : 'default' }}>
 
-        {/* SKU + códigos + posición */}
+        {/* Nombre + SKU + EAN + posición */}
         <div className="ext-tarea-info">
           <span className="ext-tarea-sku">{desc}</span>
           <span className="ext-tarea-ean">
-            <span className="ext-tarea-ean-label">EAN</span>
-            {ean ?? '—'}
+            <span className="ext-tarea-ean-label">SKU</span>
+            {sku}
+            {ean && (
+              <>
+                <span className="ext-tarea-ean-label" style={{ marginLeft: 8 }}>EAN</span>
+                {ean}
+              </>
+            )}
             {rack !== 'S/U' && (
               <span style={{ marginLeft: 8, color: 'var(--accent)', fontFamily: 'inherit', fontWeight: 600 }}>
                 <IcoPin /> {rack}
@@ -177,7 +186,9 @@ export function OperadorColaPage() {
       const q = busqueda.trim().toLowerCase()
       if (!q) return true
       const item = s.items_picking_masivo
-      return (item?.codigo ?? '').toLowerCase().includes(q) || (item?.descripcion ?? '').toLowerCase().includes(q)
+      return (item?.codigo ?? '').toLowerCase().includes(q) ||
+             (item?.descripcion ?? '').toLowerCase().includes(q) ||
+             (item?.codigo_barra ?? '').toLowerCase().includes(q)
     })
     .slice()
     .sort((a, b) => (a.items_picking_masivo?.lpn ?? '').localeCompare(b.items_picking_masivo?.lpn ?? '', undefined, { numeric: true }))
@@ -257,11 +268,12 @@ export function OperadorColaPage() {
 
       {/* ── Búsqueda + Filtros ── */}
       <div className="sd-toolbar oc-toolbar">
-        <div className="oc-busqueda-wrap">
+        <div className="oc-busqueda-wrap" style={{ position: 'relative' }}>
+          <span className="oc-busqueda-ico"><IcoBarcode /></span>
           <input
             type="search"
-            className="sd-busqueda"
-            placeholder="🔍 Buscar por SKU o nombre…"
+            className="sd-busqueda oc-busqueda-con-ico"
+            placeholder="Buscar por SKU, nombre o escanear EAN…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
