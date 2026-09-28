@@ -110,22 +110,11 @@ export function DespachoOlaPage() {
     return true
   })
 
-  function ssccToEan8(sscc: string): string {
-    const s = sscc.padStart(18, '0')
-    return s.slice(1, 8) + s[17]
-  }
-
-  const porEan8 = lpns.reduce<Record<string, string>>((acc, lpn) => {
-    acc[ssccToEan8(lpn)] = lpn
-    return acc
-  }, {})
-
   function resolverLpn(valor: string): string | null {
-    if (porLpn[valor])  return valor
-    if (porEan8[valor]) return porEan8[valor]
-    const sinCeros = valor.replace(/^0+/, '')
+    if (porLpn[valor]) return valor
+    const scan = valor.replace(/^0+/, '')
     for (const key of lpns) {
-      if (key.replace(/^0+/, '') === sinCeros) return key
+      if (key.replace(/^0+/, '') === scan) return key
     }
     return null
   }
