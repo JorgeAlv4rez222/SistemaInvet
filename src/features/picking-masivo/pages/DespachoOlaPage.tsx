@@ -110,17 +110,38 @@ export function DespachoOlaPage() {
     return true
   })
 
+  function ssccToEan8(sscc: string): string {
+    const s = sscc.padStart(18, '0')
+    return s.slice(1, 8) + s[17]
+  }
+
+  const porEan8 = lpns.reduce<Record<string, string>>((acc, lpn) => {
+    acc[ssccToEan8(lpn)] = lpn
+    return acc
+  }, {})
+
+  function resolverLpn(valor: string): string | null {
+    if (porLpn[valor])  return valor
+    if (porEan8[valor]) return porEan8[valor]
+    const sinCeros = valor.replace(/^0+/, '')
+    for (const key of lpns) {
+      if (key.replace(/^0+/, '') === sinCeros) return key
+    }
+    return null
+  }
+
   function handleEscanear(valor: string) {
-    const lpn = valor.trim()
-    if (!lpn) return
+    const raw = valor.trim()
+    if (!raw) return
     setError(null)
-    const lineasLpn = porLpn[lpn]
-    if (!lineasLpn) {
-      setError(`LPN ${lpn} no encontrado en esta ola`)
+    const lpn = resolverLpn(raw)
+    if (!lpn) {
+      setError(`LPN ${raw} no encontrado en esta ola`)
       setScanInput('')
       setTimeout(() => inputRef.current?.focus(), 50)
       return
     }
+    const lineasLpn = porLpn[lpn]
     if (lineasLpn.every(l => l.fase3_validado)) {
       setError(`LPN ${lpn} ya fue validado`)
       setScanInput('')
