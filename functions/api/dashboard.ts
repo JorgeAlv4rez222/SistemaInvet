@@ -27,6 +27,13 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     return result.ok ? json(result.data) : json({ error: result.error }, 500)
   }
 
+  if (vista === 'despachos-dia') {
+    const fecha = params.get('fecha') ?? ''
+    if (!fecha) return json({ error: 'Falta parámetro fecha' }, 400)
+    const result = await dashboardService.obtenerDespachosDia(fecha)
+    return result.ok ? json(result.data) : json({ error: result.error }, 500)
+  }
+
   if (vista === 'clientes') {
     const result = await dashboardService.obtenerClientes()
     return result.ok ? json(result.data) : json({ error: result.error }, 500)

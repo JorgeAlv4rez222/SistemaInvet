@@ -1,20 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/hooks/useAuth'
 import { useConectividad } from '../hooks/useConectividad'
-import { useNotificacionesRealtime } from '../hooks/useNotificacionesRealtime'
-import { useNotificacionesAlIngreso } from '../hooks/useNotificacionesAlIngreso'
 import type { UserRole } from '../types/base'
-import type { Notificacion } from '../hooks/useNotificacionesRealtime'
-
-interface ToastItem extends Notificacion { id: number; ts: number }
-
-const IcoBell = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-  </svg>
-)
 
 type Tema = 'dark' | 'light'
 
@@ -175,31 +163,9 @@ export function Layout({ children }: Props) {
 
   const logoSrc = '/LOGO GRANTT G COLOR Y LETRAS BLANCAS.png'
 
-  const rol           = sesion.rol as UserRole | null
-  const esOperador    = rol === 'operador'
-  const nombre        = localStorage.getItem('user_nombre') ?? ''
-  const [toasts,      setToasts]      = useState<ToastItem[]>([])
-  const [notifs,      setNotifs]      = useState<ToastItem[]>([])
-  const [panelNotifs, setPanelNotifs] = useState(false)
-  const noLeidas = notifs.length
-
-  const agregarToast = useCallback((n: Notificacion) => {
-    const id = Date.now()
-    const item: ToastItem = { ...n, id, ts: id }
-    setToasts(prev => [...prev.slice(-3), item])
-    setNotifs(prev => [item, ...prev].slice(0, 50))
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 6000)
-  }, [])
-
-  useNotificacionesRealtime(rol, agregarToast)
-  const { recheck } = useNotificacionesAlIngreso(rol, agregarToast)
-
-  function togglePanel() {
-    setPanelNotifs(p => {
-      if (!p) recheck()
-      return !p
-    })
-  }
+  const rol        = sesion.rol as UserRole | null
+  const esOperador = rol === 'operador'
+  const nombre     = localStorage.getItem('user_nombre') ?? ''
 
   const itemsVisibles = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
@@ -284,22 +250,6 @@ export function Layout({ children }: Props) {
             <span className="truncate text-sm font-bold text-white">{nombre}</span>
           </div>
         )}
-        {/* Campana */}
-        <button
-          onClick={togglePanel}
-          title="Notificaciones"
-          className={`relative flex items-center gap-3 rounded-lg text-[#94a3b8] hover:text-[#00A0DF] hover:bg-[rgba(0,160,223,0.1)] transition-all duration-150 ${expandido ? 'px-3 py-2.5' : 'justify-center p-2.5'}`}
-        >
-          <span className="relative shrink-0">
-            <IcoBell />
-            {noLeidas > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-[#00A0DF] text-white text-[9px] font-bold leading-none">
-                {noLeidas > 9 ? '9+' : noLeidas}
-              </span>
-            )}
-          </span>
-          {expandido && <span className="text-sm font-semibold font-[Inter]">Notificaciones</span>}
-        </button>
         <button
           onClick={toggleTema}
           title={tema === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
@@ -348,15 +298,6 @@ export function Layout({ children }: Props) {
       </div>
       <div className="shrink-0 border-t border-[rgba(255,255,255,0.06)] p-1.5 flex flex-col gap-1">
         {nombre && <div className="flex items-center justify-center py-1.5 text-[#94a3b8]"><IconUser /></div>}
-        <button onClick={togglePanel} title="Notificaciones"
-          className="relative flex items-center justify-center w-full p-2.5 rounded-lg text-[#94a3b8] hover:text-[#00A0DF] hover:bg-[rgba(0,160,223,0.1)] transition-all duration-150 [&_svg]:w-5 [&_svg]:h-5">
-          <IcoBell />
-          {noLeidas > 0 && (
-            <span className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-[#00A0DF] text-white text-[9px] font-bold leading-none">
-              {noLeidas > 9 ? '9+' : noLeidas}
-            </span>
-          )}
-        </button>
         <button onClick={toggleTema} title={tema === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           className="flex items-center justify-center w-full p-2.5 rounded-lg text-[#94a3b8] hover:text-[#00A0DF] hover:bg-[rgba(0,160,223,0.1)] transition-all duration-150 [&_svg]:w-5 [&_svg]:h-5">
           {tema === 'dark' ? <IconSun /> : <IconMoon />}
@@ -413,68 +354,6 @@ export function Layout({ children }: Props) {
 
       {/* ── Navegación mobile por rol ────────────────────────── */}
       {esOperador ? <MobileNavOperador /> : <MobileNavAdminSupervisor />}
-
-      {/* ── Toasts de notificación ───────────────────────── */}
-      <div className="notif-toast-container">
-        {toasts.map(t => (
-          <div key={t.id} className={`notif-toast notif-toast--${t.tipo}`}>
-            <span className="notif-toast-icon"><IcoBell /></span>
-            <span className="notif-toast-msg">{t.mensaje}</span>
-            <button className="notif-toast-close" onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))}>✕</button>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Panel de notificaciones ──────────────────────── */}
-      {panelNotifs && (
-        <>
-          <div className="notif-panel-overlay" onClick={() => setPanelNotifs(false)} />
-          <div className="notif-panel" style={{ '--panel-sidebar-w': expandido ? '212px' : '68px' } as React.CSSProperties}>
-            <div className="notif-panel-header">
-              <span className="notif-panel-title"><IcoBell /> Notificaciones</span>
-              <div className="notif-panel-actions">
-                <button className="notif-panel-refresh" onClick={recheck} title="Revisar ahora">↻</button>
-                {notifs.length > 0 && (
-                  <button className="notif-panel-clear" onClick={() => setNotifs([])}>Limpiar todo</button>
-                )}
-                <button className="notif-panel-close" onClick={() => setPanelNotifs(false)}>✕</button>
-              </div>
-            </div>
-            <div className="notif-panel-body">
-              {notifs.length === 0 ? (
-                <p className="notif-panel-empty">Sin notificaciones</p>
-              ) : (
-                notifs.map(n => (
-                  <div key={n.id} className={`notif-panel-item notif-panel-item--${n.tipo}`}
-                    onClick={() => setNotifs(prev => prev.filter(x => x.id !== n.id))}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="notif-panel-item-msg">{n.mensaje}</div>
-                    <div className="notif-panel-item-footer">
-                      <span className="notif-panel-item-time">{new Date(n.ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="notif-panel-item-del">✕</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Botón campana flotante (operador mobile) ─────── */}
-      {esOperador && (
-        <button
-          className="notif-fab tablet:hidden"
-          onClick={togglePanel}
-          title="Notificaciones"
-        >
-          <IcoBell />
-          {noLeidas > 0 && (
-            <span className="notif-fab-badge">{noLeidas > 9 ? '9+' : noLeidas}</span>
-          )}
-        </button>
-      )}
 
       {/* ── Contenido principal ──────────────────────────── */}
       <div className={`layout-content flex-1 flex flex-col min-w-0 ${esOperador ? 'pb-20 tablet:pb-0 tablet:pl-0' : 'pl-14 tablet:pl-0'}`}>
