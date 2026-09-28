@@ -122,14 +122,29 @@ export function PreparacionOlaPage() {
     return true
   })
 
-  // Lookup secundario: codigo_barra → lpn (para cuando el scanner lee EAN-8 en vez del LPN largo)
+  // Lookups secundarios para cuando el scanner lee EAN-8/PLU en vez del LPN largo
   const porCodigoBarra = lineas.reduce<Record<string, string>>((acc, l) => {
-    if (l.codigo_barra) acc[l.codigo_barra] = l.lpn
+    if (l.codigo_barra)     acc[l.codigo_barra]     = l.lpn
+    if (l.codigo_proveedor) acc[l.codigo_proveedor] = l.lpn
+    return acc
+  }, {})
+
+  // EAN-8 derivado del SSCC: prefijo_gs1(pos 1-7) + check_sscc(pos 17)
+  // Ej: SSCC 099582120000021277 → 9958212 + 7 = 99582127
+  function ssccToEan8(sscc: string): string {
+    const s = sscc.padStart(18, '0')
+    return s.slice(1, 8) + s[17]
+  }
+
+  const porEan8 = lpns.reduce<Record<string, string>>((acc, lpn) => {
+    const ean8 = ssccToEan8(lpn)
+    if (ean8) acc[ean8] = lpn
     return acc
   }, {})
 
   function resolverLpn(valor: string): string | null {
-    if (porLpn[valor]) return valor
+    if (porLpn[valor])        return valor
+    if (porEan8[valor])       return porEan8[valor]
     if (porCodigoBarra[valor]) return porCodigoBarra[valor]
     const sinCeros = valor.replace(/^0+/, '')
     for (const key of lpns) {

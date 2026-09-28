@@ -24,7 +24,7 @@ export const olasPreparacionService = {
     const { data, error } = await supabase
       .from('ola_lineas')
       .select(`
-        id, lpn, posicion_orden, codigo_barra, sku_proveedor, descripcion,
+        id, lpn, posicion_orden, codigo_barra, codigo_proveedor, sku_proveedor, descripcion,
         tienda, cantidad_solicitada, fase2_escaneado, fase2_por, fase2_en,
         ola_ordenes ( numero_orden, numero_guia )
       `)

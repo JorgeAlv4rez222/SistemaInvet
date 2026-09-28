@@ -78,7 +78,9 @@ export async function parsearExcelConstrumart(file: File): Promise<ResultadoPars
   const buffer = await file.arrayBuffer()
   const wb     = XLSX.read(buffer, { type: 'array', cellDates: false })
   const ws     = wb.Sheets[wb.SheetNames[0]]
-  const data   = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null, raw: true })
+  const data     = XLSX.utils.sheet_to_json<Celda[]>(ws, { header: 1, defval: null, raw: true })
+  // Versión formateada para preservar ceros iniciales en campos como LPN
+  const dataFmt  = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '', raw: false })
 
   // Buscar fila de encabezados (primera fila con contenido)
   const headerRow = data.find(f => f.some(c => c !== null && c !== ''))
@@ -119,15 +121,22 @@ export async function parsearExcelConstrumart(file: File): Promise<ResultadoPars
 
   // Parsear filas y agrupar por Núm. Orden
   const mapaOrdenes = new Map<string, OrdenConstrumart>()
-  let filaNum = data.indexOf(headerRow) + 2  // para mensajes de error con nro de fila real
+  const headerRowIdx = data.indexOf(headerRow)
+  let filaNum = headerRowIdx + 2  // para mensajes de error con nro de fila real
   let totalLineas = 0
+  const filasDatosFmt = (dataFmt as any[]).slice(headerRowIdx + 1).filter((_: any, i: number) => filasDatos[i] !== undefined)
 
-  for (const fila of filasDatos) {
+  for (let fi = 0; fi < filasDatos.length; fi++) {
+    const fila    = filasDatos[fi]
+    const filaFmt = filasDatosFmt[fi] ?? []
     filaNum++
 
     const numeroOrden  = strCell(fila, idx.orden).replace(/\.0$/, '')
     const numeroGuia   = strCell(fila, idx.guia).replace(/\.0$/, '')
-    const lpn          = strCell(fila, idx.lpn)
+    // Usar valor formateado para preservar cero inicial (LPN es código, no número)
+    const lpnFmt = idx.lpn !== -1 ? String(filaFmt[idx.lpn] ?? '').trim().replace(/\.0$/, '') : ''
+    const lpnRaw = strCell(fila, idx.lpn)
+    const lpn    = lpnFmt.length >= lpnRaw.length ? lpnFmt : lpnRaw
     const posicion     = numCell(fila, idx.posicion)
     const codigoBarra  = strCell(fila, idx.codigoBarra)
     const pluSap       = strCell(fila, idx.pluSap)

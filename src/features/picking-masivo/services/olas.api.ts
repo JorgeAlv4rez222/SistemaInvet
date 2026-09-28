@@ -40,6 +40,7 @@ export type LineaLpn = {
   id:                 string
   lpn:                string
   codigo_barra:       string | null
+  codigo_proveedor:   string | null
   tienda:             string | null
   descripcion:        string
   cantidad_solicitada: number
