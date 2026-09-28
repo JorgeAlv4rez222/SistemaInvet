@@ -39,6 +39,7 @@ export type TareaExtraccion = {
 export type LineaLpn = {
   id:                 string
   lpn:                string
+  codigo_barra:       string | null
   tienda:             string | null
   descripcion:        string
   cantidad_solicitada: number

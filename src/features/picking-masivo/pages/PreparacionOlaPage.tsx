@@ -122,14 +122,18 @@ export function PreparacionOlaPage() {
     return true
   })
 
+  // Lookup secundario: codigo_barra → lpn (para cuando el scanner lee EAN-8 en vez del LPN largo)
+  const porCodigoBarra = lineas.reduce<Record<string, string>>((acc, l) => {
+    if (l.codigo_barra) acc[l.codigo_barra] = l.lpn
+    return acc
+  }, {})
+
   function resolverLpn(valor: string): string | null {
     if (porLpn[valor]) return valor
-    // Fallback: el escáner puede leer el barcode en formato distinto (ej. EAN-8 vs Code-128).
-    // Buscar LPN cuyo valor sin ceros iniciales coincida, o que contenga el valor escaneado.
+    if (porCodigoBarra[valor]) return porCodigoBarra[valor]
     const sinCeros = valor.replace(/^0+/, '')
     for (const key of lpns) {
       if (key.replace(/^0+/, '') === sinCeros) return key
-      if (key.includes(valor) || (sinCeros && key.replace(/^0+/, '').includes(sinCeros))) return key
     }
     return null
   }
