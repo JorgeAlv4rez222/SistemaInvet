@@ -4,8 +4,9 @@ import { json, type Env } from '../_lib/cf'
 import { z } from 'zod'
 
 const schema = z.object({
-  adminId: z.string().uuid(),
-  notaId:  z.string().uuid(),
+  adminId:    z.string().uuid(),
+  notaId:     z.string().uuid(),
+  comentario: z.string().min(1),
   items: z.array(z.object({
     productoId:     z.string().uuid(),
     notaProductoId: z.string().uuid(),

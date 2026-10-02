@@ -9,9 +9,10 @@ export type DevolucionItem = {
 }
 
 export type RegistrarDevolucionInput = {
-  adminId: string
-  notaId:  string
-  items:   DevolucionItem[]
+  adminId:    string
+  notaId:     string
+  comentario: string
+  items:      DevolucionItem[]
 }
 
 export const devolucionesService = {
@@ -32,7 +33,7 @@ export const devolucionesService = {
     // Crear cabecera en tabla devoluciones
     const { data: devRow, error: errorDev } = await supabase
       .from('devoluciones')
-      .insert({ nota_venta_id: input.notaId, usuario_id: input.adminId })
+      .insert({ nota_venta_id: input.notaId, usuario_id: input.adminId, motivo: input.comentario })
       .select('id')
       .single()
 

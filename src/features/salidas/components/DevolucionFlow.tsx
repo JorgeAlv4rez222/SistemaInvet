@@ -29,9 +29,13 @@ export function DevolucionFlow({
   const { data, isLoading, isError } = useDetalleNota(notaId)
   const mutation = useRegistrarDevolucion()
 
-  const [cantidades, setCantidades] = useState<Record<string, number>>({})
-  const [exito, setExito]           = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [cantidades, setCantidades]   = useState<Record<string, number>>({})
+  const [exito, setExito]             = useState(false)
+  const [error, setError]             = useState<string | null>(null)
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [comentario, setComentario]   = useState('')
+  const [errorModal, setErrorModal]   = useState<string | null>(null)
+  const [itemsPendientes, setItemsPendientes] = useState<{ productoId: string; notaProductoId: string; cantidad: number }[]>([])
 
   if (isLoading) return <p className="cargando">Cargando productos…</p>
   if (isError || !data) return <p className="error">Error al cargar la nota</p>
@@ -42,7 +46,7 @@ export function DevolucionFlow({
     setCantidades((prev) => ({ ...prev, [notaProductoId]: val }))
   }
 
-  async function handleConfirmar() {
+  function handleConfirmar() {
     setError(null)
     const items = productosConDespacho.map((p) => ({
       productoId:     p.productoId,
@@ -55,11 +59,24 @@ export function DevolucionFlow({
       return
     }
 
+    setItemsPendientes(items)
+    setComentario('')
+    setErrorModal(null)
+    setModalAbierto(true)
+  }
+
+  async function handleConfirmarConComentario() {
+    if (!comentario.trim()) {
+      setErrorModal('El motivo de devolución es obligatorio.')
+      return
+    }
+    setErrorModal(null)
     try {
-      await mutation.mutateAsync({ adminId, notaId, items })
+      await mutation.mutateAsync({ adminId, notaId, items: itemsPendientes, comentario: comentario.trim() })
+      setModalAbierto(false)
       setExito(true)
     } catch (e: any) {
-      setError(e?.message ?? 'Error al registrar la devolución')
+      setErrorModal(e?.message ?? 'Error al registrar la devolución')
     }
   }
 
@@ -121,6 +138,7 @@ export function DevolucionFlow({
                     min={0}
                     max={max}
                     value={val}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => {
                       const n = Math.min(max, Math.max(0, parseInt(e.target.value, 10) || 0))
                       setCantidad(p.notaProductoId, n)
@@ -146,8 +164,35 @@ export function DevolucionFlow({
             onClick={handleConfirmar}
           >
             <IcoReturn />
-            {mutation.isPending ? 'Registrando…' : 'Confirmar devolución'}
+            Confirmar devolución
           </button>
+        </div>
+      )}
+
+      {modalAbierto && (
+        <div className="dev-modal-overlay">
+          <div className="dev-modal">
+            <h3 className="dev-modal-titulo">Motivo de devolución</h3>
+            <p className="dev-modal-sub">Este campo es obligatorio para registrar la devolución.</p>
+            <textarea
+              className={`dev-modal-textarea ${errorModal ? 'dev-modal-textarea--error' : ''}`}
+              placeholder="Describe el motivo de la devolución…"
+              value={comentario}
+              autoFocus
+              rows={4}
+              onChange={(e) => { setComentario(e.target.value); setErrorModal(null) }}
+            />
+            {errorModal && <p className="dev-modal-error">{errorModal}</p>}
+            <div className="dev-modal-acciones">
+              <button className="btn-secundario" onClick={() => setModalAbierto(false)} disabled={mutation.isPending}>
+                Cancelar
+              </button>
+              <button className="btn-primario" onClick={handleConfirmarConComentario} disabled={mutation.isPending}>
+                <IcoReturn />
+                {mutation.isPending ? 'Registrando…' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

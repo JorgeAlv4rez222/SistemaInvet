@@ -7,7 +7,7 @@ export type DevolucionItemInput = {
 }
 
 export const devolucionesApi = {
-  registrar(adminId: string, notaId: string, items: DevolucionItemInput[]) {
-    return apiClient.post<{ procesados: number }>('/devoluciones', { adminId, notaId, items })
+  registrar(adminId: string, notaId: string, items: DevolucionItemInput[], comentario: string) {
+    return apiClient.post<{ procesados: number }>('/devoluciones', { adminId, notaId, items, comentario })
   },
 }
