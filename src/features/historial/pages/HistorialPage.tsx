@@ -490,6 +490,9 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
   const totalSolicitado = filas.reduce((s, m) => s + (m.cantidadSolicitada ?? m.cantidad ?? 0), 0)
   const totalPicked     = filas.reduce((s, m) => s + (m.cantidad ?? 0), 0)
   const pct             = totalSolicitado > 0 ? Math.round((totalPicked / totalSolicitado) * 100) : 0
+  const totalDevuelto   = filasDevolucion.reduce((s, m) => s + (m.cantidad ?? 0), 0)
+  const tipoDev: 'total' | 'parcial' | null = filasDevolucion.length === 0 ? null
+    : totalDevuelto >= totalPicked ? 'total' : 'parcial'
 
   const estadoCfg = data ? (ESTADO_NOTA_CFG[data.estado] ?? { label: data.estado, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }) : null
 
@@ -551,27 +554,40 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
           {/* ── Sección devolución ── */}
           {filasDevolucion.length > 0 && (
             <div className="hnv-dev-wrap">
-              <div className="hnv-dev-titulo">↩ Devolución registrada · {filasDevolucion.length} producto{filasDevolucion.length !== 1 ? 's' : ''}</div>
+              <div className="hnv-dev-titulo-row">
+                <span>↩ Devolución registrada · {filasDevolucion.length} producto{filasDevolucion.length !== 1 ? 's' : ''}</span>
+                {tipoDev && (
+                  <span className={`hnv-badge hnv-badge-dev hnv-badge-dev--${tipoDev}`}>
+                    {tipoDev === 'total' ? 'Dev. total' : 'Dev. parcial'}
+                  </span>
+                )}
+              </div>
               <table className="hnv-dev-tabla">
                 <thead>
                   <tr>
-                    <th className="hnv-dev-th">SKU</th>
                     <th className="hnv-dev-th">Producto</th>
                     <th className="hnv-dev-th hnv-dev-th--r">Cant. devuelta</th>
+                    <th className="hnv-dev-th">Devolución</th>
                     <th className="hnv-dev-th">Registrado por</th>
                     <th className="hnv-dev-th">Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filasDevolucion.map(m => {
-                    const d   = new Date(m.fecha)
-                    const dia = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                    const d    = new Date(m.fecha)
+                    const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
                     const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    const cantSolicitada = filas.find(f => f.producto === m.producto)?.cantidadSolicitada ?? null
+                    const esTotalProd = cantSolicitada != null && (m.cantidad ?? 0) >= cantSolicitada
                     return (
                       <tr key={m.movimientoId} className="hnv-dev-fila">
-                        <td className="hnv-dev-td"><span className="hnv-dev-sku">{m.producto ?? '—'}</span></td>
                         <td className="hnv-dev-td">{m.nombreProducto ?? '—'}</td>
                         <td className="hnv-dev-td hnv-dev-td--r"><span className="hnv-dev-cant">{m.cantidad ?? 0}</span></td>
+                        <td className="hnv-dev-td">
+                          <span className={`hnv-badge hnv-badge-dev hnv-badge-dev--${esTotalProd ? 'total' : 'parcial'}`}>
+                            {esTotalProd ? 'Total' : 'Parcial'}
+                          </span>
+                        </td>
                         <td className="hnv-dev-td">{m.usuario}</td>
                         <td className="hnv-dev-td">
                           <span className="hnv-fecha-dia">{dia}</span>
@@ -703,11 +719,16 @@ function NotaHistorialRow({
       <td className="hnv-td hnv-td--numero">{nota.numeroNota}</td>
       <td className="hnv-td hnv-td--cliente">{nota.nombreCliente}</td>
       <td className="hnv-td hnv-td--fecha">{fecha}</td>
-      <td className="hnv-td hnv-td--items">{nota.totalProductos} SKUs</td>
       <td className="hnv-td hnv-td--estado">
         <span className="hnv-badge" style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.color + '40' }}>
           {ESTADO_NOTA_LABELS[nota.estado] ?? nota.estado}
         </span>
+      </td>
+      <td className="hnv-td hnv-td--dev">
+        {nota.tipoDev
+          ? <span className={`hnv-badge hnv-badge-dev hnv-badge-dev--${nota.tipoDev}`}>{nota.tipoDev === 'total' ? 'Dev. total' : 'Dev. parcial'}</span>
+          : <span className="hnv-dev-none">—</span>
+        }
       </td>
       <td className="hnv-td hnv-td--accion">
         <button
@@ -746,17 +767,21 @@ function NotaHistorialCard({
       <div className="hnv-card-cliente">{nota.nombreCliente}</div>
       <div className="hnv-card-bottom">
         <span className="hnv-card-meta">{fecha}</span>
-        <span className="hnv-card-meta">{nota.totalProductos} SKUs</span>
+        {nota.tipoDev
+          ? <span className={`hnv-badge hnv-badge-dev hnv-badge-dev--${nota.tipoDev}`}>{nota.tipoDev === 'total' ? 'Dev. total' : 'Dev. parcial'}</span>
+          : <span className="hnv-card-meta">—</span>
+        }
       </div>
     </div>
   )
 }
 
-function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void }) {
+function NotasHistorialView() {
   const [filtroEstado, setFiltroEstado] = useState('')
-  const [soloConDev, setSoloConDev] = useState(false)
-  const [busqueda, setBusqueda] = useState('')
-  const { data, isLoading, isError } = useNotas(filtroEstado || undefined)
+  const [soloConDev, setSoloConDev]     = useState(false)
+  const [busqueda, setBusqueda]         = useState('')
+  const [detalleId, setDetalleId]       = useState<string | null>(null)
+  const { data, isLoading, isError }    = useNotas(filtroEstado || undefined)
 
   const notas = useMemo(() => {
     let todas = data ?? []
@@ -768,6 +793,10 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
       n.nombreCliente.toLowerCase().includes(q)
     )
   }, [data, busqueda, soloConDev])
+
+  if (detalleId) {
+    return <DetalleNota notaId={detalleId} onCerrar={() => setDetalleId(null)} />
+  }
 
   return (
     <div className="hnv-view">
@@ -814,8 +843,8 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
                   <th className="hnv-th">NV N°</th>
                   <th className="hnv-th">CLIENTE</th>
                   <th className="hnv-th">FECHA</th>
-                  <th className="hnv-th">SKUs</th>
                   <th className="hnv-th">ESTADO</th>
+                  <th className="hnv-th">DEVOLUCIÓN</th>
                   <th className="hnv-th"></th>
                 </tr>
               </thead>
@@ -823,7 +852,7 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
                 {notas.length === 0 ? (
                   <tr><td colSpan={6} className="hnv-vacio">No hay notas con este criterio</td></tr>
                 ) : notas.map(n => (
-                  <NotaHistorialRow key={n.notaId} nota={n} onDetalle={onDetalle} />
+                  <NotaHistorialRow key={n.notaId} nota={n} onDetalle={setDetalleId} />
                 ))}
               </tbody>
             </table>
@@ -834,7 +863,7 @@ function NotasHistorialView({ onDetalle }: { onDetalle: (notaId: string) => void
             {notas.length === 0
               ? <div className="hnv-vacio">No hay notas con este criterio</div>
               : notas.map(n => (
-                  <NotaHistorialCard key={`c-${n.notaId}`} nota={n} onDetalle={onDetalle} />
+                  <NotaHistorialCard key={`c-${n.notaId}`} nota={n} onDetalle={setDetalleId} />
                 ))
             }
           </div>
@@ -1435,7 +1464,7 @@ export function HistorialPage() {
       {vista === 'picking' && <PickingHistorialView />}
 
       {vista === 'notas' && (
-        <NotasHistorialView onDetalle={(notaId) => setDetalle({ tipo: 'nota', notaId, numero: '' })} />
+        <NotasHistorialView />
       )}
 
       {vista === 'movimientos' && <>

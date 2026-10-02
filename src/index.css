@@ -292,6 +292,14 @@ label {
 .badge-lista          { background: rgba(34,197,94,0.15);  color: var(--success); }
 .badge-sin-stock      { background: rgba(245,158,11,0.15); color: var(--warning); }
 .badge-anulada        { background: rgba(239,68,68,0.12);  color: #f87171; }
+.sal-badge-devolucion { font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+.sal-badge-devolucion--parcial { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.sal-badge-devolucion--total   { background: rgba(239,68,68,0.12);  color: #f87171; }
+.hnv-estado-wrap { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.hnv-badge-dev { font-size: 0.72rem; padding: 2px 7px; border-radius: 99px; font-weight: 600; white-space: nowrap; border: 1px solid transparent; }
+.hnv-badge-dev--parcial { background: rgba(251,191,36,0.15); color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+.hnv-badge-dev--total   { background: rgba(239,68,68,0.12);  color: #f87171; border-color: rgba(239,68,68,0.3); }
+.hnv-dev-none { color: var(--text-secondary); font-size: 0.85rem; }
 
 /* ── Badges — Picking Masivo ── */
 .badge-validando,
@@ -4848,6 +4856,7 @@ label {
   background: rgba(0,160,223,0.06);
   overflow: hidden;
 }
+.hnv-dev-titulo-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1rem; font-size: 0.82rem; font-weight: 700; letter-spacing: .05em; color: var(--accent); text-transform: uppercase; }
 .hnv-dev-titulo {
   padding: 0.6rem 1rem;
   font-size: 0.78rem;
