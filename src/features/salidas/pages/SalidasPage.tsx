@@ -460,7 +460,9 @@ export function SalidasPage() {
                       </button>
                     )}
                     {esDespachada && nota.tieneDev && (
-                      <span className="badge sal-badge-devolucion">Devolución registrada</span>
+                      <span className={`badge sal-badge-devolucion sal-badge-devolucion--${nota.tipoDev ?? 'parcial'}`}>
+                        {nota.tipoDev === 'total' ? 'Dev. total' : 'Dev. parcial'}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -17,6 +17,7 @@ export type NotaParaRevision = {
   nombreChofer:        string | null
   comentarioDespacho:  string | null
   tieneDev:            boolean
+  tipoDev:             'total' | 'parcial' | null
 }
 
 export type { ValidarProductoResult }

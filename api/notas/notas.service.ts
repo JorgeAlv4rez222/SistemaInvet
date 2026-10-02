@@ -65,6 +65,7 @@ export type NotaResumen = {
   notaId:             string
   numeroNota:         string
   nombreCliente:      string
+  tipoDev:            'total' | 'parcial' | null
   estado:             string
   totalProductos:     number
   productosCompletos: number
@@ -308,14 +309,14 @@ export const notasService = {
     await supabase.rpc('liberar_notas_abandonadas')
 
     type RawNota = NotaVenta & {
-      nota_productos: { id: string; estado: string }[]
+      nota_productos: { id: string; estado: string; cantidad_despachada: number | null }[]
       usuarios: { nombre: string } | null
-      devoluciones: { id: string }[]
+      devoluciones: { devolucion_items: { cantidad: number }[] }[]
     }
 
     let q = supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, estado), usuarios!notas_venta_importado_por_fkey(nombre), devoluciones(id)')
+      .select('*, nota_productos(id, estado, cantidad_despachada), usuarios!notas_venta_importado_por_fkey(nombre), devoluciones(devolucion_items(cantidad))')
       .order('created_at', { ascending: false })
     if (estado) q = q.eq('estado', estado)
 
@@ -358,6 +359,12 @@ export const notasService = {
       tomadaPor:          n.tomada_por ?? null,
       completadaPor:      completadoresPorNota.get(n.id) ?? null,
       tieneDev:           (n.devoluciones?.length ?? 0) > 0,
+      tipoDev: (() => {
+        if (!n.devoluciones?.length) return null
+        const totalDespachado = n.nota_productos.reduce((s, p) => s + (p.cantidad_despachada ?? 0), 0)
+        const totalDevuelto   = n.devoluciones.flatMap(d => d.devolucion_items).reduce((s, i) => s + i.cantidad, 0)
+        return totalDevuelto >= totalDespachado ? 'total' : 'parcial'
+      })(),
       fechaPreparacion:   (n as any).fecha_preparacion ?? null,
       fechaDespacho:      (n as any).fecha_despacho ?? null,
     }))

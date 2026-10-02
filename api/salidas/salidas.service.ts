@@ -38,15 +38,15 @@ export const salidasService = {
   async obtenerNotasParaRevision(): Promise<ServiceResult<NotaResumen[]>> {
     const { data, error } = await supabase
       .from('notas_venta')
-      .select('*, nota_productos(id, revisado_admin), devoluciones(id)')
+      .select('*, nota_productos(id, revisado_admin, cantidad_despachada), devoluciones(devolucion_items(cantidad))')
       .in('estado', ['completa', 'despachada'])
       .order('updated_at', { ascending: false })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
 
     type RawNota = NotaVenta & {
-      nota_productos: { id: string; revisado_admin: boolean }[]
-      devoluciones:   { id: string }[]
+      nota_productos: { id: string; revisado_admin: boolean; cantidad_despachada: number | null }[]
+      devoluciones:   { devolucion_items: { cantidad: number }[] }[]
     }
     const notas = data as RawNota[] ?? []
 
@@ -57,6 +57,12 @@ export const salidasService = {
       nombreChofer:        (nota as any).nombre_chofer ?? null,
       comentarioDespacho:  nota.comentario_despacho ?? null,
       tieneDev:            (nota.devoluciones?.length ?? 0) > 0,
+      tipoDev: (() => {
+        if (!nota.devoluciones?.length) return null
+        const totalDespachado = nota.nota_productos.reduce((s, p) => s + (p.cantidad_despachada ?? 0), 0)
+        const totalDevuelto   = nota.devoluciones.flatMap(d => d.devolucion_items).reduce((s, i) => s + i.cantidad, 0)
+        return totalDevuelto >= totalDespachado ? 'total' : 'parcial'
+      })(),
     }))
 
     return { ok: true, data: result }

@@ -475,6 +475,8 @@ function ProductoHistorialCard({
 
 function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => void }) {
   const { data, isLoading, isError, error } = useMovimientosPorNota(notaId)
+  const [devAbierta, setDevAbierta]         = useState(false)
+  const [gruposAbiertos, setGruposAbiertos] = useState<Record<number, boolean>>({})
 
   const filas = useMemo(() => {
     if (!data) return [] as MovimientoHistorial[]
@@ -490,9 +492,17 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
   const totalSolicitado = filas.reduce((s, m) => s + (m.cantidadSolicitada ?? m.cantidad ?? 0), 0)
   const totalPicked     = filas.reduce((s, m) => s + (m.cantidad ?? 0), 0)
   const pct             = totalSolicitado > 0 ? Math.round((totalPicked / totalSolicitado) * 100) : 0
-  const totalDevuelto   = filasDevolucion.reduce((s, m) => s + (m.cantidad ?? 0), 0)
+
+  const productosEnNV    = [...new Set(filas.map(f => f.producto).filter(Boolean))]
+  const productosDev     = new Set(filasDevolucion.map(m => m.producto))
+  const todosDevueltos   = productosEnNV.length > 0 && productosEnNV.every(p => productosDev.has(p))
+  const cadaUnoCompleto  = filasDevolucion.every(m => {
+    const solicitado = filas.find(f => f.producto === m.producto)?.cantidadSolicitada ?? null
+    return solicitado != null && (m.cantidad ?? 0) >= solicitado
+  })
   const tipoDev: 'total' | 'parcial' | null = filasDevolucion.length === 0 ? null
-    : totalDevuelto >= totalPicked ? 'total' : 'parcial'
+    : (todosDevueltos && cadaUnoCompleto) ? 'total' : 'parcial'
+  const motivoDev: string | null = (data as any)?.motivoDev ?? null
 
   const estadoCfg = data ? (ESTADO_NOTA_CFG[data.estado] ?? { label: data.estado, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' }) : null
 
@@ -561,123 +571,164 @@ function DetalleNota({ notaId, onCerrar }: { notaId: string; onCerrar: () => voi
                     {tipoDev === 'total' ? 'Dev. total' : 'Dev. parcial'}
                   </span>
                 )}
+                <button
+                  className="hnv-dev-toggle-btn"
+                  onClick={() => setDevAbierta(v => !v)}
+                >
+                  {devAbierta ? 'Ocultar detalle' : 'Ver detalle Devolución'}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13} style={{ transform: devAbierta ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
               </div>
-              <table className="hnv-dev-tabla">
-                <thead>
-                  <tr>
-                    <th className="hnv-dev-th">Producto</th>
-                    <th className="hnv-dev-th hnv-dev-th--r">Cant. devuelta</th>
-                    <th className="hnv-dev-th">Devolución</th>
-                    <th className="hnv-dev-th">Registrado por</th>
-                    <th className="hnv-dev-th">Fecha</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filasDevolucion.map(m => {
-                    const d    = new Date(m.fecha)
-                    const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
-                    const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
-                    const cantSolicitada = filas.find(f => f.producto === m.producto)?.cantidadSolicitada ?? null
-                    const esTotalProd = cantSolicitada != null && (m.cantidad ?? 0) >= cantSolicitada
-                    return (
-                      <tr key={m.movimientoId} className="hnv-dev-fila">
-                        <td className="hnv-dev-td">{m.nombreProducto ?? '—'}</td>
-                        <td className="hnv-dev-td hnv-dev-td--r"><span className="hnv-dev-cant">{m.cantidad ?? 0}</span></td>
-                        <td className="hnv-dev-td">
-                          <span className={`hnv-badge hnv-badge-dev hnv-badge-dev--${esTotalProd ? 'total' : 'parcial'}`}>
-                            {esTotalProd ? 'Total' : 'Parcial'}
-                          </span>
-                        </td>
-                        <td className="hnv-dev-td">{m.usuario}</td>
-                        <td className="hnv-dev-td">
-                          <span className="hnv-fecha-dia">{dia}</span>
-                          <span className="hnv-fecha-hora">{hora} hrs</span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+              {devAbierta && (
+                <>
+                  {motivoDev && (
+                    <div className="hnv-dev-motivo">
+                      <span className="hnv-dev-motivo-label">Motivo de la devolución:</span>
+                      <span className="hnv-dev-motivo-texto">{motivoDev}</span>
+                    </div>
+                  )}
+                  <div className="hnv-tabla-scroll">
+                    <table className="hnv-dev-tabla">
+                      <thead>
+                        <tr>
+                          <th className="hnv-dev-th">Producto</th>
+                          <th className="hnv-dev-th hnv-dev-th--r">Cant. devuelta</th>
+                          <th className="hnv-dev-th">Registrado por</th>
+                          <th className="hnv-dev-th">Fecha</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filasDevolucion.map(m => {
+                          const d    = new Date(m.fecha)
+                          const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                          const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                          return (
+                            <tr key={m.movimientoId} className="hnv-dev-fila">
+                              <td className="hnv-dev-td">{m.nombreProducto ?? '—'}</td>
+                              <td className="hnv-dev-td hnv-dev-td--r"><span className="hnv-dev-cant">{m.cantidad ?? 0}</span></td>
+                              <td className="hnv-dev-td">{m.usuario}</td>
+                              <td className="hnv-dev-td">
+                                <span className="hnv-fecha-dia">{dia}</span>
+                                <span className="hnv-fecha-hora">{hora} hrs</span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {/* ── Tabla de trazabilidad ── */}
-          <div className="hnv-traz-wrap">
-            <div className="hnv-traz-titulo">Trazabilidad de productos · {filas.length} registro{filas.length !== 1 ? 's' : ''}</div>
-            <div className="hnv-tabla-scroll">
-              <table className="hnv-traz-tabla">
-                <thead>
-                  <tr className="hnv-traz-thead-tr">
-                    <th className="hnv-traz-th">Rack</th>
-                    <th className="hnv-traz-th">Producto</th>
-                    <th className="hnv-traz-th hnv-traz-th--center">Solicitado / Picked</th>
-                    <th className="hnv-traz-th hnv-traz-th--op">Operador</th>
-                    <th className="hnv-traz-th hnv-traz-th--fecha">Registro</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filas.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="hnv-vacio">Sin movimientos registrados para esta nota</td>
-                    </tr>
-                  ) : (() => {
-                    const SEP_LABELS = ['Pickeada por', 'Revisión de salida']
-                    let grupoIdx = -1
-                    return filas.reduce<React.ReactNode[]>((acc, m, idx) => {
-                    const prevUsuario = idx > 0 ? filas[idx - 1].usuario : null
-                    if (m.usuario !== prevUsuario) {
-                      grupoIdx++
-                      const label = SEP_LABELS[grupoIdx] ?? 'Revisión por'
-                      acc.push(
-                        <tr key={`sep-${idx}`} className="hnv-traz-sep">
-                          <td colSpan={5} className="hnv-traz-sep-td">
-                            <span className="hnv-traz-sep-label">{label}</span>
-                            <span className="hnv-traz-sep-nombre">
-                              <span className="hnv-op-chip">{m.usuario?.charAt(0)?.toUpperCase()}</span>
-                              {m.usuario}
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    }
-                    const d    = new Date(m.fecha)
-                    const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
-                    const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
-                    const sol  = m.cantidadSolicitada ?? 0
-                    const pick = m.cantidad ?? 0
-                    const ok   = pick >= sol
-                    acc.push(
-                      <tr key={m.movimientoId} className="hnv-traz-fila">
-                        <td className="hnv-traz-td hnv-traz-td--rack">
-                          <code className="hnv-rack-code">{m.ubicacion ?? '—'}</code>
-                        </td>
-                        <td className="hnv-traz-td hnv-traz-td--prod">
-                          <span className="hnv-prod-nombre">{m.nombreProducto ?? '—'}</span>
-                          <span className="hnv-prod-sku">SKU: {m.producto}</span>
-                        </td>
-                        <td className="hnv-traz-td hnv-traz-td--cant">
-                          <span className="hnv-cant-row">
-                            <span className="hnv-cant-sol">{sol}</span>
-                            <span className="hnv-cant-sep">/</span>
-                            <span className={`hnv-cant-pick ${ok ? 'hnv-cant-pick--ok' : 'hnv-cant-pick--parcial'}`}>{pick}</span>
-                          </span>
-                        </td>
-                        <td className="hnv-traz-td hnv-traz-td--op">
-                          <span className="hnv-op-nombre">{m.usuario}</span>
-                        </td>
-                        <td className="hnv-traz-td hnv-traz-td--fecha">
-                          <span className="hnv-fecha-dia">{dia}</span>
-                          <span className="hnv-fecha-hora">{hora} hrs</span>
-                        </td>
-                      </tr>
-                    )
-                    return acc
-                  }, [])
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* ── Trazabilidad por grupos (Picking / Salida) ── */}
+          {(() => {
+            const SEP_LABELS    = ['Pickeada por', 'Revisión de salida']
+            const BTN_LABELS    = ['Ver detalle Picking', 'Ver detalle Salida']
+            // Agrupar filas por bloques consecutivos de usuario
+            const grupos: { usuario: string; label: string; btnLabel: string; movs: typeof filas }[] = []
+            for (const m of filas) {
+              const last = grupos[grupos.length - 1]
+              if (!last || last.usuario !== m.usuario) {
+                const idx = grupos.length
+                grupos.push({ usuario: m.usuario, label: SEP_LABELS[idx] ?? 'Revisión por', btnLabel: BTN_LABELS[idx] ?? 'Ver detalle', movs: [] })
+              }
+              grupos[grupos.length - 1].movs.push(m)
+            }
+
+            if (grupos.length === 0) return (
+              <div className="hnv-traz-wrap">
+                <div className="hnv-traz-titulo">Trazabilidad de productos · 0 registros</div>
+                <p className="hnv-vacio">Sin movimientos registrados para esta nota</p>
+              </div>
+            )
+
+            return (
+              <div className="hnv-traz-wrap">
+                <div className="hnv-traz-titulo">Trazabilidad de productos · {filas.length} registro{filas.length !== 1 ? 's' : ''}</div>
+                {grupos.map((grupo, gi) => {
+                  const abierto = !!gruposAbiertos[gi]
+                  return (
+                    <div key={gi} className="hnv-traz-grupo">
+                      {/* Header del grupo con botón toggle */}
+                      <div className="hnv-traz-grupo-header">
+                        <div className="hnv-traz-sep-nombre" style={{ gap: 8 }}>
+                          <span className="hnv-traz-sep-label">{grupo.label}</span>
+                          <span className="hnv-op-chip">{grupo.usuario?.charAt(0)?.toUpperCase()}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{grupo.usuario}</span>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>· {grupo.movs.length} reg.</span>
+                        </div>
+                        <button
+                          className="hnv-dev-toggle-btn"
+                          onClick={() => setGruposAbiertos(prev => ({ ...prev, [gi]: !prev[gi] }))}
+                        >
+                          {abierto ? 'Ocultar detalle' : grupo.btnLabel}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13} style={{ transform: abierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                            <polyline points="6 9 12 15 18 9"/>
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Tabla colapsable */}
+                      {abierto && (
+                        <div className="hnv-tabla-scroll">
+                          <table className="hnv-traz-tabla">
+                            <thead>
+                              <tr className="hnv-traz-thead-tr">
+                                <th className="hnv-traz-th">Rack</th>
+                                <th className="hnv-traz-th">Producto</th>
+                                <th className="hnv-traz-th hnv-traz-th--center">Solicitado / Picked</th>
+                                <th className="hnv-traz-th hnv-traz-th--op">Operador</th>
+                                <th className="hnv-traz-th hnv-traz-th--fecha">Registro</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {grupo.movs.map(m => {
+                                const d   = new Date(m.fecha)
+                                const dia  = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')
+                                const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                const sol  = m.cantidadSolicitada ?? 0
+                                const pick = m.cantidad ?? 0
+                                const ok   = pick >= sol
+                                return (
+                                  <tr key={m.movimientoId} className="hnv-traz-fila">
+                                    <td className="hnv-traz-td hnv-traz-td--rack">
+                                      <code className="hnv-rack-code">{m.ubicacion ?? '—'}</code>
+                                    </td>
+                                    <td className="hnv-traz-td hnv-traz-td--prod">
+                                      <span className="hnv-prod-nombre">{m.nombreProducto ?? '—'}</span>
+                                      <span className="hnv-prod-sku">SKU: {m.producto}</span>
+                                    </td>
+                                    <td className="hnv-traz-td hnv-traz-td--cant">
+                                      <span className="hnv-cant-row">
+                                        <span className="hnv-cant-sol">{sol}</span>
+                                        <span className="hnv-cant-sep">/</span>
+                                        <span className={`hnv-cant-pick ${ok ? 'hnv-cant-pick--ok' : 'hnv-cant-pick--parcial'}`}>{pick}</span>
+                                      </span>
+                                    </td>
+                                    <td className="hnv-traz-td hnv-traz-td--op">
+                                      <span className="hnv-op-nombre">{m.usuario}</span>
+                                    </td>
+                                    <td className="hnv-traz-td hnv-traz-td--fecha">
+                                      <span className="hnv-fecha-dia">{dia}</span>
+                                      <span className="hnv-fecha-hora">{hora} hrs</span>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </>
       )}
     </div>

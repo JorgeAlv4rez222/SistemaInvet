@@ -336,7 +336,7 @@ export const historialService = {
     // Devoluciones directas (por si el movimiento no se insertó correctamente)
     const { data: devRows } = await supabase
       .from('devoluciones')
-      .select('id, usuario_id')
+      .select('id, usuario_id, motivo')
       .eq('nota_venta_id', notaId)
 
     const movimientosDevolucion: MovimientoHistorial[] = []
@@ -395,6 +395,8 @@ export const historialService = {
       ? movsBD
       : [...movsBD, ...movimientosDevolucion].sort((a, b) => a.fecha.localeCompare(b.fecha))
 
+    const motivoDev = devRows?.length ? ((devRows[0] as any).motivo ?? null) : null
+
     return {
       ok: true,
       data: {
@@ -402,6 +404,7 @@ export const historialService = {
         cliente:           nota.nombre_cliente,
         estado:            nota.estado,
         movimientos:       movsFinal,
+        motivoDev,
         despacho:          despacho
           ? {
               nombreChofer:    despacho.nombre_chofer,

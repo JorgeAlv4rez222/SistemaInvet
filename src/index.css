@@ -4856,7 +4856,29 @@ label {
   background: rgba(0,160,223,0.06);
   overflow: hidden;
 }
-.hnv-dev-titulo-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1rem; font-size: 0.82rem; font-weight: 700; letter-spacing: .05em; color: var(--accent); text-transform: uppercase; }
+.hnv-dev-titulo-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1rem; font-size: 0.82rem; font-weight: 700; letter-spacing: .05em; color: var(--accent); text-transform: uppercase; flex-wrap: wrap; }
+.hnv-dev-toggle-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,160,223,0.4);
+  background: rgba(0,160,223,0.1);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.hnv-dev-toggle-btn:hover { background: rgba(0,160,223,0.2); }
+.hnv-dev-motivo { display: flex; gap: 8px; padding: 8px 1rem 10px; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,.05); }
+.hnv-dev-motivo-label { color: var(--text-primary); font-weight: 700; white-space: nowrap; background: var(--accent); padding: 2px 8px; border-radius: 4px; }
+.hnv-dev-motivo-texto { color: var(--text-primary); font-style: italic; font-weight: 700; font-size: 1rem; }
 .hnv-dev-titulo {
   padding: 0.6rem 1rem;
   font-size: 0.78rem;
@@ -4908,6 +4930,20 @@ label {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.hnv-traz-grupo {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.hnv-traz-grupo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.55rem 1rem;
+  background: var(--bg-surface);
+  flex-wrap: wrap;
 }
 .hnv-traz-titulo {
   font-size: 11px;
@@ -5073,6 +5109,33 @@ label {
   /* Trazabilidad: ocultar columna Operador */
   .hnv-traz-th--op,
   .hnv-traz-td--op { display: none; }
+
+  /* Devolución: título-row apilado en mobile pequeño */
+  .hnv-dev-titulo-row { gap: 8px; }
+  .hnv-dev-toggle-btn { margin-left: 0; width: 100%; justify-content: center; }
+
+  /* Devolución: tabla compacta — ocultar columna "Registrado por" */
+  .hnv-dev-th:nth-child(3),
+  .hnv-dev-td:nth-child(3) { display: none; }
+
+  /* Motivo: wrap en columna si es estrecho */
+  .hnv-dev-motivo { flex-direction: column; gap: 4px; }
+}
+
+/* Tablet (481px–900px): mostrar tabla NV, ajustar dev-tabla */
+@media (min-width: 481px) and (max-width: 900px) {
+  /* El banner info usa grid 2 columnas */
+  .hnv-info-banner { display: grid; grid-template-columns: 1fr 1fr; }
+  .hnv-info-bloque { border-right: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); }
+  .hnv-info-progreso { grid-column: 1 / -1; border-top: 1px solid var(--border-light); }
+
+  /* Devolución: toggle al extremo derecho pero en misma fila */
+  .hnv-dev-titulo-row { flex-wrap: nowrap; }
+  .hnv-dev-toggle-btn { margin-left: auto; }
+
+  /* Trazabilidad: tabla scrollable ya funciona con min-width: 560px */
+  .hnv-traz-th--op,
+  .hnv-traz-td--op { display: table-cell; }
 }
 
 /* ═══════════════════════════════════════════════════════════
