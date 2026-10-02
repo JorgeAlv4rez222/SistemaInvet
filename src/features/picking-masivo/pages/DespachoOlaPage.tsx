@@ -110,9 +110,17 @@ export function DespachoOlaPage() {
     return true
   })
 
+  function normalizarLpn(valor: string): string {
+    let v = valor.trim()
+    if (v.startsWith('(00)')) v = v.slice(4)
+    else if (/^00\d{18}$/.test(v)) v = v.slice(2)
+    return v
+  }
+
   function resolverLpn(valor: string): string | null {
-    if (porLpn[valor]) return valor
-    const scan = valor.replace(/^0+/, '')
+    const v = normalizarLpn(valor)
+    if (porLpn[v]) return v
+    const scan = v.replace(/^0+/, '')
     for (const key of lpns) {
       if (key.replace(/^0+/, '') === scan) return key
     }
@@ -125,7 +133,7 @@ export function DespachoOlaPage() {
     setError(null)
     const lpn = resolverLpn(raw)
     if (!lpn) {
-      setError(`LPN ${raw} no encontrado en esta ola`)
+      setError(`LPN no encontrado. Ingresa el número impreso bajo el código de barras.`)
       setScanInput('')
       setTimeout(() => inputRef.current?.focus(), 50)
       return
