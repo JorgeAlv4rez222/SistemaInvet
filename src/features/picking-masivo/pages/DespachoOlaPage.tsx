@@ -116,6 +116,11 @@ export function DespachoOlaPage() {
     for (const key of lpns) {
       if (key.replace(/^0+/, '') === scan) return key
     }
+    if (valor.length >= 4) {
+      const sufijo = valor.slice(-5)
+      const matches = lpns.filter(key => key.endsWith(sufijo))
+      if (matches.length === 1) return matches[0]
+    }
     return null
   }
 
