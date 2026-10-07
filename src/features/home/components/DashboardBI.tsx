@@ -175,6 +175,7 @@ function DashboardBIInner() {
           alerta={!kpisLoading && (kpis?.notasDespacho ?? 0) > 0}
           onClick={() => navigate('/salidas')}
         />
+
       </div>
 
       {/* Cuerpo */}
