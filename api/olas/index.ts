@@ -44,6 +44,7 @@ const confirmarExtracSchema = z.object({
 const liberarPropiasSchema  = z.object({ olaId: z.string().uuid(), usuarioId: z.string().uuid() })
 const escanearLpnSchema     = z.object({ olaId: z.string().uuid(), lpn: z.string().min(1), usuarioId: z.string().uuid() })
 const escanearLpnF3Schema   = z.object({ olaId: z.string().uuid(), lpn: z.string().min(1), supervisorId: z.string().uuid() })
+const rollbackLineaF3Schema = z.object({ lineaId: z.string().uuid(), supervisorId: z.string().uuid() })
 const despacharOlaSchema    = z.object({ olaId: z.string().uuid(), supervisorId: z.string().uuid(), nombreChofer: z.string().min(1) })
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -161,6 +162,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const result = await olasDespachoService.escanearLpnFase3(
         parsed.data.olaId, parsed.data.lpn, parsed.data.supervisorId,
       )
+      return result.ok ? res.json(result.data) : res.status(errCode((result.error as any).code)).json({ error: result.error })
+    }
+    if (accion === 'rollback-linea-f3') {
+      const parsed = rollbackLineaF3Schema.safeParse(body)
+      if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      const result = await olasDespachoService.rollbackLineaFase3(parsed.data.lineaId)
       return result.ok ? res.json(result.data) : res.status(errCode((result.error as any).code)).json({ error: result.error })
     }
     if (accion === 'despachar-ola') {

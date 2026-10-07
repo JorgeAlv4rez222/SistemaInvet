@@ -138,6 +138,15 @@ export function useEscanearLpnF3(olaId: string) {
   })
 }
 
+export function useRollbackLineaF3(olaId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lineaId, supervisorId }: { lineaId: string; supervisorId: string }) =>
+      olasApi.rollbackLineaF3(lineaId, supervisorId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['olas', 'despacho-lineas', olaId] }),
+  })
+}
+
 export function useDespacharOla() {
   const qc = useQueryClient()
   return useMutation({

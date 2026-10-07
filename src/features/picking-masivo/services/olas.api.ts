@@ -120,6 +120,9 @@ export const olasApi = {
   escanearLpnF3: (olaId: string, lpn: string, supervisorId: string) =>
     apiClient.post<{ lineasValidadas: number; lpn: string }>('/olas?accion=escanear-lpn-f3', { olaId, lpn, supervisorId }),
 
+  rollbackLineaF3: (lineaId: string, supervisorId: string) =>
+    apiClient.post<{ lineaId: string }>('/olas?accion=rollback-linea-f3', { lineaId, supervisorId }),
+
   despacharOla: (olaId: string, supervisorId: string, nombreChofer: string) =>
     apiClient.post<{ olaId: string }>('/olas?accion=despachar-ola', { olaId, supervisorId, nombreChofer }),
 }

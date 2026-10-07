@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useOla, useLineasDespacho, useEscanearLpnF3, useDespacharOla } from '../hooks/useOlas'
+import { useOla, useLineasDespacho, useEscanearLpnF3, useDespacharOla, useRollbackLineaF3 } from '../hooks/useOlas'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 
@@ -14,6 +14,9 @@ function IcoCheck() {
 }
 function IcoWarn() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+}
+function IcoUndo() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
 }
 function IcoScan() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/></svg>
@@ -41,11 +44,25 @@ type LineaDespacho = {
 
 // ── Tarjeta LPN ───────────────────────────────────────────────────────────────
 
-function LpnCard({ lpn, lineas }: { lpn: string; lineas: LineaDespacho[] }) {
-  const validado = lineas.every(l => l.fase3_validado)
-  const tienda   = lineas[0]?.tienda ?? '—'
-  const orden    = lineas[0]?.ola_ordenes?.numero_orden ?? null
-  const totalUds = lineas.reduce((s, l) => s + l.cantidad_solicitada, 0)
+function LpnCard({
+  lpn, lineas, olaId, supervisorId,
+}: {
+  lpn: string
+  lineas: LineaDespacho[]
+  olaId: string
+  supervisorId: string
+}) {
+  const validado   = lineas.every(l => l.fase3_validado)
+  const tienda     = lineas[0]?.tienda ?? '—'
+  const orden      = lineas[0]?.ola_ordenes?.numero_orden ?? null
+  const totalUds   = lineas.reduce((s, l) => s + l.cantidad_solicitada, 0)
+  const esMultiSku = lineas.length > 1
+  const rollback   = useRollbackLineaF3(olaId)
+
+  async function handleRollback(lineaId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    await rollback.mutateAsync({ lineaId, supervisorId })
+  }
 
   return (
     <div className={`prep-lpn-card ${validado ? 'prep-lpn-card--done' : ''}`}>
@@ -62,6 +79,29 @@ function LpnCard({ lpn, lineas }: { lpn: string; lineas: LineaDespacho[] }) {
         </div>
       </div>
       <div className="prep-lpn-tienda"><IcoStore /> {tienda}</div>
+
+      {esMultiSku && (
+        <div className="desp-multisku-lineas">
+          {lineas.map(l => (
+            <div key={l.id} className="desp-multisku-fila">
+              <span className={`desp-multisku-chip ${l.fase3_validado ? 'desp-multisku-chip--ok' : ''}`}>
+                {l.descripcion}
+              </span>
+              <span className="desp-multisku-uds">{l.cantidad_solicitada} Uds</span>
+              {l.fase3_validado && (
+                <button
+                  className="desp-multisku-rollback"
+                  title="Deshacer validación"
+                  disabled={rollback.isPending}
+                  onClick={e => handleRollback(l.id, e)}
+                >
+                  <IcoUndo />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -83,6 +123,7 @@ export function DespachoOlaPage() {
   const [error, setError]                 = useState<string | null>(null)
   const [filtro, setFiltro]               = useState<'pendientes' | 'validados' | 'todos'>('pendientes')
   const [lpnPendiente, setLpnPendiente]   = useState<{ lpn: string; lineas: LineaDespacho[] } | null>(null)
+  const [checkboxes, setCheckboxes]       = useState<Record<string, boolean>>({})
   const [confirmando, setConfirmando]     = useState(false)
   const [mostrarChofer, setChofer]        = useState(false)
   const [chofer, setChoferNombre]         = useState('')
@@ -143,6 +184,7 @@ export function DespachoOlaPage() {
       return
     }
     setLpnPendiente({ lpn, lineas: lineasLpn })
+    setCheckboxes({})
     setScanInput('')
   }
 
@@ -276,7 +318,7 @@ export function DespachoOlaPage() {
       {!isLoading && !isError && lpnsFiltrados.length > 0 && (
         <div className="prep-lpn-lista">
           {lpnsFiltrados.map(lpn => (
-            <LpnCard key={lpn} lpn={lpn} lineas={porLpn[lpn]} />
+            <LpnCard key={lpn} lpn={lpn} lineas={porLpn[lpn]} olaId={olaId} supervisorId={supervisorId} />
           ))}
         </div>
       )}
@@ -295,41 +337,72 @@ export function DespachoOlaPage() {
       )}
 
       {/* ── Modal: confirmar LPN ── */}
-      {lpnPendiente && (
-        <div className="modal-overlay" onClick={() => setLpnPendiente(null)}>
-          <div className="desp-modal" onClick={e => e.stopPropagation()}>
-            <h3 className="desp-modal-titulo">Confirmar bulto</h3>
-            <div className="desp-modal-fila">
-              <span className="desp-modal-label desp-modal-label--white">LPN</span>
-              <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip">{lpnPendiente.lpn}</span>
-            </div>
-            <div className="desp-modal-fila desp-modal-fila--sep">
-              <span className="desp-modal-label desp-modal-label--white">Tienda destino</span>
-              <span className="desp-modal-valor desp-modal-valor--white">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
-            </div>
-            <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-              {lpnPendiente.lineas.map(l => (
-                <div key={l.id} className="desp-modal-fila">
-                  <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip" style={{ fontSize: '0.85rem' }}>{l.descripcion}</span>
-                  <span className="desp-modal-valor desp-modal-valor--xl">{l.cantidad_solicitada} Uds</span>
-                </div>
-              ))}
-            </div>
-            <div className="desp-modal-acciones">
-              <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setLpnPendiente(null)}>
-                Volver
-              </button>
-              <button
-                className="desp-modal-btn desp-modal-btn--primary"
-                disabled={confirmando}
-                onClick={handleConfirmarLpn}
-              >
-                {confirmando ? 'Confirmando…' : 'Confirmar carga'}
-              </button>
+      {lpnPendiente && (() => {
+        const esMultiSku = lpnPendiente.lineas.length > 1
+        const todosChecked = esMultiSku
+          ? lpnPendiente.lineas.every(l => checkboxes[l.id])
+          : true
+        return (
+          <div className="modal-overlay" onClick={() => setLpnPendiente(null)}>
+            <div className="desp-modal" onClick={e => e.stopPropagation()}>
+              <h3 className="desp-modal-titulo">Confirmar bulto</h3>
+              <div className="desp-modal-fila">
+                <span className="desp-modal-label desp-modal-label--white">LPN</span>
+                <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip">{lpnPendiente.lpn}</span>
+              </div>
+              <div className="desp-modal-fila desp-modal-fila--sep">
+                <span className="desp-modal-label desp-modal-label--white">Tienda destino</span>
+                <span className="desp-modal-valor desp-modal-valor--white">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
+              </div>
+              <div className="desp-modal-body">
+                {lpnPendiente.lineas.map(l => {
+                  const checked = !!checkboxes[l.id]
+                  if (!esMultiSku) {
+                    return (
+                      <div key={l.id} className="desp-modal-fila">
+                        <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip" style={{ fontSize: '0.85rem' }}>{l.descripcion}</span>
+                        <span className="desp-modal-valor desp-modal-valor--xl">{l.cantidad_solicitada} Uds</span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div
+                      key={l.id}
+                      className={`desp-modal-fila--check ${checked ? 'desp-fila--checked' : ''}`}
+                      onClick={() => setCheckboxes(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
+                    >
+                      <div className="desp-fila-izq">
+                        <span className="desp-fila-sku">{l.descripcion}</span>
+                        <span className="desp-fila-uds">{l.cantidad_solicitada} Uds</span>
+                      </div>
+                      <div className="desp-fila-der">
+                        <div className="desp-modal-check-custom">
+                          {checked && <IcoCheck />}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {esMultiSku && !todosChecked && (
+                <p className="desp-modal-hint">Marca cada producto para confirmar que está en el pallet</p>
+              )}
+              <div className="desp-modal-acciones">
+                <button className="desp-modal-btn desp-modal-btn--secondary" onClick={() => setLpnPendiente(null)}>
+                  Volver
+                </button>
+                <button
+                  className="desp-modal-btn desp-modal-btn--primary"
+                  disabled={confirmando || !todosChecked}
+                  onClick={handleConfirmarLpn}
+                >
+                  {confirmando ? 'Confirmando…' : 'Confirmar carga'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ── Modal chofer ── */}
       {mostrarChofer && (

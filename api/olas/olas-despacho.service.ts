@@ -60,6 +60,29 @@ export const olasDespachoService = {
     return { ok: true, data: { lineasValidadas: lineas.length - yaValidadas.length, lpn } }
   },
 
+  // ── Rollback línea individual (Fase 3) ───────────────────────────────────
+  // Desmarca fase3_validado en una línea específica de un LPN multi-SKU.
+  async rollbackLineaFase3(
+    lineaId: string,
+  ): Promise<ServiceResult<{ lineaId: string }>> {
+    const { data: linea, error: lineaErr } = await supabase
+      .from('ola_lineas')
+      .select('id, fase3_validado')
+      .eq('id', lineaId)
+      .single()
+
+    if (lineaErr || !linea) return { ok: false, error: { code: 'NOT_FOUND', message: 'Línea no encontrada' } }
+    if (!linea.fase3_validado) return { ok: false, error: { code: 'CONFLICT', message: 'La línea no está validada' } }
+
+    const { error } = await supabase
+      .from('ola_lineas')
+      .update({ fase3_validado: false, fase3_por: null, fase3_en: null })
+      .eq('id', lineaId)
+
+    if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
+    return { ok: true, data: { lineaId } }
+  },
+
   // ── Despachar ola ─────────────────────────────────────────────────────────
   // Solo procede si el 100% de líneas tienen fase3_validado = true.
   async despacharOla(
