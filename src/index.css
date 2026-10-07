@@ -4050,7 +4050,7 @@ label {
   font-size: 1rem;
   font-weight: 700;
   font-family: monospace;
-  color: var(--success);
+  color: #00A0DF;
   flex: 1;
   min-width: 0;
   text-align: left;
@@ -4254,7 +4254,7 @@ label {
 
 /* Resaltados en descripción del historial */
 .hist-hl-usuario { color: #4ade80; font-weight: 700; }
-.hist-hl-sku     { color: #4ade80; font-weight: 700; font-family: ui-monospace, monospace; }
+.hist-hl-sku     { color: #00A0DF; font-weight: 700; font-family: ui-monospace, monospace; }
 .hist-hl-nota    { color: #4ade80; font-weight: 700; }
 
 /* ── Detalle ingreso / nota ── */
@@ -5007,8 +5007,9 @@ label {
 .hnv-prod-sku {
   display: block;
   font-size: 11px;
-  color: var(--text-muted);
+  color: #00A0DF;
   font-family: monospace;
+  font-weight: 600;
   margin-top: 2px;
 }
 .hnv-traz-td--cant { text-align: center; white-space: nowrap; }
