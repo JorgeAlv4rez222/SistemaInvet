@@ -39,7 +39,7 @@ export const salidasService = {
     const { data, error } = await supabase
       .from('notas_venta')
       .select('*, nota_productos(id, revisado_admin, cantidad_despachada), devoluciones(devolucion_items(cantidad))')
-      .in('estado', ['completa', 'despachada'])
+      .in('estado', ['completa', 'revisada', 'despachada'])
       .order('updated_at', { ascending: false })
 
     if (error) return { ok: false, error: { code: 'DB_ERROR', message: error.message } }
@@ -94,7 +94,7 @@ export const salidasService = {
     type NotaRef = { id: string; estado: string; numero_nota: string }
     const notaRef = notaProducto.notas_venta as NotaRef
 
-    if (notaRef.estado !== 'completa') {
+    if (notaRef.estado !== 'completa' && notaRef.estado !== 'revisada') {
       return {
         ok: false,
         error: {
@@ -188,6 +188,10 @@ export const salidasService = {
     const todosRevisados = (todosItems ?? []).every(
       (item) => item.revisado_admin || item.id === input.notaProductoId || item.estado === 'sin_stock'
     )
+
+    if (todosRevisados) {
+      await supabase.from('notas_venta').update({ estado: 'revisada' }).eq('id', notaRef.id)
+    }
 
     return {
       ok: true,

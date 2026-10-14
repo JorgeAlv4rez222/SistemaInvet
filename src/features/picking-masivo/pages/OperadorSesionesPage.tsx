@@ -122,17 +122,6 @@ function FilaOp({ fila }: { fila: FilaOp }) {
         {fila.oc && <span className="pm-t-oc">OC {fila.oc}</span>}
       </td>
 
-      {/* Progreso */}
-      <td className="pm-t-td pm-t-td--prog">
-        <div className="pm-t-prog-wrap">
-          <div className="pm-t-prog-header">
-            <span className="pm-t-uds">{udsTxt}</span>
-            <span className="pm-t-pct">{pct}%</span>
-          </div>
-          <ProgressBar pct={pct} />
-        </div>
-      </td>
-
       {/* Entrega */}
       <td className="pm-t-td pm-t-td--entrega">
         <span className="pm-t-fecha-entrega">{fila.entrega}</span>
@@ -225,7 +214,6 @@ export function OperadorSesionesPage() {
             <thead>
               <tr className="pm-t-thead-tr">
                 <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
-                <th className="pm-t-th pm-t-th--prog">Progreso</th>
                 <th className="pm-t-th pm-t-th--entrega">Entrega</th>
                 <th className="pm-t-th pm-t-th--estado">Estado</th>
                 <th className="pm-t-th pm-t-th--acciones">Acciones</th>

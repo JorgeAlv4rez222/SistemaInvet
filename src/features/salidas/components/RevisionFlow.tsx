@@ -88,7 +88,7 @@ const PASOS_AUDIT = [
   { key: 'despacho',  label: 'Despachada' },
 ] as const
 
-function StepperAudit({ estadoNota }: { estadoNota: 'completa' | 'despachada' }) {
+function StepperAudit({ estadoNota }: { estadoNota: 'completa' | 'revisada' | 'despachada' }) {
   const activo = estadoNota === 'despachada' ? 2 : 1
   return (
     <div className="nd-stepper">
@@ -263,7 +263,7 @@ interface Props {
   comentarioDespacho?: string | null
   adminId:             string
   items:               ItemRevision[]
-  estadoNota:          'completa' | 'despachada'
+  estadoNota:          'completa' | 'revisada' | 'despachada'
   nombreChofer:        string | null
   fechaPreparacion?:   string | null
   fechaDespacho?:      string | null
@@ -482,8 +482,8 @@ export function RevisionFlow({
           </button>
           <div className="nd-header-titulo">
             <h2 className="nd-titulo">NV {numeroNota}</h2>
-            <span className={`badge ${yaDespachada ? 'badge-completa' : 'badge-preparacion'}`}>
-              {yaDespachada ? 'Despachada' : 'En Revisión'}
+            <span className={`badge ${yaDespachada ? 'badge-completa' : estadoNota === 'revisada' ? 'badge-revisada' : 'badge-preparacion'}`}>
+              {yaDespachada ? 'Despachada' : estadoNota === 'revisada' ? 'Revisada' : 'En Revisión'}
             </span>
           </div>
           {/* Botón "Lista para despacho" en el header cuando todos revisados */}

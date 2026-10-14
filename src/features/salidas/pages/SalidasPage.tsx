@@ -11,7 +11,7 @@ import type { ItemRevision } from '../components/RevisionFlow'
 type Vista =
   | { tipo: 'lista' }
   | { tipo: 'importar' }
-  | { tipo: 'revision';   notaId: string; estadoNota: 'completa' | 'despachada'; nombreChofer: string | null; tieneDev: boolean }
+  | { tipo: 'revision';   notaId: string; estadoNota: 'completa' | 'revisada' | 'despachada'; nombreChofer: string | null; tieneDev: boolean }
   | { tipo: 'devolucion'; notaId: string }
 
 const MESES = [
@@ -103,7 +103,7 @@ function horaDespacho(fecha: string): string {
 function RevisionConDetalle({
   notaId, estadoNota, nombreChofer, adminId, offline, tieneDev, onCerrar,
 }: {
-  notaId: string; estadoNota: 'completa' | 'despachada'
+  notaId: string; estadoNota: 'completa' | 'revisada' | 'despachada'
   nombreChofer: string | null; adminId: string; offline: boolean; tieneDev: boolean; onCerrar: () => void
 }) {
   const { data, isLoading, isError } = useDetalleNota(notaId)
@@ -165,7 +165,7 @@ export function SalidasPage() {
   const hoy   = new Date().toISOString().slice(0, 10)
 
   const kpis = useMemo(() => ({
-    porAuditar:      notas.filter((n) => n.estado === 'completa').length,
+    porAuditar:      notas.filter((n) => n.estado === 'completa' || n.estado === 'revisada').length,
     despachadasHoy:  notas.filter((n) => n.estado === 'despachada' && n.fechaDespacho?.startsWith(hoy)).length,
   }), [notas, hoy])
 
@@ -175,16 +175,22 @@ export function SalidasPage() {
   }, [notas])
 
   const clientesDisponibles = useMemo(() => {
-    const estadoFiltro = tabActivo === 'revision' ? 'completa' : 'despachada'
-    const set = new Set(notas.filter((n) => n.estado === estadoFiltro).map((n) => n.nombreCliente).filter(Boolean))
+    const set = new Set(
+      notas
+        .filter((n) => tabActivo === 'revision' ? n.estado === 'completa' || n.estado === 'revisada' : n.estado === 'despachada')
+        .map((n) => n.nombreCliente).filter(Boolean)
+    )
     return Array.from(set).sort()
   }, [notas, tabActivo])
 
   const tieneFiltrFecha = !!(filtroAnio || filtroMes || filtroDia)
 
   const notasFiltradas = useMemo(() => {
-    const estadoFiltro = tabActivo === 'revision' ? 'completa' : 'despachada'
-    let lista = notas.filter((n) => n.estado === estadoFiltro)
+    let lista = notas.filter((n) =>
+      tabActivo === 'revision'
+        ? n.estado === 'completa' || n.estado === 'revisada'
+        : n.estado === 'despachada'
+    )
 
     // En despachadas: mostrar solo hoy cuando no hay filtro de fecha activo
     if (tabActivo === 'despachadas' && !tieneFiltrFecha) {
@@ -199,6 +205,13 @@ export function SalidasPage() {
     if (filtroAnio)    lista = lista.filter((n) => n.fechaDespacho?.slice(0, 4) === filtroAnio)
     if (filtroMes)     lista = lista.filter((n) => n.fechaDespacho?.slice(5, 7) === filtroMes)
     if (filtroDia)     lista = lista.filter((n) => n.fechaDespacho?.slice(8, 10) === filtroDia)
+    if (tabActivo === 'revision') {
+      lista = [...lista].sort((a, b) => {
+        if (a.estado === 'revisada' && b.estado !== 'revisada') return -1
+        if (a.estado !== 'revisada' && b.estado === 'revisada') return  1
+        return 0
+      })
+    }
     return lista
   }, [notas, tabActivo, busqueda, filtroAnio, filtroMes, filtroDia, filtroCliente, tieneFiltrFecha, hoy])
 
@@ -389,13 +402,14 @@ export function SalidasPage() {
         <div className="notas-cards">
           {notasFiltradas.map((nota: NotaParaRevision) => {
             const esDespachada = nota.estado === 'despachada'
+            const esRevisada   = nota.estado === 'revisada'
             return (
               <div key={nota.notaId} className="nota-card sal-card">
                 {/* Cabecera */}
                 <div className="nota-card-header">
                   <span className="nota-card-numero">{nota.numeroNota}</span>
-                  <span className={`badge ${esDespachada ? 'badge-despachada' : 'badge-completa'}`}>
-                    {esDespachada ? 'Despachada' : 'Lista para revisar'}
+                  <span className={`badge ${esDespachada ? 'badge-despachada' : esRevisada ? 'badge-revisada' : 'badge-completa'}`}>
+                    {esDespachada ? 'Despachada' : esRevisada ? 'Revisada' : 'Lista para revisar'}
                   </span>
                 </div>
 
