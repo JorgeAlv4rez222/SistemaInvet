@@ -923,11 +923,11 @@ export const notasService = {
       return { ok: false, error: { code: 'NOT_FOUND', message: 'Nota no encontrada', field: 'notaId' } }
     }
 
-    // TC-NTA-011: solo desde 'completa'
-    if (nota.estado !== 'completa') {
+    // TC-NTA-011: solo desde 'completa' o 'revisada'
+    if (nota.estado !== 'completa' && nota.estado !== 'revisada') {
       return {
         ok: false,
-        error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `Solo se puede pasar a 'despachada' desde estado 'completa'. Estado actual: '${nota.estado}'` },
+        error: { code: 'CONFLICT_ESTADO_INVALIDO', message: `Solo se puede pasar a 'despachada' desde estado 'completa' o 'revisada'. Estado actual: '${nota.estado}'` },
       }
     }
 
