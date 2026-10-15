@@ -200,17 +200,6 @@ function OlaFila({
         )}
       </td>
 
-      {/* Progreso */}
-      <td className="pm-t-td pm-t-td--prog">
-        <div className="pm-t-prog-wrap">
-          <div className="pm-t-prog-header">
-            <span className="pm-t-uds">{udsTxt}</span>
-            <span className={`pm-t-pct${alerta ? ' pm-t-pct--alerta' : ''}`}>{pct}%</span>
-          </div>
-          <ProgressBar pct={pct} alerta={alerta} />
-        </div>
-      </td>
-
       {/* Entrega */}
       <td className="pm-t-td pm-t-td--entrega">
         <span className="pm-t-fecha-entrega">{fila.entrega}</span>
@@ -418,7 +407,6 @@ export function PickingMasivoPage() {
               <thead>
                 <tr className="pm-t-thead-tr">
                   <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
-                  <th className="pm-t-th pm-t-th--prog">Progreso</th>
                   <th className="pm-t-th pm-t-th--entrega">Entrega</th>
                   <th className="pm-t-th pm-t-th--creacion">Creación</th>
                   <th className="pm-t-th pm-t-th--estado">Estado</th>

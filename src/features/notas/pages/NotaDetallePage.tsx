@@ -837,22 +837,6 @@ export function NotaDetallePage() {
         <div className="nd-aviso nd-aviso--error">{errorRevision}</div>
       )}
 
-      {/* ── BARRA DE PROGRESO GLOBAL ── */}
-      <div className="nd-progreso-global">
-        <div className="nd-progreso-info">
-          <span className="nd-progreso-titulo">Progreso total</span>
-          <span className="nd-progreso-fraccion">
-            {itemsCompletos}/{totalItems} ítems
-          </span>
-          <span className={`nd-progreso-pct ${pctGlobal === 100 ? 'nd-progreso-pct--ok' : ''}`}>{pctGlobal}%</span>
-        </div>
-        <div className="nd-progreso-barra">
-          <div
-            className={`nd-progreso-fill ${pctGlobal === 100 ? 'nd-progreso-fill--ok' : ''}`}
-            style={{ width: `${pctGlobal}%` }}
-          />
-        </div>
-      </div>
 
 
       {/* ── BÚSQUEDA DE PRODUCTO ── */}

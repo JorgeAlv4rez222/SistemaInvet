@@ -593,21 +593,6 @@ export function RevisionFlow({
         </div>
       )}
 
-      {/* ── Progreso global (solo en vista lista) ── */}
-      {paso.tipo === 'lista' && (
-        <div className="nd-progreso-global">
-          <div className="nd-progreso-info">
-            <span className="nd-progreso-titulo">Revisión de productos</span>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <span className="nd-progreso-fraccion">{itemsRevisados}/{totalItems} ítems</span>
-              <span className={`nd-progreso-pct ${todosOk ? 'nd-progreso-pct--ok' : ''}`}>{pctGlobal}%</span>
-            </div>
-          </div>
-          <div className="nd-progreso-barra">
-            <div className={`nd-progreso-fill ${todosOk ? 'nd-progreso-fill--ok' : ''}`} style={{ width: `${pctGlobal}%` }} />
-          </div>
-        </div>
-      )}
 
       {/* ══ VISTA LISTA ════════════════════════════════════════════════════ */}
       {paso.tipo === 'lista' && (

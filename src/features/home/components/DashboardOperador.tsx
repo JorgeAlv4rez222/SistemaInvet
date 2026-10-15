@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useDashboard, useEquipoBodega } from '../hooks/useDashboard'
+import { useDashboard } from '../hooks/useDashboard'
 
 // ── Datos reales — flujo de trabajo ──────────────────────────────────────────
 // Los estados de notas_venta se mapean directamente desde los KPIs del dashboard.
@@ -11,7 +10,6 @@ function IcoClock()  { return <svg viewBox="0 0 24 24" fill="none" stroke="curre
 function IcoTruck()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> }
 function IcoFlow()   { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="6" height="4" rx="1"/><rect x="9" y="3" width="6" height="4" rx="1"/><rect x="16" y="3" width="6" height="4" rx="1"/><path d="M5 7v4"/><path d="M12 7v4"/><path d="M19 7v4"/><rect x="2" y="11" width="6" height="4" rx="1"/><rect x="9" y="11" width="6" height="4" rx="1"/><rect x="16" y="11" width="6" height="4" rx="1"/></svg> }
 function IcoFactory(){ return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 20v-8l4-4 4 8 4-8 4 4v8H2z"/><line x1="2" y1="20" x2="22" y2="20"/></svg> }
-function IcoUsers()  { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> }
 
 // ── Barra de progreso ─────────────────────────────────────────────────────────
 
@@ -23,44 +21,13 @@ function BarraFlujo({ pct, color }: { pct: number; color: string }) {
   )
 }
 
-function BarraAvance({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div className="tc-avance-bg">
-      <div className="tc-avance-fill" style={{ width: `${pct}%`, background: color }}/>
-    </div>
-  )
-}
-
-// ── Config de estado de operador ──────────────────────────────────────────────
-
-const ESTADO_OP_CFG = {
-  en_nota:  { label: 'Picking Activo', color: '#34d399', dot: '#34d399' },
-  activo:   { label: 'Activo hoy',     color: '#38bdf8', dot: '#38bdf8' },
-  inactivo: { label: 'Sin actividad',  color: '#94a3b8', dot: '#94a3b8' },
-} as const
-
-// ── Reloj en tiempo real ──────────────────────────────────────────────────────
-
-function RelojTurno() {
-  const [hora, setHora] = useState(() =>
-    new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-  )
-  useEffect(() => {
-    const id = setInterval(() => {
-      setHora(new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [])
-  return <span className="tc-reloj">{hora}</span>
-}
 
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export function DashboardOperador() {
-  const { data: kpis, isLoading }    = useDashboard()
-  const { data: equipo, isLoading: equipoLoading } = useEquipoBodega()
-
-  const operadores = equipo?.operadores ?? []
+  const { data: kpis, isLoading } = useDashboard()
+  const nombre   = localStorage.getItem('user_nombre') ?? ''
+  const mesActual = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
 
   // Flujo de trabajo desde datos reales
   const pendientes   = kpis?.notasPendientes ?? 0
@@ -84,10 +51,10 @@ export function DashboardOperador() {
         <div className="tc-header-left">
           <div className="tc-header-title-row">
             <span className="tc-header-ico"><IcoFactory /></span>
-            <h1 className="tc-titulo">Torre de Control — Producción Bodega</h1>
+            <h1 className="tc-titulo">Bienvenido{nombre && `, ${nombre}`}</h1>
           </div>
+          <p className="bi-subtitulo">Operador de Bodega · Bodega Central Grantt — {mesActual}</p>
         </div>
-        <RelojTurno />
       </div>
 
       {/* ── KPIs producción ─────────────────────────────────────────────────── */}
@@ -150,67 +117,6 @@ export function DashboardOperador() {
 
         </div>
 
-        {/* ── Columna derecha ─────────────────────────────────────────────── */}
-        <div className="tc-col-right">
-
-          {/* Productividad del equipo — datos reales */}
-          <div className="tc-panel tc-panel-full">
-            <div className="tc-panel-header">
-              <div>
-                <h2 className="tc-panel-titulo"><IcoUsers /> Productividad del Equipo</h2>
-                <p className="tc-panel-sub">
-                  {equipoLoading
-                    ? 'Cargando…'
-                    : operadores.length > 0
-                      ? `${operadores.filter(o => o.estado !== 'inactivo').length} operadores activos hoy`
-                      : 'Sin actividad de picking hoy'
-                  }
-                </p>
-              </div>
-            </div>
-
-            {equipoLoading && (
-              <p className="cargando" style={{ fontSize: 13, padding: '12px 0' }}>Cargando equipo…</p>
-            )}
-
-            {!equipoLoading && operadores.length === 0 && (
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', padding: '12px 0' }}>
-                Ningún operador ha registrado picking hoy.
-              </p>
-            )}
-
-            {!equipoLoading && operadores.length > 0 && (
-              <div className="tc-equipo-list">
-                {operadores.map((op, i) => {
-                  const cfg = ESTADO_OP_CFG[op.estado]
-                  return (
-                    <div key={op.usuarioId} className="tc-equipo-fila">
-                      <span className="tc-equipo-rank">{i + 1}</span>
-                      <div className="tc-equipo-info">
-                        <span className="tc-equipo-nombre">{op.nombre}</span>
-                        <BarraAvance pct={op.avancePct} color={cfg.dot} />
-                      </div>
-                      <span className="tc-equipo-ritmo">
-                        {op.ritmoLph} <span className="tc-equipo-unit">L/h</span>
-                      </span>
-                      <span className="tc-equipo-avance-pct" style={{ color: cfg.dot }}>
-                        {op.pickingsHoy} <span className="tc-equipo-unit" style={{ fontSize: 10 }}>picks</span>
-                      </span>
-                      <span
-                        className="tc-estado-badge"
-                        style={{ color: cfg.color, borderColor: `${cfg.color}40`, background: `${cfg.color}12` }}
-                      >
-                        <span className="tc-estado-dot" style={{ background: cfg.dot }}/>
-                        {cfg.label}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-        </div>
       </div>
     </div>
   )

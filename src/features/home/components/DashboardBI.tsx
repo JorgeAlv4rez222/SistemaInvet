@@ -110,6 +110,9 @@ function DashboardBIInner() {
   const { data: biData } = useKpisBi()
 
   const mesActual = new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
+  const nombre    = localStorage.getItem('user_nombre') ?? ''
+  const rol       = localStorage.getItem('user_rol') ?? ''
+  const rolLabel  = rol === 'admin' ? 'Administrador' : rol === 'supervisor' ? 'Supervisor' : ''
 
   function fmtHora(hora: string) {
     // "09:30 a. m." → "09:30" para que quepa en el panel estrecho
@@ -145,9 +148,9 @@ function DashboardBIInner() {
         <div className="bi-header-left">
           <h1 className="bi-titulo">
             <span className="bi-titulo-ico"><IcoChart /></span>
-            Dashboard de Gestión Logística
+            Bienvenido{nombre && `, ${nombre}`}
           </h1>
-          <p className="bi-subtitulo">Bodega Central Grantt — {mesActual}</p>
+          <p className="bi-subtitulo">{rolLabel && `${rolLabel} · `}Bodega Central Grantt — {mesActual}</p>
         </div>
       </div>
 
