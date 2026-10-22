@@ -7486,6 +7486,14 @@ label {
 .rv2-meta-strip { grid-template-columns: minmax(0,1fr) 1px minmax(0,1fr) 1px minmax(0,auto); }
 .rv2-meta-strip .rv-desp-col:last-child { align-items: center; justify-content: center; }
 @media (max-width: 768px) {
+  .rv2-meta-strip {
+    grid-template-columns: minmax(0,1fr) 1px minmax(0,1fr) 1px minmax(0,auto);
+    grid-template-rows: auto;
+  }
+  .rv2-meta-strip .rv-desp-sep { display: block; }
+  .rv2-meta-strip .rv-desp-col { border-bottom: none; padding: 10px 12px; }
+}
+@media (max-width: 768px) {
   .rv-desp-meta {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
