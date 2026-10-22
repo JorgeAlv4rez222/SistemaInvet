@@ -26,7 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       creadoEn:           n.created_at,
       actualizadoEn:      n.updated_at,
       fechaDespacho:      n.fecha_despacho ?? null,
+      fechaPreparacion:   n.updated_at ?? null,
       nombreChofer:       n.nombre_chofer ?? null,
+      rutCliente:         n.rut_cliente ?? null,
+      numeroOc:           n.numero_oc ?? null,
       comentarioDespacho: n.comentario_despacho ?? null,
     }))
     return res.status(200).json(mapped)

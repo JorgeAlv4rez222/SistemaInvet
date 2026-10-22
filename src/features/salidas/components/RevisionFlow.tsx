@@ -80,6 +80,44 @@ function IcoTruck({ size = 14 }: { size?: number }) {
   )
 }
 
+function IcoBuilding({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18"/><path d="M9 21V9"/><rect x="12" y="13" width="3" height="3"/><rect x="12" y="17" width="3" height="4"/>
+    </svg>
+  )
+}
+function IcoCalendar({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  )
+}
+function IcoBarcode({ size = 28 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <path d="M3 5v14"/><path d="M6 5v14"/><path d="M9 5v14"/><path d="M12 5v14"/><path d="M15 5v14"/><path d="M18 5v14"/><path d="M21 5v14"/>
+      <rect x="2" y="4" width="20" height="16" rx="1" strokeWidth={1} strokeDasharray="0"/>
+    </svg>
+  )
+}
+function IcoSearch({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  )
+}
+function IcoAlert({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  )
+}
+
 // ── Stepper de auditoría ──────────────────────────────────────────────────
 
 const PASOS_AUDIT = [
@@ -250,8 +288,15 @@ function ModalAnular({ notaId, adminId, onCerrar, onAnulada }: ModalAnularProps)
 
 function fmtFecha(iso: string | null | undefined): string {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+  const d    = new Date(iso)
+  const dd   = String(d.getDate()).padStart(2, '0')
+  const mm   = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const h    = d.getHours()
+  const min  = String(d.getMinutes()).padStart(2, '0')
+  const ampm = h >= 12 ? 'pm' : 'am'
+  const h12  = String(h % 12 || 12).padStart(2, '0')
+  return `${dd}-${mm}-${yyyy} // ${h12}:${min} ${ampm}`
 }
 
 interface Props {
@@ -292,7 +337,14 @@ export function RevisionFlow({
   const [revisadoEnSesion, setRevisadoEnSesion] = useState(false)
   const [mostrarModalChofer, setMostrarModalChofer] = useState(false)
   const [mostrarModalAnular, setMostrarModalAnular] = useState(false)
-  const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  const [expandidos, setExpandidos]   = useState<Set<string>>(new Set())
+  const [busqueda, setBusqueda]       = useState('')
+  const [escaneadosOk, setEscaneadosOk]         = useState<Set<string>>(new Set())
+  const [itemEscaneando, setItemEscaneando]     = useState<string | null>(null)
+  const [scanErrorInline, setScanErrorInline]   = useState('')
+  const [confirmandoId, setConfirmandoId]       = useState<string | null>(null)
+  const [cantidadesEdit, setCantidadesEdit]     = useState<Record<string, string>>({})
+  const [destacadoId, setDestacadoId]           = useState<string | null>(null)
 
   function toggleExpandido(id: string) {
     setExpandidos(prev => {
@@ -306,11 +358,10 @@ export function RevisionFlow({
   const cantidadRef = useRef<HTMLInputElement>(null)
   const validar     = useValidarProducto()
 
-  const totalItems    = items.length
+  const totalItems     = items.length
   const itemsRevisados = items.filter((i) => i.revisadoAdmin).length
   const todosRevisados = revisadoEnSesion || (items.length > 0 && items.every((i) => i.revisadoAdmin))
-  const pctGlobal     = totalItems > 0 ? Math.round((itemsRevisados / totalItems) * 100) : 0
-  const todosOk       = pctGlobal === 100
+  const pctGlobal      = totalItems > 0 ? Math.round((itemsRevisados / totalItems) * 100) : 0
 
   useEffect(() => {
     if (paso.tipo === 'escanear_producto') scanRef.current?.focus()
@@ -330,7 +381,6 @@ export function RevisionFlow({
     if (!codigo.trim() || paso.tipo !== 'escanear_producto') return
     const normalizar = (s: string) => s.replace(/^0+/, '')
     const escaneado  = normalizar(codigo.trim())
-    // Si hay equivalente, validar SOLO contra el código del equivalente (ya resuelto en codigoBarra por el servicio)
     const cbEsperado = paso.item.codigoBarra
     const cbOk  = cbEsperado ? normalizar(cbEsperado) === escaneado : true
     const altOk = paso.item.codigoBarraAlternativo ? normalizar(paso.item.codigoBarraAlternativo) === escaneado : false
@@ -375,75 +425,215 @@ export function RevisionFlow({
     }
   }
 
+  // ── Inline scan (desde lista) ────────────────────────────────────────────
+
+  function abrirScannerInline(item: ItemRevision) {
+    setScanErrorInline('')
+    setItemEscaneando(item.notaProductoId)
+  }
+
+  function handleScanInline(codigo: string) {
+    if (!itemEscaneando) return
+    const item = items.find(i => i.notaProductoId === itemEscaneando)
+    if (!item) return
+    const normalizar = (s: string) => s.replace(/^0+/, '')
+    const escaneado  = normalizar(codigo.trim())
+    const cbEsperado = item.codigoBarra
+    const cbOk  = cbEsperado ? normalizar(cbEsperado) === escaneado : true
+    const altOk = item.codigoBarraAlternativo ? normalizar(item.codigoBarraAlternativo) === escaneado : false
+    if (cbEsperado && !cbOk && !altOk) {
+      setScanErrorInline(`Código incorrecto. Escanea: ${item.skuEquivalente ?? item.sku}`)
+      setTimeout(() => setScanErrorInline(''), 4000)
+      return
+    }
+    setEscaneadosOk(prev => new Set(prev).add(itemEscaneando))
+    setCantidadesEdit(prev => ({ ...prev, [itemEscaneando]: String(item.cantidadDespachada) }))
+    setItemEscaneando(null)
+    setScanErrorInline('')
+  }
+
+  async function handleConfirmarItem(item: ItemRevision) {
+    if (!escaneadosOk.has(item.notaProductoId)) return
+    const cantStr = cantidadesEdit[item.notaProductoId] ?? String(item.cantidadDespachada)
+    const cant    = parseInt(cantStr, 10)
+    if (isNaN(cant) || cant <= 0) { setError('Ingresa una cantidad válida'); return }
+    setConfirmandoId(item.notaProductoId)
+    setError(null)
+    try {
+      const resultado = await validar.mutateAsync({
+        adminId,
+        notaProductoId:    item.notaProductoId,
+        codigoProducto:    item.codigoBarra || item.sku,
+        cantidadIngresada: cant,
+      })
+      if (resultado.todosRevisados) setRevisadoEnSesion(true)
+      setEscaneadosOk(prev => { const n = new Set(prev); n.delete(item.notaProductoId); return n })
+      setCantidadesEdit(prev => { const n = { ...prev }; delete n[item.notaProductoId]; return n })
+    } catch (e) {
+      setError(e instanceof ApiResponseError ? e.message : 'Error al validar')
+    } finally {
+      setConfirmandoId(null)
+    }
+  }
+
+  function handleScanBusqueda(codigo: string) {
+    if (!codigo.trim()) return
+    const normalizar = (s: string) => s.replace(/^0+/, '').toLowerCase()
+    const cod = normalizar(codigo)
+    const encontrado = items.find(i =>
+      normalizar(i.codigoBarra ?? '') === cod ||
+      normalizar(i.codigoBarraAlternativo ?? '') === cod ||
+      normalizar(i.sku) === cod ||
+      normalizar(i.skuEquivalente ?? '') === cod
+    )
+    if (!encontrado) return
+    setBusqueda('')
+    setDestacadoId(encontrado.notaProductoId)
+    setTimeout(() => {
+      document.getElementById(`rv2-item-${encontrado.notaProductoId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    setTimeout(() => setDestacadoId(null), 2500)
+  }
+
   const pendientes  = items.filter((i) => !i.revisadoAdmin)
   const completados = items.filter((i) => i.revisadoAdmin)
 
-  // ── Fila de producto (grid plano igual que NotaDetallePage) ──────────────
+  // ── Fila de producto — 3 columnas responsive ────────────────────────────
 
   function renderFila(item: ItemRevision) {
-    const revisado     = item.revisadoAdmin
-    const esSinStock   = item.estado === 'sin_stock'
-    const puedeRevisar = !revisado && !esSinStock && !offline && !yaDespachada
-    const abierto      = expandidos.has(item.notaProductoId)
+    const revisado      = item.revisadoAdmin
+    const esSinStock    = item.estado === 'sin_stock'
+    const puedeRevisar  = !revisado && !esSinStock && !offline && !yaDespachada
+    const expandido     = expandidos.has(item.notaProductoId)
+    const scanOk        = escaneadosOk.has(item.notaProductoId)
+    const confirmando   = confirmandoId === item.notaProductoId
 
-    const dotClass = revisado
-      ? 'nd-dot nd-dot--ok'
-      : esSinStock
-        ? 'nd-dot nd-dot--warn'
-        : 'nd-dot nd-dot--pending'
+    const estadoLabel = revisado ? 'Revisado' : esSinStock ? 'Sin stock' : 'Pendiente'
+    const estadoCls   = revisado ? 'rv2-estado--revisado' : esSinStock ? 'rv2-estado--sinstock' : 'rv2-estado--pendiente'
 
-    const badgeClass = revisado
-      ? 'nd-prod-badge nd-prod-badge--revisado'
-      : 'nd-prod-badge nd-prod-badge--warn'
-
-    const badgeLabel = revisado ? 'Revisado' : esSinStock ? 'Sin stock' : 'Pendiente'
-
+    const esDestacado = destacadoId === item.notaProductoId
     return (
-      <div key={item.notaProductoId} className={`nd-prod-row rv-prod-row ${revisado ? 'nd-prod-row--terminado' : 'nd-prod-row--pendiente'}`}>
+      <div
+        key={item.notaProductoId}
+        id={`rv2-item-${item.notaProductoId}`}
+        className={`rv2-item ${revisado ? 'rv2-item--revisado' : esSinStock ? 'rv2-item--sinstock' : ''} ${scanOk ? 'rv2-item--scanok' : ''} ${esDestacado ? 'rv2-item--destacado' : ''}`}
+      >
 
-        {/* Info del producto */}
-        <div
-          className="nd-prod-info"
-          style={{ cursor: 'pointer' }}
-          onClick={() => toggleExpandido(item.notaProductoId)}
-        >
-          <div className="nd-prod-nombre-row">
-            <code className="nd-prod-sku-inline">{item.skuEquivalente ?? item.sku}</code>
-          </div>
-          <span className="nd-prod-descripcion">{item.nombre}</span>
-          {abierto && item.codigoBarra && (
-            <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{item.codigoBarra}</code>
-          )}
-          {item.skuEquivalente && (
-            <div className="rv-equiv-info">
-              <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Original:</span><code className="rv-equiv-codigo">{item.sku}</code></span>
-              <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Equivalente:</span><code className="rv-equiv-codigo rv-equiv-codigo--activo">{item.skuEquivalente}</code></span>
+        {/* Fila principal */}
+        <div className="rv2-item-main">
+
+          {/* Col 1 — Botón barcode */}
+          <button
+            className={`rv2-col-barcode-btn ${scanOk ? 'rv2-col-barcode-btn--ok' : ''} ${revisado ? 'rv2-col-barcode-btn--revisado' : ''}`}
+            onClick={(e) => { e.stopPropagation(); if (puedeRevisar) abrirScannerInline(item) }}
+            disabled={!puedeRevisar}
+            title={puedeRevisar ? 'Escanear código de barras' : undefined}
+          >
+            <IcoBarcode size={28} />
+            {scanOk && <span className="rv2-scan-check"><IcoCheck size={10} /></span>}
+          </button>
+
+          {/* Col 2 — Info (clickable para expandir) */}
+          <div
+            className="rv2-col-info"
+            onClick={() => toggleExpandido(item.notaProductoId)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="rv2-sku-row">
+              <code className="rv2-sku">{item.skuEquivalente ?? item.sku}</code>
+              {expandido && <span className="rv2-expand-hint">▲</span>}
+              {!expandido && <span className="rv2-expand-hint">▼</span>}
             </div>
-          )}
-        </div>
+            <span className="rv2-nombre">{item.nombre}</span>
+            {item.skuEquivalente && (
+              <div className="rv2-equiv">
+                <span className="rv2-equiv-row">
+                  <span className="rv2-equiv-label">Original</span>
+                  <code className="rv2-equiv-code">{item.sku}</code>
+                </span>
+                <span className="rv2-equiv-row">
+                  <span className="rv2-equiv-dot" />
+                  <span className="rv2-equiv-label">Equivalente</span>
+                  <code className="rv2-equiv-code rv2-equiv-code--activo">{item.skuEquivalente}</code>
+                </span>
+              </div>
+            )}
+          </div>
 
-        {/* Cantidades */}
-        <div className="nd-prod-qty rv-prod-qty">
-          <div className="nd-qty-item">
-            <span className="nd-qty-label">Despachado</span>
-            <span className={`nd-qty-valor ${revisado ? 'nd-qty-valor--ok' : ''}`}>{item.cantidadDespachada}</span>
+          {/* Col 3 — Qty + acción */}
+          <div className="rv2-col-right">
+            {scanOk ? (
+              <div className="rv2-qty-edit-block">
+                <label className="rv2-qty-edit-label">Cantidad</label>
+                <input
+                  className="rv2-qty-edit-input"
+                  type="number"
+                  min={1}
+                  value={cantidadesEdit[item.notaProductoId] ?? item.cantidadDespachada}
+                  onChange={e => setCantidadesEdit(prev => ({ ...prev, [item.notaProductoId]: e.target.value }))}
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+            ) : (
+              <div className="rv2-qty-block">
+                <span className={`rv2-qty-valor ${revisado ? 'rv2-qty-valor--ok' : ''}`}>
+                  {item.cantidadDespachada}
+                </span>
+                <span className="rv2-qty-label">uds.</span>
+              </div>
+            )}
+            <span className={`rv2-estado ${estadoCls}`}>{estadoLabel}</span>
+            {puedeRevisar && (
+              <button
+                className="rv2-btn-revisar"
+                disabled={!scanOk || confirmando}
+                onClick={() => handleConfirmarItem(item)}
+              >
+                {confirmando ? '…' : <><IcoCheck size={11} /> Confirmar</>}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Acción */}
-        <div className="nd-prod-acciones">
-          {puedeRevisar ? (
-            <button
-              className="btn-primario nd-prod-btns"
-              style={{ fontSize: 'var(--font-size-xs)', padding: '0.3rem 0.75rem' }}
-              onClick={() => handleSeleccionarItem(item)}
-            >
-              Revisar
-            </button>
-          ) : (
-            <span className={badgeClass}>{badgeLabel}</span>
-          )}
-        </div>
+        {/* Fila expandida — barcode texto + ubicación */}
+        {expandido && (
+          <div className="rv2-item-expand">
+            <div className="rv2-expand-field">
+              <span className="rv2-expand-label">Código de barras</span>
+              <code className="rv2-expand-val">{item.codigoBarra || '—'}</code>
+              {item.codigoBarra && (
+                <button
+                  className="rv2-copy-btn"
+                  title="Copiar código"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigator.clipboard.writeText(item.codigoBarra).catch(() => {
+                      const el = document.createElement('textarea')
+                      el.value = item.codigoBarra
+                      document.body.appendChild(el)
+                      el.select()
+                      document.execCommand('copy')
+                      document.body.removeChild(el)
+                    })
+                    const btn = e.currentTarget
+                    btn.classList.add('rv2-copy-btn--copied')
+                    setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+            {scanOk && (
+              <div className="rv2-expand-field rv2-expand-field--ok">
+                <IcoCheck size={12} />
+                <span className="rv2-expand-label">Código escaneado y validado</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -470,7 +660,7 @@ export function RevisionFlow({
 
       {/* ── Header ejecutivo ── */}
       <div className="nd-header">
-        <div className="nd-header-top">
+        <div className="rv2-header-top-row">
           <button
             className="btn-volver"
             onClick={() => {
@@ -480,15 +670,14 @@ export function RevisionFlow({
           >
             <IcoBack size={16} /> Volver
           </button>
-          <div className="nd-header-titulo">
-            <h2 className="nd-titulo">NV {numeroNota}</h2>
-            <span className={`badge ${yaDespachada ? 'badge-completa' : estadoNota === 'revisada' ? 'badge-revisada' : 'badge-preparacion'}`}>
+          <div className="rv2-header-centro">
+            <h2 className="rv2-nv-titulo">NV {numeroNota}</h2>
+            <span className={`badge ${yaDespachada ? 'badge-despachada' : estadoNota === 'revisada' ? 'badge-revisada' : 'badge-preparacion'}`}>
               {yaDespachada ? 'Despachada' : estadoNota === 'revisada' ? 'Revisada' : 'En Revisión'}
             </span>
           </div>
-          {/* Botón "Lista para despacho" en el header cuando todos revisados */}
-          {!yaDespachada && todosRevisados && esAdmin && (
-            <div className="nd-header-acciones">
+          <div className="rv2-header-derecha">
+            {!yaDespachada && todosRevisados && esAdmin && (
               <button
                 className="nd-btn-enviar"
                 disabled={offline}
@@ -496,53 +685,90 @@ export function RevisionFlow({
               >
                 <IcoTruck size={14} /> Lista para despacho
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Meta strip de cliente */}
-        <div className="nd-meta-strip">
-          <div className="nd-meta-item">
-            <IcoUser size={13} />
-            <span className="nd-meta-label">Cliente</span>
-            <span className="nd-meta-valor">{nombreCliente}</span>
+        {/* Meta strip */}
+        {yaDespachada ? (
+          /* ── Diseño corporativo 3 columnas (solo despachadas) ── */
+          <div className="rv-desp-meta">
+            {/* Col 1: Cliente */}
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoBuilding size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-main">{nombreCliente}</span>
+                {rutCliente && <span className="rv-desp-sub">RUT {rutCliente}</span>}
+                {numeroOc   && <span className="rv-desp-sub">OC {numeroOc}</span>}
+              </div>
+            </div>
+            <div className="rv-desp-sep" />
+            {/* Col 2: Chofer */}
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoTruck size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-sub-label">Chofer</span>
+                <span className="rv-desp-main">{nombreChofer ?? 'Sin asignar'}</span>
+              </div>
+            </div>
+            <div className="rv-desp-sep" />
+            {/* Col 3: Fechas */}
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoCalendar size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-fecha-row">
+                  <span className="rv-desp-sub-label">Preparada</span>
+                  <span className="rv-desp-sub">{fmtFecha(fechaPreparacion)}</span>
+                </span>
+                <span className="rv-desp-fecha-row">
+                  <span className="rv-desp-sub-label">Despachada</span>
+                  <span className="rv-desp-sub">{fmtFecha(fechaDespacho)}</span>
+                </span>
+              </div>
+            </div>
           </div>
-          {rutCliente && (
-            <div className="nd-meta-item">
-              <IcoDoc size={13} />
-              <span className="nd-meta-label">RUT</span>
-              <span className="nd-meta-valor">{rutCliente}</span>
+        ) : (
+          /* ── Tira horizontal estilo despachada (en revisión) ── */
+          <div className="rv-desp-meta rv2-meta-strip">
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoBuilding size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-main">{nombreCliente}</span>
+                {rutCliente && <span className="rv-desp-sub">RUT {rutCliente}</span>}
+                {numeroOc   && <span className="rv-desp-sub">OC {numeroOc}</span>}
+              </div>
             </div>
-          )}
-          {numeroOc && (
-            <div className="nd-meta-item">
-              <IcoDoc size={13} />
-              <span className="nd-meta-label">N° OC</span>
-              <span className="nd-meta-valor">{numeroOc}</span>
+            <div className="rv-desp-sep" />
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoClock size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-sub-label">Preparación</span>
+                {fechaPreparacion
+                  ? <span className="rv-desp-main">{fmtFecha(fechaPreparacion)}</span>
+                  : <span className="rv-desp-sub">—</span>
+                }
+                <div className="rv2-meta-progress" style={{ marginTop: 6 }}>
+                  <div className="rv2-meta-progress-bar" style={{ width: `${pctGlobal}%` }} />
+                </div>
+                <span className="rv2-meta-progress-label">{itemsRevisados}/{totalItems} revisados</span>
+              </div>
             </div>
-          )}
-          {fechaPreparacion && (
-            <div className="nd-meta-item">
-              <IcoClock size={13} />
-              <span className="nd-meta-label">Preparada</span>
-              <span className="nd-meta-valor">{fmtFecha(fechaPreparacion)}</span>
-            </div>
-          )}
-          {yaDespachada && fechaDespacho && (
-            <div className="nd-meta-item">
-              <IcoClock size={13} />
-              <span className="nd-meta-label">Despachada</span>
-              <span className="nd-meta-valor">{fmtFecha(fechaDespacho)}</span>
-            </div>
-          )}
-          {yaDespachada && nombreChofer && (
-            <div className="nd-meta-item">
-              <IcoTruck size={13} />
-              <span className="nd-meta-label">Chofer</span>
-              <span className="nd-meta-valor">{nombreChofer}</span>
-            </div>
-          )}
-        </div>
+            {paso.tipo === 'lista' && esAdmin && (
+              <>
+                <div className="rv-desp-sep" />
+                <div className="rv-desp-col" style={{ justifyContent: 'center' }}>
+                  <button
+                    className="rv2-btn-anular"
+                    disabled={offline}
+                    onClick={() => setMostrarModalAnular(true)}
+                  >
+                    <IcoAlert size={13} /> Anular NV
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
 
@@ -550,18 +776,7 @@ export function RevisionFlow({
       {offline && <div className="nd-aviso nd-aviso--offline">Sin conexión — modo solo lectura.</div>}
       {error   && <div className="nd-aviso nd-aviso--error">{error}</div>}
 
-      {/* ── Botón Anular NV (solo admin, solo en vista lista, no despachada) ── */}
-      {paso.tipo === 'lista' && esAdmin && !yaDespachada && (
-        <div style={{ padding: '0 var(--spacing-md)', marginBottom: '0.5rem' }}>
-          <button
-            className="rv-btn-anular"
-            disabled={offline}
-            onClick={() => setMostrarModalAnular(true)}
-          >
-            Anular NV
-          </button>
-        </div>
-      )}
+      {/* Anular NV movido al header */}
 
       {/* ── Banner devolución registrada ── */}
       {tieneDev && (
@@ -595,6 +810,57 @@ export function RevisionFlow({
 
 
       {/* ══ VISTA LISTA ════════════════════════════════════════════════════ */}
+      {/* ── Modal scanner inline ── */}
+      {itemEscaneando && (() => {
+        const item = items.find(i => i.notaProductoId === itemEscaneando)
+        if (!item) return null
+        return (
+          <div className="rv2-scan-overlay" onClick={() => setItemEscaneando(null)}>
+            <div className="rv2-scan-modal" onClick={e => e.stopPropagation()}>
+              <div className="rv2-scan-modal-header">
+                <div>
+                  <code className="rv2-sku">{item.skuEquivalente ?? item.sku}</code>
+                  <p className="rv2-scan-modal-nombre">{item.nombre}</p>
+                </div>
+                <button className="rv2-scan-modal-cerrar" onClick={() => setItemEscaneando(null)}>✕</button>
+              </div>
+              <div className={`nd-scanner-bar ${scanErrorInline ? 'nd-scanner-bar--error' : ''}`} style={{ margin: '8px 0 0' }}>
+                <span className="nd-scanner-icon"><IcoScan size={18} /></span>
+                <input
+                  id="rv2-scan-input"
+                  className="nd-scanner-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Escanea el código de barras…"
+                  autoComplete="off"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleScanInline((e.target as HTMLInputElement).value)
+                      ;(e.target as HTMLInputElement).value = ''
+                    }
+                  }}
+                />
+                <BarcodeScanner
+                  onDetected={(codigo) => handleScanInline(codigo)}
+                  title="Escanear producto"
+                />
+              </div>
+              {scanErrorInline && <p className="nd-scanner-error">{scanErrorInline}</p>}
+              <button
+                className="rv2-scan-modal-confirmar"
+                onClick={() => {
+                  const inp = document.getElementById('rv2-scan-input') as HTMLInputElement | null
+                  if (inp?.value) { handleScanInline(inp.value); inp.value = '' }
+                }}
+              >
+                <IcoCheck size={14} /> Confirmar
+              </button>
+            </div>
+          </div>
+        )
+      })()}
+
       {paso.tipo === 'lista' && (
         <>
           {comentarioDespacho && (
@@ -603,34 +869,61 @@ export function RevisionFlow({
             </div>
           )}
 
-          {/* Header tabla */}
-          <div className="nd-tabla-header rv-tabla-header">
-            <div>Producto</div>
-            <div className="nd-col-qty">Cantidades</div>
-            <div className="nd-col-acc">Estado</div>
+          {/* ── Barra de búsqueda ── */}
+          <div className="rv2-search-bar">
+            <span className="rv2-search-ico"><IcoSearch size={15} /></span>
+            <input
+              className="rv2-search-input"
+              type="text"
+              placeholder="Buscar por SKU, descripción o código de barras…"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+            {busqueda && (
+              <button className="rv2-search-clear" onClick={() => setBusqueda('')}>✕</button>
+            )}
+            <BarcodeScanner
+              onDetected={(codigo) => handleScanBusqueda(codigo)}
+              title="Buscar producto por código"
+            />
           </div>
 
-          {pendientes.length > 0 && (
-            <section>
-              <h3 className="nd-seccion-titulo">
-                Pendientes ({pendientes.length})
-              </h3>
-              <div className="nd-productos-lista">
-                {pendientes.map(renderFila)}
+          {/* ── Lista de productos ── */}
+          {(() => {
+            const q = busqueda.toLowerCase().trim()
+            const filtrar = (arr: ItemRevision[]) =>
+              q ? arr.filter(i =>
+                i.sku.toLowerCase().includes(q) ||
+                i.nombre.toLowerCase().includes(q) ||
+                (i.codigoBarra?.toLowerCase().includes(q) ?? false) ||
+                (i.skuEquivalente?.toLowerCase().includes(q) ?? false)
+              ) : arr
+            const pendFiltrados = filtrar(pendientes)
+            const compFiltrados = filtrar(completados)
+            return (
+              <div className="rv2-lista">
+                {pendFiltrados.length > 0 && (
+                  <section>
+                    <h3 className="rv2-seccion-titulo">
+                      Pendientes <span className="rv2-seccion-badge">{pendFiltrados.length}</span>
+                    </h3>
+                    {pendFiltrados.map(renderFila)}
+                  </section>
+                )}
+                {compFiltrados.length > 0 && (
+                  <section>
+                    <h3 className="rv2-seccion-titulo rv2-seccion-titulo--ok">
+                      Revisados <span className="rv2-seccion-badge rv2-seccion-badge--ok">{compFiltrados.length}</span>
+                    </h3>
+                    {compFiltrados.map(renderFila)}
+                  </section>
+                )}
+                {q && pendFiltrados.length === 0 && compFiltrados.length === 0 && (
+                  <div className="rv2-sin-resultados">Sin resultados para "{busqueda}"</div>
+                )}
               </div>
-            </section>
-          )}
-
-          {completados.length > 0 && (
-            <section className={pendientes.length > 0 ? 'nd-productos-lista--completados' : ''}>
-              <h3 className="nd-seccion-titulo">
-                Revisados ({completados.length})
-              </h3>
-              <div className="nd-productos-lista">
-                {completados.map(renderFila)}
-              </div>
-            </section>
-          )}
+            )
+          })()}
         </>
       )}
 

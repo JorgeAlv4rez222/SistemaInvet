@@ -14,7 +14,10 @@ export type NotaParaRevision = {
   creadoEn:            string
   actualizadoEn:       string
   fechaDespacho:       string | null
+  fechaPreparacion:    string | null
   nombreChofer:        string | null
+  rutCliente:          string | null
+  numeroOc:            string | null
   comentarioDespacho:  string | null
   tieneDev:            boolean
   tipoDev:             'total' | 'parcial' | null

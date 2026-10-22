@@ -82,6 +82,20 @@ function IcoDoc({ size = 16 }: { size?: number }) {
     </svg>
   )
 }
+function IcoBuilding({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18"/><path d="M9 21V9"/><rect x="12" y="13" width="3" height="3"/><rect x="12" y="17" width="3" height="4"/>
+    </svg>
+  )
+}
+function IcoCalendar({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  )
+}
 
 function tiempoRelativo(fecha: string): string {
   const diff = Date.now() - new Date(fecha).getTime()
@@ -97,6 +111,15 @@ function tiempoRelativo(fecha: string): string {
 function horaDespacho(fecha: string): string {
   const d = new Date(fecha)
   return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+}
+function fmtFechaHora(fecha: string | null): string {
+  if (!fecha) return '—'
+  const d = new Date(fecha)
+  const dd   = String(d.getDate()).padStart(2, '0')
+  const mm   = String(d.getMonth() + 1).padStart(2, '0')
+  const yy   = String(d.getFullYear()).slice(2)
+  const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  return `${dd}-${mm}-${yy} · ${hora}`
 }
 
 // ─── RevisionConDetalle ────────────────────────────────────────────────────
@@ -405,29 +428,21 @@ export function SalidasPage() {
             const esRevisada   = nota.estado === 'revisada'
             return (
               <div key={nota.notaId} className="nota-card sal-card">
-                {/* Cabecera */}
                 <div className="nota-card-header">
                   <span className="nota-card-numero">{nota.numeroNota}</span>
                   <span className={`badge ${esDespachada ? 'badge-despachada' : esRevisada ? 'badge-revisada' : 'badge-completa'}`}>
                     {esDespachada ? 'Despachada' : esRevisada ? 'Revisada' : 'Lista para revisar'}
                   </span>
                 </div>
-
-                {/* Cliente */}
                 <div className="nota-card-cliente" style={{ marginLeft: 0 }}>{nota.nombreCliente}</div>
-
                 <hr className="nota-card-divider" />
-
-                {/* Meta row */}
                 <div className="nota-card-meta">
                   <div className="nota-card-meta-izq">
-                    {/* Ítems */}
                     <span className="nota-expand-item">
                       <IcoBox size={14} />
                       {nota.totalProductos} ítem{nota.totalProductos !== 1 ? 's' : ''}
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
-                    {/* Hora de despacho */}
                     <span className="nota-expand-item">
                       <IcoClock size={14} />
                       {esDespachada && nota.fechaDespacho
@@ -436,12 +451,10 @@ export function SalidasPage() {
                       }
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
-                    {/* Chofer */}
                     <span className="nota-expand-item">
                       <IcoTruck size={14} />
                       {nota.nombreChofer ? nota.nombreChofer : 'Sin chofer'}
                     </span>
-                    {/* Comentario despacho */}
                     {nota.comentarioDespacho && (
                       <>
                         <span className="nota-card-sep" aria-hidden="true">|</span>
@@ -451,8 +464,6 @@ export function SalidasPage() {
                       </>
                     )}
                   </div>
-
-                  {/* Botones de acción */}
                   <div className="sal-card-acciones">
                     <button
                       className={`btn-primario nota-card-btn ${esDespachada ? 'sal-btn-revisar' : 'sal-btn-auditar'}`}

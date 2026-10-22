@@ -610,7 +610,6 @@ export function NotaDetallePage() {
         {/* ── Columna cantidades ── */}
         <div className="nd-prod-qty">
           <div className="nd-qty-item">
-            <span className="nd-qty-label">Solicitado</span>
             <span className="nd-qty-valor">{item.cantidadSolicitada}</span>
           </div>
           {terminado && (
