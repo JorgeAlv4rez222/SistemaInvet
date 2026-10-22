@@ -579,10 +579,8 @@ export function RevisionFlow({
                 <span className={`rv2-qty-valor ${revisado ? 'rv2-qty-valor--ok' : ''}`}>
                   {item.cantidadDespachada}
                 </span>
-                <span className="rv2-qty-label">uds.</span>
               </div>
             )}
-            <span className={`rv2-estado ${estadoCls}`}>{estadoLabel}</span>
             {puedeRevisar && (
               <button
                 className="rv2-btn-revisar"
@@ -902,6 +900,9 @@ export function RevisionFlow({
             const compFiltrados = filtrar(completados)
             return (
               <div className="rv2-lista">
+                <div className="rv2-lista-header">
+                  <span className="rv2-lista-header-cantidad">Cantidad</span>
+                </div>
                 {pendFiltrados.length > 0 && (
                   <section>
                     <h3 className="rv2-seccion-titulo">
