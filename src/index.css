@@ -2963,9 +2963,9 @@ label {
   z-index: 1000;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 16px;
   backdrop-filter: blur(2px);
 }
 .nd-picking-modal {
@@ -2973,10 +2973,10 @@ label {
   max-width: 480px;
   max-height: 90dvh;
   overflow-y: auto;
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px;
   background: #0f172a;
   border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 -8px 48px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6);
   animation: nd-slide-up 0.22s ease;
 }
 .nd-picking-modal .picking-flow {
@@ -3001,8 +3001,7 @@ label {
   font-size: 0.8rem;
 }
 @media (min-width: 640px) {
-  .nd-picking-overlay { align-items: center; padding: 24px 16px; }
-  .nd-picking-modal { border-radius: 16px; max-height: 88dvh; }
+  .nd-picking-modal { max-height: 88dvh; }
 }
 @keyframes nd-slide-up {
   from { transform: translateY(40px); opacity: 0; }
