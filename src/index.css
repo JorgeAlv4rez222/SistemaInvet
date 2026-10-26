@@ -2956,6 +2956,59 @@ label {
 
 .desc-celda { max-width: 200px; }
 
+/* ── PickingFlow overlay modal ── */
+.nd-picking-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  backdrop-filter: blur(2px);
+}
+.nd-picking-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  border-radius: 16px 16px 0 0;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 -8px 48px rgba(0,0,0,0.6);
+  animation: nd-slide-up 0.22s ease;
+}
+.nd-picking-modal .picking-flow {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 100%;
+  margin: 0;
+  padding: 20px 16px 24px;
+}
+.nd-picking-modal .picking-header {
+  margin-bottom: 4px;
+}
+.nd-picking-modal .btn-cerrar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+@media (min-width: 640px) {
+  .nd-picking-overlay { align-items: center; padding: 24px 16px; }
+  .nd-picking-modal { border-radius: 16px; max-height: 88dvh; }
+}
+@keyframes nd-slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
 /* ── PickingFlow ── */
 .picking-flow {
   background: var(--bg-surface);
@@ -2968,14 +3021,29 @@ label {
 }
 .picking-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-.picking-header h3 { font-size: var(--font-size-lg); }
-.picking-nombre    { color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: 4px; }
+.picking-btn-volver {
+  font-size: 0.8rem;
+  padding: 5px 10px;
+}
+.picking-sku-titulo {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0, 160, 223, 0.15);
+  border: 1px solid rgba(0, 160, 223, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--accent);
+}
 .multilote-badge {
   display: inline-flex;
   align-items: center;
@@ -3689,6 +3757,72 @@ label {
   align-items: center;
 }
 .input-con-camara input { flex: 1; }
+
+/* Inline confirm en fila tras scan */
+.nd-inline-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.nd-inline-qty {
+  width: 70px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,160,223,0.1);
+  border: 1px solid rgba(0,160,223,0.4);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+.nd-inline-qty:focus { outline: none; border-color: var(--accent); }
+
+/* Scan OK banner */
+.scan-ok-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.scan-ok-check { font-size: 1rem; }
+.scan-ok-resetear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.scan-ok-resetear:hover { color: var(--text-secondary); }
+
+/* Cantidad inline tras scan */
+.cantidad-inline {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cantidad-inline input {
+  width: 100%;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
 
 /* ═══════════════════════════════════════════════════════════
    BARCODE SCANNER
@@ -10255,7 +10389,7 @@ input[type="radio"] {
 .rv2-sku-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .rv2-sku {
   font-family: monospace;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -10264,7 +10398,7 @@ input[type="radio"] {
   white-space: nowrap;
 }
 .rv2-expand-hint { font-size: 9px; color: var(--text-muted); margin-left: 2px; }
-.rv2-nombre { font-size: 0.82rem; color: var(--text-primary); line-height: 1.3; word-break: break-word; }
+.rv2-nombre { font-size: 0.72rem; color: var(--text-primary); line-height: 1.3; word-break: break-word; }
 .rv2-equiv {
   display: flex;
   flex-direction: column;

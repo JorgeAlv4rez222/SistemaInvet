@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDetalleNota, useConcluirParcial, useEnviarARevision, useRegistrarPicking, useEditarNota, useEliminarNota } from '../hooks/useNotas'
 import { PickingFlow } from '../components/PickingFlow'
@@ -74,6 +74,14 @@ function IcoScan({ size = 16 }: { size?: number }) {
       <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
       <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
       <line x1="7" y1="12" x2="17" y2="12"/>
+    </svg>
+  )
+}
+function IcoBarcode({ size = 28 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={size} height={size}>
+      <path d="M3 5v14"/><path d="M6 5v14"/><path d="M9 5v14"/><path d="M12 5v14"/><path d="M15 5v14"/><path d="M18 5v14"/><path d="M21 5v14"/>
+      <rect x="2" y="4" width="20" height="16" rx="1" strokeWidth={1} strokeDasharray="0"/>
     </svg>
   )
 }
@@ -414,11 +422,16 @@ export function NotaDetallePage() {
   const { data, isLoading, isError, error, refetch } = useDetalleNota(notaId, operadorId)
 
   const [itemPicking,       setItemPicking]       = useState<NotaProductoResumen | null>(null)
+  const [itemConfirmando,   setItemConfirmando]   = useState<{
+    notaProductoId: string
+    codigo: string
+    loteId?: string
+    eqId?: string
+    cantidadEditable: number
+  } | null>(null)
   const [expandidos,        setExpandidos]        = useState<Set<string>>(new Set())
   const [busquedaProducto,  setBusquedaProducto]  = useState('')
-  const [scanInput,         setScanInput]         = useState('')
   const [scanError,         setScanError]         = useState('')
-  const [concluirAbierto,   setConcluirAbierto]   = useState<string | null>(null)
   const [concluirTexto,     setConcluirTexto]     = useState('')
   const [concluirError,     setConcluirError]     = useState<string | null>(null)
   const [errorRevision,     setErrorRevision]     = useState<string | null>(null)
@@ -426,17 +439,30 @@ export function NotaDetallePage() {
   const [modalEditar,       setModalEditar]       = useState(false)
   const [modalEliminar,     setModalEliminar]     = useState(false)
 
-  const scanRef            = useRef<HTMLInputElement>(null)
   const registrarPicking   = useRegistrarPicking()
   const concluirParcial    = useConcluirParcial()
   const enviarARevision    = useEnviarARevision()
 
-  // Mantener foco en el scanner cuando no hay modal abierto
-  useEffect(() => {
-    if (!itemPicking && scanRef.current) {
-      scanRef.current.focus()
-    }
-  }, [itemPicking])
+
+  async function handleConfirmarInline() {
+    if (!itemConfirmando) return
+    const cant = itemConfirmando.cantidadEditable
+    if (!cant || cant <= 0) return
+    try {
+      await registrarPicking.mutateAsync({
+        usuarioId:             operadorId,
+        notaProductoId:        itemConfirmando.notaProductoId,
+        codigoProducto:        itemConfirmando.codigo,
+        cantidad:              cant,
+        usarEquivalente:       !!itemConfirmando.eqId,
+        productoEquivalenteId: itemConfirmando.eqId,
+        loteId:                itemConfirmando.loteId,
+        esParadaMultiLote:     false,
+      })
+      setItemConfirmando(null)
+      void refetch()
+    } catch { /* silencioso */ }
+  }
 
   async function handleMarcarCompleto(item: NotaProductoResumen) {
     try {
@@ -465,7 +491,7 @@ export function NotaDetallePage() {
     setConcluirError(null)
     try {
       await concluirParcial.mutateAsync({ usuarioId: operadorId, notaProductoId, comentarioOperador: concluirTexto.trim() })
-      setConcluirAbierto(null); setConcluirTexto(''); void refetch()
+      setConcluirTexto(''); void refetch()
     } catch (e) {
       setConcluirError(e instanceof ApiResponseError ? e.message : 'Error al concluir el ítem')
     }
@@ -477,33 +503,6 @@ export function NotaDetallePage() {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-  }
-
-  function handleScan(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== 'Enter') return
-    const codigo = scanInput.trim()
-    setScanInput('')
-    if (!codigo || !data) return
-    const normalizar = (c: string) => c.replace(/^0+/, '') // normaliza ceros UPC→EAN
-    const codN = normalizar(codigo)
-    const producto = data.productos.find((p) =>
-      !esTerminado(p) && (
-        normalizar(p.codigoBarra ?? '') === codN ||
-        normalizar(p.codigoBaRalternativo ?? '') === codN ||
-        p.sku === codigo
-      )
-    )
-    if (!producto) {
-      setScanError(`Código no encontrado: ${codigo}`)
-      setTimeout(() => setScanError(''), 3000)
-      return
-    }
-    setScanError('')
-    if (esSinEscaneo(producto.sku)) {
-      void handleMarcarCompleto(producto)
-    } else {
-      setItemPicking(producto)
-    }
   }
 
   // ── Carga / error ────────────────────────────────────────────────────────
@@ -544,163 +543,165 @@ export function NotaDetallePage() {
   const pendientes  = productosMostrados.filter((p) => !esTerminado(p))
   const completados = productosMostrados.filter(esTerminado)
 
-  // ── PickingFlow ───────────────────────────────────────────────────────────
-  if (itemPicking) {
-    return (
-      <PickingFlow
-        item={itemPicking}
-        usuarioId={operadorId}
-        onCompletado={() => { setItemPicking(null); void refetch() }}
-        onCerrar={()     => { setItemPicking(null); void refetch() }}
-      />
-    )
-  }
-
   // ── Render fila de producto ───────────────────────────────────────────────
   function renderFila(item: NotaProductoResumen) {
-    const terminado      = esTerminado(item)
-    const parcialCerrado = terminado && item.estado === 'parcial'
-    const puedePickear   = !terminado && !offline && !notaCerrada && !esAdmin
-    const ubicPrincipal  = item.ubicaciones[0] ?? null
-    const abierto        = expandidos.has(item.notaProductoId)
+    const terminado     = esTerminado(item)
+    const sinStock      = item.estado === 'sin_stock'
+    const parcial       = terminado && item.estado === 'parcial'
+    const puedePickear  = !terminado && !offline && !notaCerrada && !esAdmin
+    const ubicPrincipal = item.ubicaciones[0] ?? null
+    const expandido     = expandidos.has(item.notaProductoId)
 
     return (
       <div
         key={item.notaProductoId}
-        className={`nd-prod-row ${terminado ? 'nd-prod-row--terminado' : 'nd-prod-row--pendiente'}`}
+        id={`nd-item-${item.notaProductoId}`}
+        className={`rv2-item ${terminado ? 'rv2-item--revisado' : ''} ${sinStock ? 'rv2-item--sinstock' : ''}`}
       >
-        {/* ── Columna producto ── */}
-        <div
-          className="nd-prod-info"
-          onClick={() => toggleExpandido(item.notaProductoId)}
-          style={{ cursor: 'pointer' }}
-        >
-          <div className="nd-prod-nombre-row">
-            <code className="nd-prod-sku-inline">{item.sku}</code>
-          </div>
-          <span className="nd-prod-descripcion">{item.nombre}</span>
-          {abierto && (
-            <div className="nd-prod-loc nd-prod-loc--expandido">
-              {ubicPrincipal ? (
-                <span className="nd-loc-badge">
-                  <IcoRack size={11} />
-                  {ubicPrincipal.posicionCodigo ?? '—'}
-                </span>
-              ) : (
-                <span className="nd-loc-badge nd-loc-badge--sin">Sin ubicación</span>
-              )}
-              {item.codigoBarra && (
-                <code className="nd-prod-ean">{item.codigoBarra}</code>
-              )}
-              {ubicPrincipal && (
-                <span className="nd-loc-lote" title={`Lote: ${ubicPrincipal.loteId}`}>
-                  {formatearFecha(ubicPrincipal.fechaIngreso)}
-                </span>
-              )}
-            </div>
-          )}
-          {item.skuEquivalente && (
-            <span className="nd-prod-equiv">↔ {item.skuEquivalente}</span>
-          )}
-          {item.comentarioOperador && (
-            <span className="nd-prod-comentario">{item.comentarioOperador}</span>
-          )}
-        </div>
+        {/* Fila principal */}
+        <div className="rv2-item-main">
 
-        {/* ── Columna cantidades ── */}
-        <div className="nd-prod-qty">
-          <div className="nd-qty-item">
-            <span className="nd-qty-valor">{item.cantidadSolicitada}</span>
-          </div>
-          {terminado && (
-            <>
-              <div className="nd-qty-sep" aria-hidden="true">·</div>
-              <div className="nd-qty-item">
-                <span className="nd-qty-label">Pickeado</span>
-                <span className={`nd-qty-valor ${item.cantidadDespachada > 0 ? 'nd-qty-valor--ok' : ''}`}>
-                  {item.cantidadDespachada}
+          {/* Col 1 — Botón barcode */}
+          <button
+            className={`rv2-col-barcode-btn ${terminado ? 'rv2-col-barcode-btn--revisado' : ''}`}
+            onClick={(e) => { e.stopPropagation(); if (puedePickear) esSinEscaneo(item.sku) ? void handleMarcarCompleto(item) : setItemPicking(item) }}
+            disabled={!puedePickear}
+            title={puedePickear ? 'Iniciar picking' : undefined}
+          >
+            <IcoBarcode size={28} />
+          </button>
+
+          {/* Col 2 — Info */}
+          <div className="rv2-col-info" onClick={() => toggleExpandido(item.notaProductoId)} style={{ cursor: 'pointer' }}>
+            <div className="rv2-sku-row">
+              <code className="rv2-sku">{item.skuEquivalente ?? item.sku}</code>
+              {expandido ? <span className="rv2-expand-hint">▲</span> : <span className="rv2-expand-hint">▼</span>}
+            </div>
+            <span className="rv2-nombre">{item.nombre}</span>
+            {item.skuEquivalente && (
+              <div className="rv2-equiv">
+                <span className="rv2-equiv-row">
+                  <span className="rv2-equiv-label">Original</span>
+                  <code className="rv2-equiv-code">{item.sku}</code>
                 </span>
               </div>
-            </>
-          )}
+            )}
+            {item.comentarioOperador && (
+              <span className="rv2-nombre" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 400 }}>{item.comentarioOperador}</span>
+            )}
+          </div>
+
+          {/* Col 3 — Qty + acción */}
+          {(() => {
+            const esConfirmando = itemConfirmando?.notaProductoId === item.notaProductoId
+            return (
+              <div className="rv2-col-right">
+                {esConfirmando ? (
+                  <div className="rv2-qty-edit-block">
+                    <label className="rv2-qty-edit-label">Cantidad</label>
+                    <input
+                      className="rv2-qty-edit-input"
+                      type="number"
+                      min={1}
+                      value={itemConfirmando!.cantidadEditable}
+                      onChange={(e) => setItemConfirmando(prev => prev ? { ...prev, cantidadEditable: parseInt(e.target.value) || 0 } : null)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="rv2-qty-block">
+                      <span className={`rv2-qty-valor ${terminado ? 'rv2-qty-valor--ok' : ''}`}>
+                        {item.cantidadSolicitada}
+                      </span>
+                    </div>
+                    {puedePickear && esSinEscaneo(item.sku) && (
+                      <button
+                        className="rv2-btn-revisar"
+                        disabled={offline || registrarPicking.isPending}
+                        onClick={() => void handleMarcarCompleto(item)}
+                      >
+                        <IcoCheck size={11} /> Marcar
+                      </button>
+                    )}
+                    {sinStock && <span className="nd-prod-badge nd-prod-badge--err" style={{ fontSize: '9px' }}>Sin stock</span>}
+                    {parcial   && <span className="nd-prod-badge nd-prod-badge--warn" style={{ fontSize: '9px' }}>Parcial</span>}
+                  </>
+                )}
+                {esConfirmando && (
+                  <button
+                    className="rv2-btn-revisar"
+                    disabled={registrarPicking.isPending || !itemConfirmando!.cantidadEditable}
+                    onClick={() => void handleConfirmarInline()}
+                  >
+                    <IcoCheck size={11} /> {registrarPicking.isPending ? '…' : 'Confirmar'}
+                  </button>
+                )}
+              </div>
+            )
+          })()}
         </div>
 
-        {/* ── Columna acciones ── */}
-        <div className="nd-prod-acciones">
-          {terminado && item.estado === 'completo' && !item.revisadoAdmin && (
-            <span className="nd-prod-badge nd-prod-badge--ok">Completado</span>
-          )}
-          {terminado && item.estado === 'sin_stock' && (
-            <span className="nd-prod-badge nd-prod-badge--err">Sin stock</span>
-          )}
-          {parcialCerrado && (
-            <span className="nd-prod-badge nd-prod-badge--warn">Parcial</span>
-          )}
-          {item.revisadoAdmin && (
-            <span className="nd-prod-badge nd-prod-badge--revisado">Revisado ✓</span>
-          )}
-          {puedePickear && (
-            <div className="nd-prod-btns">
-              {item.estado === 'parcial' && !expandidos.has(item.notaProductoId) && (
+        {/* Fila expandida / indicador scan validado */}
+        {(expandido || itemConfirmando?.notaProductoId === item.notaProductoId) && (
+          <div className="rv2-item-expand">
+            <div className="rv2-expand-field">
+              <span className="rv2-expand-label">Código de barras</span>
+              <code className="rv2-expand-val">{item.codigoBarra || '—'}</code>
+              {item.codigoBarra && (
                 <button
-                  className="btn-secundario"
-                  style={{ fontSize: '11px', padding: '4px 10px' }}
-                  onClick={() => toggleExpandido(item.notaProductoId)}
+                  className="rv2-copy-btn"
+                  title="Copiar código"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigator.clipboard.writeText(item.codigoBarra!).catch(() => {
+                      const el = document.createElement('textarea')
+                      el.value = item.codigoBarra!
+                      document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el)
+                    })
+                    const btn = e.currentTarget
+                    btn.classList.add('rv2-copy-btn--copied')
+                    setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
+                  }}
                 >
-                  Concluir
-                </button>
-              )}
-              {esSinEscaneo(item.sku) ? (
-                <button
-                  className="btn-primario"
-                  style={{ fontSize: '11px', padding: '5px 12px' }}
-                  disabled={registrarPicking.isPending}
-                  onClick={() => void handleMarcarCompleto(item)}
-                >
-                  {registrarPicking.isPending ? '…' : 'Marcar completo'}
-                </button>
-              ) : (
-                <button
-                  className="btn-primario"
-                  style={{ fontSize: '11px', padding: '5px 12px' }}
-                  onClick={() => setItemPicking(item)}
-                >
-                  Picking
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
                 </button>
               )}
             </div>
-          )}
-        </div>
-
-        {/* ── Panel cierre parcial (expandible) ── */}
-        {abierto && item.estado === 'parcial' && (
-          <div className="nd-concluir-panel" onClick={(e) => e.stopPropagation()}>
-            <span className="nd-concluir-label">Motivo de cierre parcial:</span>
-            <textarea
-              className="nd-concluir-textarea"
-              placeholder="Ej: cliente confirmó recibir solo lo despachado…"
-              value={concluirTexto}
-              onChange={(e) => setConcluirTexto(e.target.value)}
-              autoFocus
-            />
-            {concluirError && <span className="nd-concluir-error">{concluirError}</span>}
-            <div className="nd-concluir-footer">
-              <button
-                className="btn-secundario"
-                style={{ fontSize: '12px' }}
-                onClick={() => { setConcluirAbierto(null); setConcluirTexto(''); setConcluirError(null); toggleExpandido(item.notaProductoId) }}
-              >
-                Cancelar
-              </button>
-              <button
-                className="btn-primario"
-                style={{ fontSize: '12px' }}
-                disabled={concluirParcial.isPending || !concluirTexto.trim()}
-                onClick={() => handleConfirmarConcluir(item.notaProductoId)}
-              >
-                {concluirParcial.isPending ? 'Guardando…' : 'Confirmar'}
-              </button>
-            </div>
+            {itemConfirmando?.notaProductoId === item.notaProductoId && (
+              <div className="rv2-expand-field rv2-expand-field--ok">
+                <IcoCheck size={12} />
+                <span className="rv2-expand-label">Código escaneado y validado</span>
+              </div>
+            )}
+            {expandido && (
+              <div className="rv2-expand-field">
+                <span className="rv2-expand-label">Ubicación</span>
+                <code className="rv2-expand-val">{ubicPrincipal?.posicionCodigo ?? '—'}</code>
+              </div>
+            )}
+            {expandido && item.estado === 'parcial' && (
+              <div className="nd-concluir-panel" onClick={(e) => e.stopPropagation()}>
+                <span className="nd-concluir-label">Motivo de cierre parcial:</span>
+                <textarea
+                  className="nd-concluir-textarea"
+                  placeholder="Ej: cliente confirmó recibir solo lo despachado…"
+                  value={concluirTexto}
+                  onChange={(e) => setConcluirTexto(e.target.value)}
+                  autoFocus
+                />
+                {concluirError && <span className="nd-concluir-error">{concluirError}</span>}
+                <div className="nd-concluir-footer">
+                  <button className="btn-secundario" style={{ fontSize: '12px' }} onClick={() => { setConcluirTexto(''); setConcluirError(null); toggleExpandido(item.notaProductoId) }}>Cancelar</button>
+                  <button className="btn-primario" style={{ fontSize: '12px' }} disabled={concluirParcial.isPending || !concluirTexto.trim()} onClick={() => handleConfirmarConcluir(item.notaProductoId)}>
+                    {concluirParcial.isPending ? 'Guardando…' : 'Confirmar'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -729,40 +730,30 @@ export function NotaDetallePage() {
         />
       )}
 
-      {/* ── HEADER EJECUTIVO ── */}
+      {/* ── HEADER ── */}
       <div className="nd-header">
-        <div className="nd-header-top">
+        <div className="rv2-header-top-row">
           <button className="btn-volver" onClick={() => navigate('/notas')}>
             <IcoBack /> Volver
           </button>
-          <div className="nd-header-titulo">
-            <h2 className="nd-titulo">NV {data.numeroNota}</h2>
+          <div className="rv2-header-centro">
+            <h2 className="rv2-nv-titulo">NV {data.numeroNota}</h2>
             <span className={`badge badge-${data.estado.replace('_', '-')}`}>
               {NOTA_ESTADO_LABEL[data.estado] ?? data.estado}
             </span>
           </div>
-          <div className="nd-header-acciones">
+          <div className="rv2-header-derecha">
             {esAdmin && data.estado === 'pendiente' && (
               <div className="nd-modificar-wrap" style={{ position: 'relative' }}>
-                <button
-                  className="nd-btn-modificar"
-                  onClick={() => setMenuModificar((v) => !v)}
-                  disabled={offline}
-                >
+                <button className="nd-btn-modificar" onClick={() => setMenuModificar((v) => !v)} disabled={offline}>
                   <IcoEdit size={13} /> Modificar NV
                 </button>
                 {menuModificar && (
                   <div className="nd-modificar-menu" onClick={() => setMenuModificar(false)}>
-                    <button
-                      className="nd-modificar-opcion"
-                      onClick={() => { setMenuModificar(false); setModalEditar(true) }}
-                    >
+                    <button className="nd-modificar-opcion" onClick={() => { setMenuModificar(false); setModalEditar(true) }}>
                       <IcoEdit size={13} /> Editar ítems
                     </button>
-                    <button
-                      className="nd-modificar-opcion nd-modificar-opcion--danger"
-                      onClick={() => { setMenuModificar(false); setModalEliminar(true) }}
-                    >
+                    <button className="nd-modificar-opcion nd-modificar-opcion--danger" onClick={() => { setMenuModificar(false); setModalEliminar(true) }}>
                       <IcoTrash size={13} /> Eliminar nota
                     </button>
                   </div>
@@ -771,7 +762,7 @@ export function NotaDetallePage() {
             )}
             {!notaCerrada && esAdmin && (
               <button
-                className="btn-primario nd-btn-enviar"
+                className="nd-btn-enviar"
                 disabled={enviarARevision.isPending || offline || !todosCompletos}
                 onClick={handleEnviarARevision}
                 title={!todosCompletos ? 'Completa todos los ítems primero' : ''}
@@ -783,121 +774,117 @@ export function NotaDetallePage() {
           </div>
         </div>
 
-        {/* Meta strip cliente */}
-        <div className="nd-meta-strip">
-          <div className="nd-meta-item">
-            <IcoUser size={12} />
-            <span className="nd-meta-label">Cliente</span>
-            <span className="nd-meta-valor">{data.nombreCliente}</span>
+        {/* Tira meta horizontal */}
+        <div className="rv-desp-meta rv2-meta-strip">
+          <div className="rv-desp-col">
+            <div className="rv-desp-col-ico">
+              <IcoUser size={15} />
+            </div>
+            <div className="rv-desp-col-data">
+              <span className="rv-desp-main">{data.nombreCliente}</span>
+              {data.rutCliente && <span className="rv-desp-sub">RUT {data.rutCliente}</span>}
+              {data.numeroOc   && <span className="rv-desp-sub">OC {data.numeroOc}</span>}
+            </div>
           </div>
-          {data.rutCliente && (
-            <div className="nd-meta-item">
-              <IcoDoc size={12} />
-              <span className="nd-meta-label">RUT</span>
-              <span className="nd-meta-valor">{data.rutCliente}</span>
+          <div className="rv-desp-sep" />
+          <div className="rv-desp-col">
+            <div className="rv-desp-col-ico"><IcoClock size={15} /></div>
+            <div className="rv-desp-col-data">
+              <span className="rv-desp-sub-label">Preparación</span>
+              {data.fechaPreparacion
+                ? <span className="rv-desp-main">{fmtFecha(data.fechaPreparacion)}</span>
+                : <span className="rv-desp-sub">—</span>
+              }
+              <div className="rv2-meta-progress" style={{ marginTop: 6 }}>
+                <div className="rv2-meta-progress-bar" style={{ width: `${pctGlobal}%` }} />
+              </div>
+              <span className="rv2-meta-progress-label">{itemsCompletos}/{totalItems} completados</span>
             </div>
-          )}
-          {data.numeroOc && (
-            <div className="nd-meta-item">
-              <IcoDoc size={12} />
-              <span className="nd-meta-label">N° OC</span>
-              <span className="nd-meta-valor">{data.numeroOc}</span>
-            </div>
-          )}
-          {data.fechaPreparacion && (
-            <div className="nd-meta-item">
-              <IcoClock size={12} />
-              <span className="nd-meta-label">Preparada</span>
-              <span className="nd-meta-valor">{fmtFecha(data.fechaPreparacion)}</span>
-            </div>
-          )}
-          {data.fechaDespacho && (
-            <div className="nd-meta-item">
-              <IcoClock size={12} />
-              <span className="nd-meta-label">Despachada</span>
-              <span className="nd-meta-valor">{fmtFecha(data.fechaDespacho)}</span>
-            </div>
-          )}
+          </div>
           {data.comentarioDespacho && (
-            <div className="nd-meta-item nd-meta-item--comentario">
-              <span className="nd-meta-label">Instrucción</span>
-              <span className="nd-meta-valor nd-meta-valor--comentario">{data.comentarioDespacho}</span>
-            </div>
+            <>
+              <div className="rv-desp-sep" />
+              <div className="rv-desp-col">
+                <div className="rv-desp-col-data">
+                  <span className="rv-desp-sub-label">Instrucción</span>
+                  <span className="rv-desp-sub">{data.comentarioDespacho}</span>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
 
-
       {/* ── AVISOS ── */}
-      {offline && (
-        <div className="nd-aviso nd-aviso--offline">Sin conexión — modo solo lectura.</div>
-      )}
-      {errorRevision && (
-        <div className="nd-aviso nd-aviso--error">{errorRevision}</div>
-      )}
+      {offline      && <div className="nd-aviso nd-aviso--offline">Sin conexión — modo solo lectura.</div>}
+      {errorRevision && <div className="nd-aviso nd-aviso--error">{errorRevision}</div>}
+      {scanError    && <div className="nd-aviso nd-aviso--error">{scanError}</div>}
 
-
-
-      {/* ── BÚSQUEDA DE PRODUCTO ── */}
-      <div className="ing-busqueda" style={{ marginBottom: '12px' }}>
-        <span className="ing-busqueda-icono"><IcoSearch /></span>
+      {/* ── BÚSQUEDA ── */}
+      <div className="rv2-search-bar">
+        <span className="rv2-search-ico"><IcoSearch size={15} /></span>
         <input
-          type="search"
-          placeholder="Buscar producto por código o nombre…"
+          className="rv2-search-input"
+          type="text"
+          placeholder="Buscar por SKU o descripción…"
           value={busquedaProducto}
           onChange={(e) => setBusquedaProducto(e.target.value)}
-          autoComplete="off"
         />
         {busquedaProducto && (
-          <button className="ing-busqueda-limpiar" onClick={() => setBusquedaProducto('')}>✕</button>
+          <button className="rv2-search-clear" onClick={() => setBusquedaProducto('')}>✕</button>
         )}
       </div>
 
-      {/* ── TABLA DE PRODUCTOS ── */}
-      {qProducto && pendientes.length === 0 && completados.length === 0 && (
-        <div className="ing-vacio"><p>Sin resultados para "{busquedaProducto}"</p></div>
-      )}
-
-      {/* Cabecera de columnas */}
-      {(pendientes.length > 0 || completados.length > 0) && (
-        <div className="nd-tabla-header">
-          <div className="nd-col-info">Producto</div>
-          <div className="nd-col-qty">Cantidades</div>
-          <div className="nd-col-acc">Estado / Acción</div>
+      {/* ── LISTA ── */}
+      <div className="rv2-lista">
+        <div className="rv2-lista-header">
+          <span className="rv2-lista-header-cantidad">Cantidad</span>
         </div>
-      )}
 
-      {pendientes.length > 0 && (
-        <section className="nd-seccion">
-          <div className="nd-seccion-titulo">
-            <span className="nd-seccion-dot nd-seccion-dot--pendiente" />
-            Pendientes ({pendientes.length})
-          </div>
-          <div className="nd-productos-lista">
-            {pendientes.map((item) => renderFila(item))}
-          </div>
-        </section>
-      )}
+        {qProducto && pendientes.length === 0 && completados.length === 0 && (
+          <div className="rv2-sin-resultados">Sin resultados para "{busquedaProducto}"</div>
+        )}
 
-      {completados.length > 0 && (
-        <section className="nd-seccion">
-          <div className="nd-seccion-titulo">
-            <span className="nd-seccion-dot nd-seccion-dot--completo" />
-            Completados ({completados.length})
-          </div>
-          <div className="nd-productos-lista nd-productos-lista--completados">
-            {completados.map((item) => renderFila(item))}
-          </div>
-        </section>
-      )}
+        {pendientes.length > 0 && (
+          <section>
+            <h3 className="rv2-seccion-titulo">
+              Pendientes <span className="rv2-seccion-badge">{pendientes.length}</span>
+            </h3>
+            {pendientes.map(renderFila)}
+          </section>
+        )}
 
-      {/* ── PIE DE TRAZABILIDAD ── */}
-      {notaCerrada && (
-        <div className="nd-pie-traza">
-          <span>
-            Nota {data.estado === 'despachada' ? 'despachada' : 'lista para despacho'} —
-            {' '}{itemsCompletos} de {totalItems} ítems completados
-          </span>
+        {completados.length > 0 && (
+          <section>
+            <h3 className="rv2-seccion-titulo rv2-seccion-titulo--ok">
+              Completados <span className="rv2-seccion-badge rv2-seccion-badge--ok">{completados.length}</span>
+            </h3>
+            {completados.map(renderFila)}
+          </section>
+        )}
+      </div>
+
+      {/* ── PickingFlow overlay flotante ── */}
+      {itemPicking && (
+        <div className="nd-picking-overlay" onClick={() => { setItemPicking(null); void refetch() }}>
+          <div className="nd-picking-modal" onClick={(e) => e.stopPropagation()}>
+            <PickingFlow
+              item={itemPicking}
+              usuarioId={operadorId}
+              onCompletado={() => { setItemPicking(null); void refetch() }}
+              onCerrar={()     => { setItemPicking(null) }}
+              onScanValidado={(info) => {
+                setItemConfirmando({
+                  notaProductoId:   itemPicking.notaProductoId,
+                  codigo:           info.codigo,
+                  loteId:           info.loteId,
+                  eqId:             info.eqId,
+                  cantidadEditable: info.cantidadSugerida,
+                })
+                setItemPicking(null)
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

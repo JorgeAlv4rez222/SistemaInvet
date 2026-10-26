@@ -7,11 +7,19 @@ import { onlyNumbersKeyDown, onlyNumbersPaste } from '../../../shared/utils/nume
 import { sonarEscaneoExitoso, sonarEscaneoError } from '../../../shared/utils/sonidos'
 import type { NotaProductoResumen, ProductoConStock, Ubicacion } from '../services/notas.api'
 
+interface ScanInfo {
+  codigo:           string
+  loteId?:          string
+  eqId?:            string
+  cantidadSugerida: number
+}
+
 interface Props {
-  item:         NotaProductoResumen
-  usuarioId:    string
-  onCompletado: () => void
-  onCerrar:     () => void
+  item:              NotaProductoResumen
+  usuarioId:         string
+  onCompletado:      () => void
+  onCerrar:          () => void
+  onScanValidado?:   (info: ScanInfo) => void
 }
 
 interface Parada {
@@ -110,14 +118,21 @@ function EquivalenteCard({ eq, seleccionado, onSeleccionar }: { eq: ProductoConS
   )
 }
 
-export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) {
-  const [paso, setPaso]                   = useState<Paso>({ tipo: 'escanear_producto', paradaIdx: 0 })
+export function PickingFlow({ item, usuarioId, onCompletado, onCerrar, onScanValidado }: Props) {
+  const [plan, setPlan]                   = useState<Parada[]>(
+    () => calcularPlan(item.ubicaciones, item.cantidadSolicitada - item.cantidadDespachada)
+  )
+  const [paso, setPaso]                   = useState<Paso>(
+    () => ({ tipo: 'escanear_producto', paradaIdx: 0 })
+  )
   const [cantidad, setCantidad]           = useState('')
   const [error, setError]                 = useState<string | null>(null)
   const [equivalenteId, setEquivalenteId] = useState<string | null>(null)
   const [motivo, setMotivo]               = useState('')
-  const [plan, setPlan]                   = useState<Parada[]>([])
   const [pickedSoFar, setPickedSoFar]     = useState(0)
+  const [scanOk, setScanOk]               = useState(false)
+  const [codigoEscaneado, setCodigoEscaneado] = useState('')
+  const [inputProducto, setInputProducto] = useState('')
 
   const productoInputRef = useRef<HTMLInputElement>(null)
   const rackInputRef     = useRef<HTMLInputElement>(null)
@@ -140,8 +155,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
 
   const paradaActual = (
     paso.tipo === 'escanear_rack' ||
-    paso.tipo === 'escanear_producto' ||
-    paso.tipo === 'ingresar_cantidad'
+    paso.tipo === 'escanear_producto'
   ) ? plan[paso.paradaIdx] : null
 
   function handleSeleccionarEquivalente(id: string | null) {
@@ -178,18 +192,19 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     setPlan(planCalculado)
     setPickedSoFar(0)
     setCantidad(planCalculado[0]?.cantidadATomar?.toString() ?? '')
-    const primerPaso = planCalculado[0]?.posicionCodigo
-      ? { tipo: 'escanear_rack' as const, paradaIdx: 0, equivalenteId: equivalenteId ?? undefined }
-      : { tipo: 'escanear_producto' as const, paradaIdx: 0, equivalenteId: equivalenteId ?? undefined }
-    setPaso(primerPaso)
+    setPaso({ tipo: 'escanear_producto', paradaIdx: 0, equivalenteId: equivalenteId ?? undefined })
     setError(null)
   }
 
   function handleIniciarConEquivalente(eqId: string) {
+    const ubicacionesEq = item.equivalentes.find((e) => e.productoId === eqId)?.ubicaciones ?? []
+    const planEq        = calcularPlan(ubicacionesEq, cantidadPendiente)
     setEquivalenteId(eqId)
-    setPlan([])
+    setPlan(planEq)
     setPickedSoFar(0)
-    setCantidad(cantidadPendiente.toString())
+    setCantidad(planEq[0]?.cantidadATomar?.toString() ?? cantidadPendiente.toString())
+    if (rackInputRef.current) rackInputRef.current.value = ''
+    if (productoInputRef.current) productoInputRef.current.value = ''
     setPaso({ tipo: 'escanear_producto', paradaIdx: 0, equivalenteId: eqId })
     setError(null)
   }
@@ -209,7 +224,8 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
     setTimeout(() => { scanCooldownRef.current = false }, 500)
     const parada = plan[paso.paradaIdx]
     if (codigo.trim() !== parada?.posicionCodigo) {
-      setError(`Rack incorrecto. Se esperaba ${parada?.posicionCodigo ?? ''}`)
+      sonarEscaneoError()
+      setError(`Ubicación incorrecta. Por favor, diríjase al rack asignado: ${parada?.posicionCodigo ?? ''}`)
       if (rackInputRef.current) rackInputRef.current.value = ''
       rackInputRef.current?.focus()
       return
@@ -238,15 +254,26 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       productoInputRef.current?.focus()
       return
     }
-    const parada = plan[paso.paradaIdx]
-    setCantidad(parada?.cantidadATomar?.toString() ?? '')
+    const parada          = plan[paso.paradaIdx]
+    const cantidadSugerida = parada?.cantidadATomar ?? (item.cantidadSolicitada - item.cantidadDespachada)
     sonarEscaneoExitoso()
-    setPaso({ tipo: 'ingresar_cantidad', paradaIdx: paso.paradaIdx, codigoProducto: codigo.trim(), equivalenteId: paso.equivalenteId })
     setError(null)
+    if (onScanValidado) {
+      onScanValidado({
+        codigo:           codigo.trim(),
+        loteId:           parada?.loteId,
+        eqId:             paso.equivalenteId,
+        cantidadSugerida,
+      })
+      return
+    }
+    setCantidad(cantidadSugerida.toString())
+    setScanOk(true)
+    setCodigoEscaneado(codigo.trim())
   }
 
   async function handleConfirmarPicking() {
-    if (paso.tipo !== 'ingresar_cantidad') return
+    if (paso.tipo !== 'escanear_producto') return
     const cant = parseInt(cantidad, 10)
     if (!cant || cant <= 0) { setError('Ingresa una cantidad válida'); return }
 
@@ -263,30 +290,28 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
       return
     }
 
-    // Última parada y aún queda pendiente → pedir motivo (stock insuficiente en bodega)
     if (esUltimaParada && (pickedSoFar + cant) < cantidadPendiente) {
       setMotivo('')
       setError(null)
       setPaso({
-        tipo:          'motivo_parcial',
+        tipo:           'motivo_parcial',
         cantidadParada: cant,
         cantidadTotal:  pickedSoFar + cant,
-        codigoProducto: paso.codigoProducto,
+        codigoProducto: codigoEscaneado,
         equivalenteId:  paso.equivalenteId,
       })
       return
     }
 
     setError(null)
-    // esParadaIntermedia = hay más paradas después de esta
     await _llamarApiPicking({
       cant,
-      codigoProducto:   paso.codigoProducto,
-      eqId:             paso.equivalenteId,
-      comentario:       null,
-      loteId:           parada?.loteId,
+      codigoProducto:     codigoEscaneado,
+      eqId:               paso.equivalenteId,
+      comentario:         null,
+      loteId:             parada?.loteId,
       esParadaIntermedia: !esUltimaParada,
-      paradaIdx:        paso.paradaIdx,
+      paradaIdx:          paso.paradaIdx,
     })
   }
 
@@ -344,11 +369,11 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
         const siguienteParada = plan[siguienteIdx]
         setPickedSoFar(nuevoPicked)
         setCantidad(siguienteParada?.cantidadATomar?.toString() ?? '')
+        setScanOk(false)
+        setCodigoEscaneado('')
+        setInputProducto('')
         if (rackInputRef.current) rackInputRef.current.value = ''
-        const siguientePaso = siguienteParada?.posicionCodigo
-          ? { tipo: 'escanear_rack' as const, paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined }
-          : { tipo: 'escanear_producto' as const, paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined }
-        setPaso(siguientePaso)
+        setPaso({ tipo: 'escanear_producto', paradaIdx: siguienteIdx, equivalenteId: eqId ?? undefined })
         return
       }
 
@@ -368,18 +393,9 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
   return (
     <div className="picking-flow">
       <div className="picking-header">
-        <div>
-          <h3>{item.sku}</h3>
-          <p className="picking-nombre">{item.nombre}</p>
-        </div>
+        <button className="btn-secundario picking-btn-volver" onClick={onCerrar}>← Volver</button>
         <button className="btn-cerrar" onClick={onCerrar}>✕</button>
       </div>
-
-      {paso.tipo === 'ingresar_cantidad' && (
-        <div className="picking-progreso">
-          <span className="pendiente-badge">Solicitado: <strong>{cantidadPendiente - pickedSoFar}</strong></span>
-        </div>
-      )}
 
       {/* Indicador de parada multi-lote */}
       {esMultiLote && paso.tipo !== 'inicio' && paso.tipo !== 'resultado' && paso.tipo !== 'sin_stock' && (
@@ -484,17 +500,15 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
             <button
               className="btn-secundario"
               disabled={paso.paradaIdx > 0}
-              onClick={() => {
-                if (paso.paradaIdx === 0) {
-                  setPaso({ tipo: 'inicio' })
-                  setPickedSoFar(0)
-                  setPlan([])
-                  setError(null)
-                }
-              }}
+              onClick={() => { setError(null); onCerrar() }}
             >
               ← Volver
             </button>
+            {paso.paradaIdx === 0 && (
+              <button className="btn-secundario" onClick={() => setPaso({ tipo: 'sin_stock' })}>
+                Sin stock
+              </button>
+            )}
             <button className="btn-primario" onClick={() => handleEscanearRack(rackInputRef.current?.value ?? '')}>
               Confirmar rack
             </button>
@@ -521,15 +535,9 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
         </div>
       )}
 
-      {/* ESCANEAR PRODUCTO */}
+      {/* ESCANEAR PRODUCTO + INGRESAR CANTIDAD (pantalla unificada) */}
       {paso.tipo === 'escanear_producto' && (
         <div className="paso">
-          {paradaActual && (
-            <div className="instruccion-fifo">
-              <p>Rack: <strong>{paradaActual.posicionCodigo}</strong></p>
-              <p className="fecha-fifo">Ingreso: {formatearFecha(paradaActual.fechaIngreso)}</p>
-            </div>
-          )}
           {equivalenteId && (() => {
             const eq = item.equivalentes.find(e => e.productoId === equivalenteId)
             return eq ? (
@@ -539,44 +547,103 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
               </div>
             ) : null
           })()}
-          <p className="paso-instruccion">Escanea el código de barras del producto</p>
-          <div className="input-con-camara">
-            <input
-              ref={productoInputRef}
-              type="text"
-              inputMode="numeric"
-              placeholder="Código producto…"
-              autoComplete="off"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleEscanearProducto(e.currentTarget.value)
-              }}
-              onInput={(e) => {
-                const input = e.currentTarget
-                input.value = input.value.replace(/\D/g, '')
-              }}
-            />
-            <BarcodeScanner
-              onDetected={(codigo) => {
-                if (productoInputRef.current) productoInputRef.current.value = codigo
-                handleEscanearProducto(codigo)
-              }}
-              title="Escanear producto"
-            />
-          </div>
+
+          {/* Sección scan */}
+          <p className="paso-instruccion">
+            Escanea el código de barras del:
+            <br />
+            <code className="picking-sku-titulo">{item.skuEquivalente ?? item.sku}</code>
+          </p>
+          {scanOk ? (
+            <div className="scan-ok-banner">
+              <span className="scan-ok-check">✓</span>
+              <span>Código verificado</span>
+              <button
+                className="scan-ok-resetear"
+                onClick={() => {
+                  setScanOk(false)
+                  setCodigoEscaneado('')
+                  setCantidad('')
+                  setInputProducto('')
+                  setError(null)
+                  setTimeout(() => productoInputRef.current?.focus(), 50)
+                }}
+              >
+                Escanear de nuevo
+              </button>
+            </div>
+          ) : (
+            <div className="input-con-camara">
+              <input
+                ref={productoInputRef}
+                type="text"
+                inputMode="numeric"
+                placeholder="Código producto…"
+                autoComplete="off"
+                autoFocus
+                value={inputProducto}
+                onChange={(e) => setInputProducto(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleEscanearProducto(inputProducto)
+                }}
+              />
+              <BarcodeScanner
+                onDetected={(codigo) => {
+                  setInputProducto(codigo)
+                  handleEscanearProducto(codigo)
+                }}
+                title="Escanear producto"
+              />
+            </div>
+          )}
+
+          {/* Cantidad — visible tras scan exitoso */}
+          {scanOk && (
+            <div className="cantidad-inline">
+              <label className="paso-label">Cantidad</label>
+              <input
+                type="number"
+                min={1}
+                max={paradaActual
+                  ? Math.min(paradaActual.cantidadDisponible, cantidadPendiente - pickedSoFar)
+                  : cantidadPendiente}
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') void handleConfirmarPicking() }}
+                onPaste={onlyNumbersPaste}
+                autoFocus
+              />
+            </div>
+          )}
+
           <div className="paso-acciones">
-            <button
-              className="btn-secundario"
-              onClick={() => { setError(null); onCerrar() }}
-            >
-              ← Volver
-            </button>
             <button className="btn-secundario" onClick={() => setPaso({ tipo: 'sin_stock' })}>
               Sin stock
             </button>
-            <button className="btn-primario" onClick={() => handleEscanearProducto(productoInputRef.current?.value ?? '')}>
-              Confirmar
-            </button>
+            {!scanOk && (
+              <button
+                className="btn-primario"
+                onClick={() => handleEscanearProducto(inputProducto)}
+                disabled={!inputProducto.trim()}
+              >
+                Confirmar
+              </button>
+            )}
+            {scanOk && (
+              <button
+                className="btn-primario"
+                disabled={registrarPicking.isPending || !cantidad}
+                onClick={() => void handleConfirmarPicking()}
+              >
+                {registrarPicking.isPending
+                  ? 'Despachando…'
+                  : esMultiLote && paso.paradaIdx < plan.length - 1
+                    ? 'Confirmar y continuar →'
+                    : 'Confirmar'}
+              </button>
+            )}
           </div>
+
           {item.equivalentes.length > 0 && (
             <button className="btn-equivalente" style={{ marginTop: '12px', width: '100%' }} onClick={handleClickEquivalente}>
               {equivalenteId
@@ -586,53 +653,6 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
                   : 'Usar producto equivalente'}
             </button>
           )}
-        </div>
-      )}
-
-      {/* INGRESAR CANTIDAD */}
-      {paso.tipo === 'ingresar_cantidad' && (
-        <div className="paso">
-          {paradaActual && esMultiLote && (
-            <p>Retirar de este rack: <strong>{paradaActual.cantidadATomar}</strong> unidades</p>
-          )}
-          <label>
-            Ingrese cantidad:
-            <input
-              type="number"
-              min={1}
-              max={paradaActual
-                ? Math.min(paradaActual.cantidadDisponible, cantidadPendiente - pickedSoFar)
-                : cantidadPendiente}
-              value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
-              onKeyDown={(e) => { onlyNumbersKeyDown(e); if (e.key === 'Enter') handleConfirmarPicking() }}
-              onPaste={onlyNumbersPaste}
-              autoFocus
-            />
-          </label>
-          <div className="paso-acciones">
-            <button
-              className="btn-secundario"
-              onClick={() => {
-                if (productoInputRef.current) productoInputRef.current.value = ''
-                setPaso({ tipo: 'escanear_producto', paradaIdx: paso.paradaIdx, equivalenteId: paso.equivalenteId })
-                setError(null)
-              }}
-            >
-              ← Volver
-            </button>
-            <button
-              className="btn-primario"
-              disabled={registrarPicking.isPending || !cantidad}
-              onClick={handleConfirmarPicking}
-            >
-              {registrarPicking.isPending
-                ? 'Despachando…'
-                : esMultiLote && paso.paradaIdx < plan.length - 1
-                  ? 'Confirmar y continuar →'
-                  : 'Confirmar despacho'}
-            </button>
-          </div>
         </div>
       )}
 
@@ -730,7 +750,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
               <button
                 className="btn-secundario"
                 onClick={() => {
-                  setPaso({ tipo: 'ingresar_cantidad', paradaIdx: 0, codigoProducto: paso.codigoProducto, equivalenteId: paso.equivalenteId })
+                  setPaso({ tipo: 'escanear_producto', paradaIdx: 0, equivalenteId: paso.equivalenteId })
                   setError(null)
                 }}
               >
@@ -775,7 +795,10 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar }: Props) 
           sku={item.sku}
           usuarioId={usuarioId}
           onCompletado={onCompletado}
-          onCancelar={() => { setPaso({ tipo: 'inicio' }); setError(null) }}
+          onCancelar={() => {
+            setPaso({ tipo: 'escanear_producto', paradaIdx: 0, equivalenteId: equivalenteId ?? undefined })
+            setError(null)
+          }}
         />
       )}
     </div>
