@@ -775,42 +775,39 @@ export function NotaDetallePage() {
         </div>
 
         {/* Tira meta horizontal */}
-        <div className="rv-desp-meta rv2-meta-strip">
-          <div className="rv-desp-col">
-            <div className="rv-desp-col-ico">
-              <IcoUser size={15} />
-            </div>
-            <div className="rv-desp-col-data">
-              <span className="rv-desp-main">{data.nombreCliente}</span>
-              {data.rutCliente && <span className="rv-desp-sub">RUT {data.rutCliente}</span>}
-              {data.numeroOc   && <span className="rv-desp-sub">OC {data.numeroOc}</span>}
-            </div>
-          </div>
-          <div className="rv-desp-sep" />
-          <div className="rv-desp-col">
-            <div className="rv-desp-col-ico"><IcoClock size={15} /></div>
-            <div className="rv-desp-col-data">
-              <span className="rv-desp-sub-label">Preparación</span>
-              {data.fechaPreparacion
-                ? <span className="rv-desp-main">{fmtFecha(data.fechaPreparacion)}</span>
-                : <span className="rv-desp-sub">—</span>
-              }
-              <div className="rv2-meta-progress" style={{ marginTop: 6 }}>
-                <div className="rv2-meta-progress-bar" style={{ width: `${pctGlobal}%` }} />
+        <div className="nd-meta-wrap">
+          <div className="rv-desp-meta rv2-meta-strip">
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico">
+                <IcoUser size={15} />
               </div>
-              <span className="rv2-meta-progress-label">{itemsCompletos}/{totalItems} completados</span>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-main">{data.nombreCliente}</span>
+                {data.rutCliente && <span className="rv-desp-sub">RUT {data.rutCliente}</span>}
+                {data.numeroOc   && <span className="rv-desp-sub">OC {data.numeroOc}</span>}
+              </div>
+            </div>
+            <div className="rv-desp-sep" />
+            <div className="rv-desp-col">
+              <div className="rv-desp-col-ico"><IcoClock size={15} /></div>
+              <div className="rv-desp-col-data">
+                <span className="rv-desp-sub-label">Preparación</span>
+                {data.fechaPreparacion
+                  ? <span className="rv-desp-main">{fmtFecha(data.fechaPreparacion)}</span>
+                  : <span className="rv-desp-sub">—</span>
+                }
+                <div className="rv2-meta-progress" style={{ marginTop: 6 }}>
+                  <div className="rv2-meta-progress-bar" style={{ width: `${pctGlobal}%` }} />
+                </div>
+                <span className="rv2-meta-progress-label">{itemsCompletos}/{totalItems} completados</span>
+              </div>
             </div>
           </div>
           {data.comentarioDespacho && (
-            <>
-              <div className="rv-desp-sep" />
-              <div className="rv-desp-col">
-                <div className="rv-desp-col-data">
-                  <span className="rv-desp-sub-label">Instrucción</span>
-                  <span className="rv-desp-sub">{data.comentarioDespacho}</span>
-                </div>
-              </div>
-            </>
+            <div className="nd-meta-instruccion">
+              <span className="rv-desp-sub-label">Instrucción</span>
+              <span className="rv-desp-sub">{data.comentarioDespacho}</span>
+            </div>
           )}
         </div>
       </div>
