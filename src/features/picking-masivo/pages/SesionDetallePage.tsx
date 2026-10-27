@@ -238,7 +238,9 @@ export function SesionDetallePage() {
       if (parseError || items.length === 0) { setError(parseError ?? 'No se encontraron items'); return }
       const mapa = new Map(items.map(i => [i.codigo, i.skuProveedor]))
       setSkuMap(mapa)
-      setSkuMapLabel(`SKU cargado: ${mapa.size} productos — ahora descarga el Excel`)
+      // Persistir a DB para que futuros exports no requieran recargar el Excel
+      await parcharSku.mutateAsync({ sesionId: sesionId ?? '', items })
+      setSkuMapLabel(`SKU sincronizado: ${mapa.size} productos`)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al leer el archivo')
@@ -374,9 +376,18 @@ export function SesionDetallePage() {
         </div>
         <div className="sd-header-actions">
           {esAdmin && (
-            <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
-              <IcoDownload /> Excel
-            </button>
+            <>
+              <input ref={skuFileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
+                onChange={handleSkuFile} />
+              <button className="sd-btn sd-btn--secondary" disabled={parcharSku.isPending}
+                onClick={() => skuFileInputRef.current?.click()}
+                title={skuMapLabel ?? 'Cargar Excel original para sincronizar SKU proveedor'}>
+                📋 {parcharSku.isPending ? 'Guardando…' : skuMapLabel ? 'SKU ✓' : 'SKU'}
+              </button>
+              <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
+                <IcoDownload /> Excel
+              </button>
+            </>
           )}
           {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
             <>
