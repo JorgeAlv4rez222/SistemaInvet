@@ -215,8 +215,8 @@ export function SalidasPage() {
         : n.estado === 'despachada'
     )
 
-    // En despachadas: mostrar solo hoy cuando no hay filtro de fecha activo
-    if (tabActivo === 'despachadas' && !tieneFiltrFecha) {
+    // En despachadas: mostrar solo hoy cuando no hay filtro de fecha ni búsqueda activa
+    if (tabActivo === 'despachadas' && !tieneFiltrFecha && !busqueda.trim()) {
       lista = lista.filter((n) => n.fechaDespacho?.startsWith(hoy))
     }
 
@@ -397,7 +397,7 @@ export function SalidasPage() {
       {isError   && <p className="error">Error al cargar notas</p>}
 
       {/* Indicador: mostrando solo hoy */}
-      {tabActivo === 'despachadas' && !tieneFiltrFecha && (
+      {tabActivo === 'despachadas' && !tieneFiltrFecha && !busqueda.trim() && (
         <div className="sal-hoy-banner">
           Mostrando despachos de hoy
           <button
