@@ -95,6 +95,11 @@ async function getUsuarioId(req: NextApiRequest): Promise<string | null> {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { accion, id, estado } = req.query
 
+  // Cloudflare Pages puede entregar req.body como string — normalizar a objeto
+  if (typeof req.body === 'string') {
+    try { req.body = JSON.parse(req.body) } catch { /* ignorar */ }
+  }
+
   // ── GET ──────────────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     res.setHeader('Cache-Control', 'no-store')

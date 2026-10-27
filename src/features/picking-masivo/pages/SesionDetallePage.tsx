@@ -236,13 +236,14 @@ export function SesionDetallePage() {
       const { parsearExcelSkuProveedor } = await import('../utils/parsearExcelSkuProveedor')
       const { items, error: parseError } = await parsearExcelSkuProveedor(file)
       if (parseError || items.length === 0) { setError(parseError ?? 'No se encontraron items'); return }
+      console.log('[SKU] items a enviar:', items.length, items.slice(0, 3))
       const mapa = new Map(items.map(i => [i.codigo, i.skuProveedor]))
       setSkuMap(mapa)
-      // Persistir a DB para que futuros exports no requieran recargar el Excel
       await parcharSku.mutateAsync({ sesionId: sesionId ?? '', items })
       setSkuMapLabel(`SKU sincronizado: ${mapa.size} productos`)
       setError(null)
     } catch (err) {
+      console.error('[SKU] error:', err)
       setError(err instanceof Error ? err.message : 'Error al leer el archivo')
     }
   }
