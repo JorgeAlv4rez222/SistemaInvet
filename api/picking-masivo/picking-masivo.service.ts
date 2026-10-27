@@ -359,15 +359,16 @@ export const pickingMasivoService = {
     sesionId: string,
     items: { codigo: string; skuProveedor: string }[]
   ): Promise<ServiceResult<{ actualizados: number }>> {
-    let actualizados = 0
-    for (const item of items) {
-      const { error } = await supabase
-        .from('items_picking_masivo')
-        .update({ sku_proveedor: item.skuProveedor })
-        .eq('sesion_id', sesionId)
-        .eq('codigo', item.codigo)
-      if (!error) actualizados++
-    }
+    const resultados = await Promise.all(
+      items.map(item =>
+        supabase
+          .from('items_picking_masivo')
+          .update({ sku_proveedor: item.skuProveedor })
+          .eq('sesion_id', sesionId)
+          .eq('codigo', item.codigo)
+      )
+    )
+    const actualizados = resultados.filter(r => !r.error).length
     return { ok: true, data: { actualizados } }
   },
 

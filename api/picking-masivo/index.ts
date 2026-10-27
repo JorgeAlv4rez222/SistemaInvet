@@ -13,6 +13,8 @@ const itemExcelSchema = z.object({
   productoId:    z.string().uuid().optional(),
   codigoBarra:   z.string().optional(),
   lpn:           z.string().optional(),
+  tienda:        z.string().optional(),
+  skuProveedor:  z.string().optional(),
 })
 
 const validarExcelSchema = z.object({
