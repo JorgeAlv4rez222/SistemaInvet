@@ -146,6 +146,7 @@ export function SesionDetallePage() {
   const [skuMap, setSkuMap]             = useState<Map<string, string>>(new Map())
   const [skuMapLabel, setSkuMapLabel]   = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
+  const [descExpandidos, setDescExpandidos] = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'libre' | 'parcial' | 'sin_stock' | 'completado'>('todos')
   const [productosConfirmados, setProductosConfirmados] = useState(false)
@@ -561,17 +562,22 @@ export function SesionDetallePage() {
                   </span>
                 </div>
 
-                {/* Info: nombre + SKU / EAN / LPN */}
-                <div className="sd-item-sku">
-                  <span className="sd-item-nombre">
-                    {item.descripcion && item.descripcion !== item.codigo ? item.descripcion : item.codigo}
-                  </span>
+                {/* Info: SKU destacado + descripción al hacer click */}
+                <div className="sd-item-sku" style={{ cursor: 'pointer' }}
+                  onClick={() => setDescExpandidos(prev => {
+                    const n = new Set(prev)
+                    n.has(item.id) ? n.delete(item.id) : n.add(item.id)
+                    return n
+                  })}>
                   <div className="sd-item-codes">
-                    <span className="sd-sku-tag">SKU: {item.codigo}</span>
+                    <span className="sd-sku-tag sd-sku-tag--hl">{item.codigo}</span>
                     {item.codigo_barra && <span className="sd-ean-tag">EAN: {item.codigo_barra}</span>}
                     {item.tienda && <span className="sd-tienda-tag">{item.tienda}</span>}
                     {item.lpn && <span className="sd-lpn-item-tag">LPN: {item.lpn}</span>}
                   </div>
+                  {descExpandidos.has(item.id) && item.descripcion && item.descripcion !== item.codigo && (
+                    <span className="sd-item-nombre">{item.descripcion}</span>
+                  )}
                 </div>
 
                 {/* UDS */}

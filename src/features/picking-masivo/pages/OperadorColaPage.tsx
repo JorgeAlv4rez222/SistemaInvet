@@ -46,6 +46,7 @@ function SubtareaCard({
 }) {
   const navigate = useNavigate()
   const [expandido, setExpandido] = useState(false)
+  const [descVisible, setDescVisible] = useState(false)
 
   const esMia          = sub.estado === 'bloqueado' && sub.bloqueado_por === operadorId
   const bloqueadaXOtro = sub.estado === 'bloqueado' && sub.bloqueado_por !== operadorId
@@ -79,12 +80,11 @@ function SubtareaCard({
       <div className="ext-tarea-header" onClick={() => item?.lpn && setExpandido(v => !v)}
         style={{ cursor: item?.lpn ? 'pointer' : 'default' }}>
 
-        {/* Nombre + SKU + EAN + posición */}
-        <div className="ext-tarea-info">
-          <span className="ext-tarea-sku">{desc}</span>
+        {/* SKU destacado + descripción al hacer click */}
+        <div className="ext-tarea-info" style={{ cursor: 'pointer' }}
+          onClick={e => { e.stopPropagation(); setDescVisible(v => !v) }}>
           <span className="ext-tarea-ean">
-            <span className="ext-tarea-ean-label">SKU</span>
-            {sku}
+            <span className="sd-sku-tag sd-sku-tag--hl">{sku}</span>
             {ean && (
               <>
                 <span className="ext-tarea-ean-label" style={{ marginLeft: 8 }}>EAN</span>
@@ -97,6 +97,9 @@ function SubtareaCard({
               </span>
             )}
           </span>
+          {descVisible && desc !== sku && (
+            <span className="ext-tarea-desc">{desc}</span>
+          )}
         </div>
 
         {/* Cantidad */}

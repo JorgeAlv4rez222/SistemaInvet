@@ -23,9 +23,11 @@ export function useRegistrarPicking() {
   return useMutation({
     mutationFn: notasApi.registrarPicking,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notas'] })
+      // refetchQueries fuerza el fetch aunque NotasPage no esté montado,
+      // así el cache ya está fresco cuando el operador vuelve a la lista
+      void qc.refetchQueries({ queryKey: ['notas', 'lista'] })
+      qc.invalidateQueries({ queryKey: ['notas', 'detalle'] })
       qc.invalidateQueries({ queryKey: ['ubicaciones'], exact: false })
-      // Puede completar la nota y hacerla aparecer en la lista de despacho
       qc.invalidateQueries({ queryKey: ['salidas'] })
     },
   })

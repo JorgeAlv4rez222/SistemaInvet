@@ -14251,6 +14251,23 @@ input[type="radio"] {
   font-family: monospace;
 }
 .sd-tienda-tag { color: #94a3b8; }
+.sd-sku-tag--hl {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+.ext-tarea-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}
 
 /* Progreso del ítem */
 .sd-item-progreso {
