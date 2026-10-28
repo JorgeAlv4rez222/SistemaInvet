@@ -469,6 +469,7 @@ export function RevisionFlow({
       if (resultado.todosRevisados) setRevisadoEnSesion(true)
       setEscaneadosOk(prev => { const n = new Set(prev); n.delete(item.notaProductoId); return n })
       setCantidadesEdit(prev => { const n = { ...prev }; delete n[item.notaProductoId]; return n })
+      setExpandidos(prev => { const n = new Set(prev); n.delete(item.notaProductoId); return n })
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'Error al validar')
     } finally {
