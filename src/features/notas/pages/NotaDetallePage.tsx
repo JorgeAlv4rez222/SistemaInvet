@@ -460,6 +460,7 @@ export function NotaDetallePage() {
         esParadaMultiLote:     false,
       })
       setItemConfirmando(null)
+      void refetch()
     } catch { /* silencioso */ }
   }
 
