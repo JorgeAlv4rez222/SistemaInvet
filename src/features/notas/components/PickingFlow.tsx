@@ -255,7 +255,7 @@ export function PickingFlow({ item, usuarioId, onCompletado, onCerrar, onScanVal
       return
     }
     const parada          = plan[paso.paradaIdx]
-    const cantidadSugerida = parada?.cantidadATomar ?? (item.cantidadSolicitada - item.cantidadDespachada)
+    const cantidadSugerida = parada?.cantidadATomar || (item.cantidadSolicitada - item.cantidadDespachada)
     sonarEscaneoExitoso()
     setError(null)
     if (onScanValidado) {
