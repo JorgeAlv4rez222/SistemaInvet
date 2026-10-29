@@ -391,15 +391,6 @@ export function SesionDetallePage() {
               </button>
             </>
           )}
-          {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
-            <>
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleArchivoLpn(f) }} />
-              <button className="sd-btn sd-btn--secondary" disabled={lpnSubiendo} onClick={() => fileInputRef.current?.click()}>
-                📎 {lpnSubiendo ? 'Subiendo…' : lpnCount > 0 ? `Excel LPN (${lpnCount})` : 'Excel LPN'}
-              </button>
-            </>
-          )}
           {puedeCancelar && (
             <button className="sd-btn sd-btn--danger" onClick={() => setConfirmarCancelar(true)}>
               🚫 Cancelar Sesión
@@ -495,18 +486,6 @@ export function SesionDetallePage() {
 
       </div>
 
-      {/* Botones de fase (completada/despachado) — solo admin */}
-      {esAdmin && !sesionTieneLpn && (sesion.estado === 'completada' || sesion.estado === 'despachado') && (
-        <div className="sd-fase-btns">
-          <button
-            className="sd-btn sd-btn--primary"
-            disabled={!todosProductosValidados || lpnCount === 0}
-            onClick={() => navigate(`/picking-masivo/${sesionId}/despacho?fase=lpns`)}
-          >
-            Validar LPN →
-          </button>
-        </div>
-      )}
 
       {/* ── Toolbar: búsqueda + filtros ── */}
       <div className="sd-toolbar">
