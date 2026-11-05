@@ -245,27 +245,28 @@ export const olasService = {
 
     const olaId = ola.id
 
-    // Insertar órdenes y líneas
-    for (const orden of input.ordenes) {
-      const { data: ordenRow, error: ordenErr } = await supabase
-        .from('ola_ordenes')
-        .insert({
-          ola_id:        olaId,
-          numero_orden:  orden.numeroOrden,
-          numero_guia:   orden.numeroGuia || null,
-          nombre_tienda: null,
-        })
-        .select('id')
-        .single()
+    // Insertar órdenes y líneas en 2 queries bulk (evita límite de subrequests de Cloudflare)
+    const ordenesConId = input.ordenes.map(o => ({ ...o, id: crypto.randomUUID() }))
 
-      if (ordenErr || !ordenRow) {
-        await supabase.from('olas_picking').delete().eq('id', olaId)
-        return { ok: false, error: { code: 'DB_ERROR', message: ordenErr?.message ?? 'Error al crear orden' } }
-      }
+    const { error: ordenesErr } = await supabase
+      .from('ola_ordenes')
+      .insert(ordenesConId.map(o => ({
+        id:            o.id,
+        ola_id:        olaId,
+        numero_orden:  o.numeroOrden,
+        numero_guia:   o.numeroGuia || null,
+        nombre_tienda: null,
+      })))
 
-      const lineaRows = orden.lineas.map(l => ({
+    if (ordenesErr) {
+      await supabase.from('olas_picking').delete().eq('id', olaId)
+      return { ok: false, error: { code: 'DB_ERROR', message: ordenesErr.message } }
+    }
+
+    const todasLineas = ordenesConId.flatMap(o =>
+      o.lineas.map(l => ({
         ola_id:              olaId,
-        orden_id:            ordenRow.id,
+        orden_id:            o.id,
         lpn:                 l.lpn,
         posicion_orden:      l.posicionOrden || null,
         codigo_barra:        l.codigoBarra || null,
@@ -276,12 +277,12 @@ export const olasService = {
         tienda:              l.tienda || null,
         cantidad_solicitada: l.cantidadSolicitada,
       }))
+    )
 
-      const { error: lineasErr } = await supabase.from('ola_lineas').insert(lineaRows)
-      if (lineasErr) {
-        await supabase.from('olas_picking').delete().eq('id', olaId)
-        return { ok: false, error: { code: 'DB_ERROR', message: lineasErr.message } }
-      }
+    const { error: lineasErr } = await supabase.from('ola_lineas').insert(todasLineas)
+    if (lineasErr) {
+      await supabase.from('olas_picking').delete().eq('id', olaId)
+      return { ok: false, error: { code: 'DB_ERROR', message: lineasErr.message } }
     }
 
     return { ok: true, data: { olaId } }
