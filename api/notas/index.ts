@@ -155,6 +155,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(result.data)
     }
 
+    if (accion === 'enviar-revision') {
+      const parsed = z.object({ adminId: z.string().uuid(), notaId: z.string().uuid() }).safeParse(req.body)
+      if (!parsed.success) {
+        return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
+      }
+      const result = await notasService.enviarARevision(parsed.data)
+      if (!result.ok) return res.status(result.error.code === 'UNAUTHORIZED' ? 403 : result.error.code === 'NOT_FOUND' ? 404 : 400).json({ error: result.error })
+      return res.status(200).json(result.data)
+    }
+
     if (accion === 'anular-nota') {
       const parsed = anularNotaSchema.safeParse(req.body)
       if (!parsed.success) {

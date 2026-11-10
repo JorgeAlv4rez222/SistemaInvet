@@ -127,8 +127,28 @@ export const olasExtraccionService = {
 
     if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
 
-    // El trigger fn_avanzar_ola_desde_extraccion avanza la ola automáticamente
-    // cuando todas las tareas están completadas → estado: 'en_preparacion'
+    // Para construmart: si todas las tareas están completadas, avanzar directo a 'completada'
+    const { data: ola } = await supabase
+      .from('olas_picking')
+      .select('proveedor')
+      .eq('id', tarea.ola_id)
+      .single()
+
+    if (ola?.proveedor === 'construmart') {
+      const { data: tareasPendientes } = await supabase
+        .from('ola_tareas_extraccion')
+        .select('id')
+        .eq('ola_id', tarea.ola_id)
+        .neq('estado', 'completado')
+
+      if (!tareasPendientes || tareasPendientes.length === 0) {
+        await supabase
+          .from('olas_picking')
+          .update({ estado: 'completada', completada_en: new Date().toISOString() })
+          .eq('id', tarea.ola_id)
+          .eq('estado', 'en_extraccion')
+      }
+    }
 
     return { ok: true, data: { tareaId } }
   },

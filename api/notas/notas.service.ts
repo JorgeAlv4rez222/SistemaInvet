@@ -269,7 +269,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   // Un ítem parcial cuenta como terminado cuando el operador ya lo cerró
   // con una justificación (comentario_operador) — a su criterio, sin más picking pendiente.
   const terminados = items.every((i) =>
-    i.estado === 'completo' || i.estado === 'sin_stock' || (i.estado === 'parcial' && !!i.comentario_operador)
+    i.estado === 'completo' || i.estado === 'sin_stock' || i.estado === 'parcial'
   )
   if (!terminados) return false
 
@@ -282,7 +282,7 @@ async function evaluarEstadoNota(notaId: string, usuarioId: string | null, notaD
   // TC-NTA-006: EVT-008 cambio de estado automático — solo si hay un usuario a quien
   // atribuir el movimiento (p.ej. no cuando se autocorrige al simplemente leer la nota).
   if (usuarioId) {
-    await supabase.from('movimientos').insert({
+    void supabase.from('movimientos').insert({
       tipo:          'cambio_estado_nota',
       nota_venta_id: notaId,
       usuario_id:    usuarioId,
@@ -581,7 +581,10 @@ export const notasService = {
     }
 
     // Validar producto escaneado (acepta codigo_barra principal o alternativo)
-    const barcodeOk = input.codigoProducto === productoPickRef.codigo_barra
+    // Si el producto no tiene codigo_barra registrado se permite marcar con el SKU (picking manual sin escaneo)
+    const sinBarcode = !productoPickRef.codigo_barra
+    const barcodeOk = sinBarcode
+      || input.codigoProducto === productoPickRef.codigo_barra
       || (!!productoPickRef.codigo_barra_alternativo && input.codigoProducto === productoPickRef.codigo_barra_alternativo)
     if (!barcodeOk) {
       return {
@@ -617,16 +620,6 @@ export const notasService = {
       }
     }
 
-    // Si es envío parcial, comentario es obligatorio (excepto en paradas intermedias multi-lote)
-    if (input.cantidad < cantidadPendiente && !input.esParadaMultiLote && !input.comentarioOperador?.trim()) {
-      return {
-        ok: false,
-        error: {
-          code: 'COMENTARIO_REQUERIDO',
-          message: 'Debes indicar el motivo del despacho parcial',
-        },
-      }
-    }
 
     // ── MODO SALIDA LIBRE ──────────────────────────────────────────────────────
     // Si no hay stock registrado, la salida se registra directamente sin lote.
@@ -651,10 +644,27 @@ export const notasService = {
 
     if (errorNPUp) return { ok: false, error: { code: 'DB_ERROR', message: errorNPUp.message } }
 
+    const movimientoSalidaBase = {
+      tipo:          esSalidaCompleta ? 'salida' : 'salida_parcial',
+      nota_venta_id: notaRef.id,
+      producto_id:   productoPickId,
+      cantidad:      input.cantidad,
+      usuario_id:    input.usuarioId,
+    }
+
     if (stockDisponible === 0) {
       // Sin lotes: salida libre directa sin descontar de inventario
+      const inserts: Promise<unknown>[] = [
+        supabase.from('movimientos').insert({
+          ...movimientoSalidaBase,
+          lote_id: null,
+          detalle: esSalidaCompleta
+            ? { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, ubicacion: null, salidaLibre: true }
+            : { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, cantidadFaltante: np.cantidad_solicitada - nuevaDespachada, razon: input.esParadaMultiLote ? 'multi_lote' : 'parcial_operador', comentarioOperador: input.comentarioOperador ?? null, ubicacion: null, salidaLibre: true },
+        }),
+      ]
       if (usarEquivalente) {
-        await supabase.from('movimientos').insert({
+        inserts.push(supabase.from('movimientos').insert({
           tipo:          'equivalente_usado',
           nota_venta_id: notaRef.id,
           producto_id:   productoRef.id,
@@ -666,20 +676,9 @@ export const notasService = {
             productoOriginal: { sku: productoRef.sku, nombre: productoRef.nombre, stockDisponible: 0 },
             productoEquivalente: { sku: productoPickRef.sku, nombre: productoPickRef.nombre, cantidad: input.cantidad, ubicacion: null },
           },
-        })
+        }))
       }
-
-      await supabase.from('movimientos').insert({
-        tipo:          esSalidaCompleta ? 'salida' : 'salida_parcial',
-        nota_venta_id: notaRef.id,
-        lote_id:       null,
-        producto_id:   productoPickId,
-        cantidad:      input.cantidad,
-        usuario_id:    input.usuarioId,
-        detalle: esSalidaCompleta
-          ? { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, ubicacion: null, salidaLibre: true }
-          : { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, cantidadFaltante: np.cantidad_solicitada - nuevaDespachada, razon: input.esParadaMultiLote ? 'multi_lote' : 'parcial_operador', comentarioOperador: input.comentarioOperador ?? null, ubicacion: null, salidaLibre: true },
-      })
+      void Promise.all(inserts)
     } else {
       // Con lotes reales: deducción FIFO normal
       const loteEsperado = input.loteId
@@ -693,22 +692,44 @@ export const notasService = {
 
       if (errorLoteUp) return { ok: false, error: { code: 'DB_ERROR', message: errorLoteUp.message } }
       if (!descontarResult?.ok) {
-        return { ok: false, error: { code: 'STOCK_INSUFICIENTE', message: 'Stock insuficiente al momento de registrar. Intenta nuevamente.' } }
+        // Stock insuficiente en lote (desincronía sistema/físico): registrar como salida libre
+        // para no bloquear la operación. El físico existe; el sistema lo pondrá al día con Softland.
+        void supabase.from('movimientos').insert({
+          ...movimientoSalidaBase,
+          lote_id: null,
+          detalle: esSalidaCompleta
+            ? { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, ubicacion: null, salidaLibre: true, razon: 'stock_insuficiente_en_lote' }
+            : { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, cantidadFaltante: np.cantidad_solicitada - nuevaDespachada, razon: 'stock_insuficiente_en_lote', comentarioOperador: input.comentarioOperador ?? null, ubicacion: null, salidaLibre: true },
+        })
+        const [notaCompletaFallback, prodActualFallback] = await Promise.all([
+          evaluarEstadoNota(notaRef.id, input.usuarioId, { numero_nota: notaRef.numero_nota, nombre_cliente: notaRef.nombre_cliente }),
+          supabase.from('productos').select('stock_total').eq('id', productoPickId).single(),
+        ])
+        return {
+          ok: true,
+          data: { valido: true, mensaje: esSalidaCompleta ? 'Producto despachado (salida libre)' : `Parcial — quedan ${np.cantidad_solicitada - nuevaDespachada} por despachar`, cantidadDespachada: nuevaDespachada, stockRestante: prodActualFallback.data?.stock_total ?? 0, notaCompleta: notaCompletaFallback },
+        }
       }
       const cantidadRestanteLote = descontarResult.cantidad_nueva as number
-
-      // TC-FIFO-003: si el lote se agotó y tenía rack asignado, liberar posición
-      if (cantidadRestanteLote === 0 && loteEsperado.posiciones_rack?.id) {
-        await supabase
-          .from('posiciones_rack')
-          .update({ ocupada: false })
-          .eq('id', loteEsperado.posiciones_rack.id)
-      }
-
       const ubicacion = { rack: loteEsperado.posiciones_rack?.codigo ?? null, fechaIngresoLote: loteEsperado.fecha_ingreso }
 
+      const postInserts: Promise<unknown>[] = [
+        supabase.from('movimientos').insert({
+          ...movimientoSalidaBase,
+          lote_id: loteEsperado.id,
+          detalle: esSalidaCompleta
+            ? { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, ubicacion }
+            : { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, cantidadFaltante: np.cantidad_solicitada - nuevaDespachada, razon: input.esParadaMultiLote ? 'multi_lote' : 'parcial_operador', comentarioOperador: input.comentarioOperador ?? null, ubicacion },
+        }),
+      ]
+      // TC-FIFO-003: si el lote se agotó y tenía rack asignado, liberar posición
+      if (cantidadRestanteLote === 0 && loteEsperado.posiciones_rack?.id) {
+        postInserts.push(
+          supabase.from('posiciones_rack').update({ ocupada: false }).eq('id', loteEsperado.posiciones_rack.id)
+        )
+      }
       if (usarEquivalente) {
-        await supabase.from('movimientos').insert({
+        postInserts.push(supabase.from('movimientos').insert({
           tipo:          'equivalente_usado',
           nota_venta_id: notaRef.id,
           producto_id:   productoRef.id,
@@ -720,32 +741,17 @@ export const notasService = {
             productoOriginal: { sku: productoRef.sku, nombre: productoRef.nombre, stockDisponible: 0 },
             productoEquivalente: { sku: productoPickRef.sku, nombre: productoPickRef.nombre, cantidad: input.cantidad, ubicacion },
           },
-        })
+        }))
       }
-
-      await supabase.from('movimientos').insert({
-        tipo:          esSalidaCompleta ? 'salida' : 'salida_parcial',
-        nota_venta_id: notaRef.id,
-        lote_id:       loteEsperado.id,
-        producto_id:   productoPickId,
-        cantidad:      input.cantidad,
-        usuario_id:    input.usuarioId,
-        detalle: esSalidaCompleta
-          ? { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, ubicacion }
-          : { numeroNota: notaRef.numero_nota, nombreCliente: notaRef.nombre_cliente, sku: productoPickRef.sku, nombreProducto: productoPickRef.nombre, cantidadSolicitada: np.cantidad_solicitada, cantidadDespachada: nuevaDespachada, cantidadFaltante: np.cantidad_solicitada - nuevaDespachada, razon: input.esParadaMultiLote ? 'multi_lote' : 'parcial_operador', comentarioOperador: input.comentarioOperador ?? null, ubicacion },
-      })
+      void Promise.all(postInserts)
     }
     // ──────────────────────────────────────────────────────────────────────────
 
-    // TC-NTA-006: evaluar si la nota quedó completa
-    const notaCompleta = await evaluarEstadoNota(notaRef.id, input.usuarioId, { numero_nota: notaRef.numero_nota, nombre_cliente: notaRef.nombre_cliente })
-
-    // Calcular stock restante del producto
-    const { data: prodActual } = await supabase
-      .from('productos')
-      .select('stock_total')
-      .eq('id', productoPickId)
-      .single()
+    // TC-NTA-006: evaluar si la nota quedó completa + stock actual en paralelo
+    const [notaCompleta, prodActual] = await Promise.all([
+      evaluarEstadoNota(notaRef.id, input.usuarioId, { numero_nota: notaRef.numero_nota, nombre_cliente: notaRef.nombre_cliente }),
+      supabase.from('productos').select('stock_total').eq('id', productoPickId).single(),
+    ])
 
     return {
       ok: true,
@@ -753,7 +759,7 @@ export const notasService = {
         valido:             true,
         mensaje:            esSalidaCompleta ? 'Producto despachado correctamente' : `Parcial — quedan ${np.cantidad_solicitada - nuevaDespachada} por despachar`,
         cantidadDespachada: nuevaDespachada,
-        stockRestante:      prodActual?.stock_total ?? 0,
+        stockRestante:      prodActual.data?.stock_total ?? 0,
         notaCompleta,
       },
     }

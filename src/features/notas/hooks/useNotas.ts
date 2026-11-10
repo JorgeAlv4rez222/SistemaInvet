@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notasApi } from '../services/notas.api'
+import type { DetalleNota } from '../services/notas.api'
 
 export function useNotas(estado?: string) {
   return useQuery({
@@ -22,11 +23,28 @@ export function useRegistrarPicking() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: notasApi.registrarPicking,
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
+      // Actualizar el cache del detalle directamente con los datos reales del servidor
+      // para que la UI refleje el cambio sin esperar un refetch extra
+      if (result.ok) {
+        qc.setQueriesData<DetalleNota>({ queryKey: ['notas', 'detalle'] }, (old) => {
+          if (!old) return old
+          const item = old.productos.find(p => p.notaProductoId === variables.notaProductoId)
+          const estadoNuevo = item && result.data.cantidadDespachada >= item.cantidadSolicitada ? 'completo' : 'parcial'
+          return {
+            ...old,
+            estado: result.data.notaCompleta ? 'completa' : old.estado,
+            productos: old.productos.map(p =>
+              p.notaProductoId === variables.notaProductoId
+                ? { ...p, cantidadDespachada: result.data.cantidadDespachada, estado: estadoNuevo }
+                : p
+            ),
+          }
+        })
+      }
       // refetchQueries fuerza el fetch aunque NotasPage no esté montado,
       // así el cache ya está fresco cuando el operador vuelve a la lista
       void qc.refetchQueries({ queryKey: ['notas', 'lista'] })
-      qc.invalidateQueries({ queryKey: ['notas', 'detalle'] })
       qc.invalidateQueries({ queryKey: ['ubicaciones'], exact: false })
       qc.invalidateQueries({ queryKey: ['salidas'] })
     },

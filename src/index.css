@@ -8154,6 +8154,14 @@ label {
   background: #15803d !important;
   box-shadow: 0 0 18px rgba(22,163,74,0.5);
 }
+.nd-btn-enviar:disabled {
+  background: var(--surface-alt, #334155) !important;
+  border-color: transparent !important;
+  color: var(--text-muted, #64748b) !important;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 
 /* Meta strip */
 .nd-meta-strip {

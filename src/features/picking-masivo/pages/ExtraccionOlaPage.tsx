@@ -26,6 +26,9 @@ function IcoLock() {
 function IcoPin() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
 }
+function IcoCopy() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={12} height={12}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+}
 
 function fmtDt(iso: string | null): string {
   if (!iso) return ''
@@ -35,6 +38,32 @@ function fmtDt(iso: string | null): string {
   const hh = d.getHours().toString().padStart(2, '0')
   const mi = d.getMinutes().toString().padStart(2, '0')
   return `${dd}-${mm} ${hh}:${mi}`
+}
+
+// ─── Botón copiar EAN ─────────────────────────────────────────────────────────
+
+function CopyEanBtn({ ean }: { ean: string }) {
+  const [copiado, setCopiado] = useState(false)
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation()
+    navigator.clipboard.writeText(ean).catch(() => {
+      const el = document.createElement('textarea')
+      el.value = ean; document.body.appendChild(el); el.select()
+      document.execCommand('copy'); document.body.removeChild(el)
+    })
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 1500)
+  }
+  return (
+    <button
+      className={`rv2-copy-btn ${copiado ? 'rv2-copy-btn--copied' : ''}`}
+      title="Copiar EAN"
+      onClick={handleCopy}
+      style={{ marginLeft: 4 }}
+    >
+      {copiado ? '✓' : <IcoCopy />}
+    </button>
+  )
 }
 
 // ─── Tarjeta de tarea ─────────────────────────────────────────────────────────
@@ -79,6 +108,7 @@ function TareaCard({
             <span className="ext-tarea-ean">
               <span className="ext-tarea-ean-label">EAN</span>
               {tarea.codigo_barra}
+              <CopyEanBtn ean={tarea.codigo_barra} />
             </span>
           )}
         </div>

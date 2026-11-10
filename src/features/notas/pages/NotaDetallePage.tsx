@@ -14,8 +14,8 @@ function formatearFecha(fecha: string): string {
   return fecha.slice(0, 10).split('-').reverse().join('-')
 }
 
-function esTerminado(item: { estado: string; comentarioOperador: string | null; revisadoAdmin: boolean }): boolean {
-  return item.revisadoAdmin || item.estado === 'completo' || item.estado === 'sin_stock' || (item.estado === 'parcial' && !!item.comentarioOperador)
+function esTerminado(item: { estado: string; revisadoAdmin: boolean }): boolean {
+  return item.revisadoAdmin || item.estado === 'completo' || item.estado === 'sin_stock' || item.estado === 'parcial'
 }
 
 // ─── Iconos ────────────────────────────────────────────────────────────────
@@ -473,7 +473,9 @@ export function NotaDetallePage() {
         cantidad:       item.cantidadSolicitada - item.cantidadDespachada,
       })
       void refetch()
-    } catch { /* silencioso */ }
+    } catch (e) {
+      setScanError(e instanceof ApiResponseError ? e.message : 'Error al marcar producto')
+    }
   }
 
   async function handleEnviarARevision() {
@@ -606,6 +608,7 @@ export function NotaDetallePage() {
                       value={itemConfirmando!.cantidadEditable}
                       onChange={(e) => setItemConfirmando(prev => prev ? { ...prev, cantidadEditable: parseInt(e.target.value) || 0 } : null)}
                       onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.target.select()}
                       autoFocus
                     />
                   </div>
@@ -613,7 +616,7 @@ export function NotaDetallePage() {
                   <>
                     <div className="rv2-qty-block">
                       <span className={`rv2-qty-valor ${terminado ? 'rv2-qty-valor--ok' : ''}`}>
-                        {item.cantidadSolicitada}
+                        {terminado ? item.cantidadDespachada : item.cantidadSolicitada}
                       </span>
                     </div>
                     {puedePickear && esSinEscaneo(item.sku) && (
@@ -683,23 +686,12 @@ export function NotaDetallePage() {
                 <code className="rv2-expand-val">{ubicPrincipal?.posicionCodigo ?? '—'}</code>
               </div>
             )}
-            {expandido && item.estado === 'parcial' && (
-              <div className="nd-concluir-panel" onClick={(e) => e.stopPropagation()}>
-                <span className="nd-concluir-label">Motivo de cierre parcial:</span>
-                <textarea
-                  className="nd-concluir-textarea"
-                  placeholder="Ej: cliente confirmó recibir solo lo despachado…"
-                  value={concluirTexto}
-                  onChange={(e) => setConcluirTexto(e.target.value)}
-                  autoFocus
-                />
-                {concluirError && <span className="nd-concluir-error">{concluirError}</span>}
-                <div className="nd-concluir-footer">
-                  <button className="btn-secundario" style={{ fontSize: '12px' }} onClick={() => { setConcluirTexto(''); setConcluirError(null); toggleExpandido(item.notaProductoId) }}>Cancelar</button>
-                  <button className="btn-primario" style={{ fontSize: '12px' }} disabled={concluirParcial.isPending || !concluirTexto.trim()} onClick={() => handleConfirmarConcluir(item.notaProductoId)}>
-                    {concluirParcial.isPending ? 'Guardando…' : 'Confirmar'}
-                  </button>
-                </div>
+            {expandido && (item.estado === 'parcial' || item.estado === 'completo') && (
+              <div className="rv2-expand-field">
+                <span className="rv2-expand-label">Solicitado</span>
+                <code className="rv2-expand-val">{item.cantidadSolicitada}</code>
+                <span className="rv2-expand-label" style={{ marginLeft: '12px' }}>Despachado</span>
+                <code className="rv2-expand-val">{item.cantidadDespachada}</code>
               </div>
             )}
           </div>
@@ -763,9 +755,9 @@ export function NotaDetallePage() {
             {!notaCerrada && esAdmin && (
               <button
                 className="nd-btn-enviar"
-                disabled={enviarARevision.isPending || offline || !todosCompletos}
+                disabled={enviarARevision.isPending || offline}
                 onClick={handleEnviarARevision}
-                title={!todosCompletos ? 'Completa todos los ítems primero' : ''}
+                title=""
               >
                 <IcoSend size={13} />
                 {enviarARevision.isPending ? 'Enviando…' : 'Enviar a revisión'}
@@ -871,12 +863,13 @@ export function NotaDetallePage() {
               onCompletado={() => { setItemPicking(null); void refetch() }}
               onCerrar={()     => { setItemPicking(null) }}
               onScanValidado={(info) => {
+                const pendiente = itemPicking.cantidadSolicitada - itemPicking.cantidadDespachada
                 setItemConfirmando({
                   notaProductoId:   itemPicking.notaProductoId,
                   codigo:           info.codigo,
                   loteId:           info.loteId,
                   eqId:             info.eqId,
-                  cantidadEditable: info.cantidadSugerida,
+                  cantidadEditable: info.cantidadSugerida || pendiente || 1,
                 })
                 setItemPicking(null)
               }}

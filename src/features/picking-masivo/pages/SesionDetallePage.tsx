@@ -257,7 +257,7 @@ export function SesionDetallePage() {
         const eq = sub.es_equivalente && sub.producto_equivalente
           ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
         filas.push({
-          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': skuMap.get(item.codigo) ?? item.sku_proveedor ?? item.codigo,
+          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.sku_proveedor ?? skuMap.get(item.codigo) ?? item.codigo,
           'Descripción': item.descripcion ?? item.codigo,
           'Código': item.codigo, 'LPN': item.lpn ?? '—',
           'Cant. Solicitada': sub.cantidad_asignada,
