@@ -63,6 +63,7 @@ export type ValidarExcelResult = {
     lpn?:           string
     tienda?:        string
     skuProveedor?:  string
+    ordenCarga?:    number
     ok:             boolean
   }[]
 }
