@@ -651,28 +651,33 @@ export function NotaDetallePage() {
           <div className="rv2-item-expand">
             <div className="rv2-expand-field">
               <span className="rv2-expand-label">Código de barras</span>
-              <code className="rv2-expand-val">{item.codigoBarra || '—'}</code>
-              {item.codigoBarra && (
-                <button
-                  className="rv2-copy-btn"
-                  title="Copiar código"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigator.clipboard.writeText(item.codigoBarra!).catch(() => {
-                      const el = document.createElement('textarea')
-                      el.value = item.codigoBarra!
-                      document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el)
-                    })
-                    const btn = e.currentTarget
-                    btn.classList.add('rv2-copy-btn--copied')
-                    setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
-                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                </button>
-              )}
+              {(() => {
+                const cb = (!item.codigoBarra || item.codigoBarra.startsWith('SK-')) ? (item.codigoBaRalternativo ?? null) : item.codigoBarra
+                return <>
+                  <code className="rv2-expand-val">{cb || '—'}</code>
+                  {cb && (
+                    <button
+                      className="rv2-copy-btn"
+                      title="Copiar código"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigator.clipboard.writeText(cb).catch(() => {
+                          const el = document.createElement('textarea')
+                          el.value = cb
+                          document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el)
+                        })
+                        const btn = e.currentTarget
+                        btn.classList.add('rv2-copy-btn--copied')
+                        setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+                        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    </button>
+                  )}
+                </>
+              })()}
             </div>
             {itemConfirmando?.notaProductoId === item.notaProductoId && (
               <div className="rv2-expand-field rv2-expand-field--ok">

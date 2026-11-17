@@ -599,31 +599,36 @@ export function RevisionFlow({
           <div className="rv2-item-expand">
             <div className="rv2-expand-field">
               <span className="rv2-expand-label">Código de barras</span>
-              <code className="rv2-expand-val">{item.codigoBarra || '—'}</code>
-              {item.codigoBarra && (
-                <button
-                  className="rv2-copy-btn"
-                  title="Copiar código"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigator.clipboard.writeText(item.codigoBarra).catch(() => {
-                      const el = document.createElement('textarea')
-                      el.value = item.codigoBarra
-                      document.body.appendChild(el)
-                      el.select()
-                      document.execCommand('copy')
-                      document.body.removeChild(el)
-                    })
-                    const btn = e.currentTarget
-                    btn.classList.add('rv2-copy-btn--copied')
-                    setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
-                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                </button>
-              )}
+              {(() => {
+                const cb = (!item.codigoBarra || item.codigoBarra.startsWith('SK-')) ? (item.codigoBarraAlternativo ?? null) : item.codigoBarra
+                return <>
+                  <code className="rv2-expand-val">{cb || '—'}</code>
+                  {cb && (
+                    <button
+                      className="rv2-copy-btn"
+                      title="Copiar código"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigator.clipboard.writeText(cb).catch(() => {
+                          const el = document.createElement('textarea')
+                          el.value = cb
+                          document.body.appendChild(el)
+                          el.select()
+                          document.execCommand('copy')
+                          document.body.removeChild(el)
+                        })
+                        const btn = e.currentTarget
+                        btn.classList.add('rv2-copy-btn--copied')
+                        setTimeout(() => btn.classList.remove('rv2-copy-btn--copied'), 1500)
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}>
+                        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    </button>
+                  )}
+                </>
+              })()}
             </div>
             {scanOk && (
               <div className="rv2-expand-field rv2-expand-field--ok">
@@ -941,11 +946,11 @@ export function RevisionFlow({
               <div className="rv-equiv-despacho">
                 <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Producto original:</span><code className="rv-equiv-codigo">{paso.item.sku}</code></span>
                 <span className="rv-equiv-row rv-equiv-row--activo"><span className="rv-equiv-etiqueta">Equivalente asignado:</span><code className="rv-equiv-codigo rv-equiv-codigo--activo">{paso.item.skuEquivalente}</code></span>
-                {paso.item.codigoBarra && <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{paso.item.codigoBarra}</code>}
+                {(() => { const cb = (!paso.item.codigoBarra || paso.item.codigoBarra.startsWith('SK-')) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{cb}</code> : null })()}
               </div>
             ) : (
               <div className="nd-prod-codes">
-                {paso.item.codigoBarra && <code className="nd-prod-ean">{paso.item.codigoBarra}</code>}
+                {(() => { const cb = (!paso.item.codigoBarra || paso.item.codigoBarra.startsWith('SK-')) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean">{cb}</code> : null })()}
               </div>
             )}
           </div>
