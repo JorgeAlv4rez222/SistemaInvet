@@ -127,14 +127,14 @@ export const olasExtraccionService = {
 
     if (updErr) return { ok: false, error: { code: 'DB_ERROR', message: updErr.message } }
 
-    // Para construmart: si todas las tareas están completadas, avanzar directo a 'completada'
+    // Si todas las tareas completadas: avanzar estado según proveedor
     const { data: ola } = await supabase
       .from('olas_picking')
       .select('proveedor')
       .eq('id', tarea.ola_id)
       .single()
 
-    if (ola?.proveedor === 'construmart') {
+    if (ola) {
       const { data: tareasPendientes } = await supabase
         .from('ola_tareas_extraccion')
         .select('id')
@@ -142,9 +142,11 @@ export const olasExtraccionService = {
         .neq('estado', 'completado')
 
       if (!tareasPendientes || tareasPendientes.length === 0) {
+        const estadoSiguiente = ola.proveedor === 'construmart' ? 'completada' : 'en_preparacion'
+        const extra = ola.proveedor === 'construmart' ? { completada_en: new Date().toISOString() } : {}
         await supabase
           .from('olas_picking')
-          .update({ estado: 'completada', completada_en: new Date().toISOString() })
+          .update({ estado: estadoSiguiente, ...extra })
           .eq('id', tarea.ola_id)
           .eq('estado', 'en_extraccion')
       }
