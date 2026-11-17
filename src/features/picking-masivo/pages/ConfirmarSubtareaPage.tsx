@@ -97,7 +97,6 @@ export function ConfirmarSubtareaPage() {
   const [barcodeOk, setBarcodeOk]                 = useState(false)
   const [sinStockMode, setSinStockMode]           = useState(false)
   const [cantidad, setCantidad]                   = useState('')
-  const [motivo, setMotivo]                       = useState('')
   const [equivalenteActivo, setEquivalenteActivo] = useState(false)
   const [opcionesEq, setOpcionesEq]               = useState<ProductoBase[]>([])
   const [equivalenteSel, setEquivalenteSel]       = useState<ProductoBase | null>(null)
@@ -111,7 +110,6 @@ export function ConfirmarSubtareaPage() {
     if (!subtarea) return
     if (esParcialEditable) {
       setCantidad(String(subtarea.cantidad_despachada ?? ''))
-      setMotivo(subtarea.motivo_diferencia ?? '')
     } else {
       setCantidad(String(subtarea.cantidad_asignada))
     }
@@ -175,16 +173,14 @@ export function ConfirmarSubtareaPage() {
   }
 
   function handleConfirmarDespacho() {
-    if (!barcodeOk)                              { setError('Escanea el producto primero'); return }
-    if (cantNum <= 0)                            { setError('Ingresa una cantidad válida'); return }
-    if (cantNum > cantAsignada)                  { setError(`No puedes despachar más de lo asignado (${cantAsignada})`); return }
-    if (cantNum < cantAsignada && !motivo.trim()) { setError('El motivo es obligatorio para despacho parcial'); return }
-    confirmar(cantNum, cantNum < cantAsignada ? motivo.trim() : undefined)
+    if (!barcodeOk)         { setError('Escanea el producto primero'); return }
+    if (cantNum <= 0)       { setError('Ingresa una cantidad válida'); return }
+    if (cantNum > cantAsignada) { setError(`No puedes despachar más de lo asignado (${cantAsignada})`); return }
+    confirmar(cantNum, undefined)
   }
 
   function handleSinStock() {
-    if (!motivo.trim()) { setError('Indica el motivo de la falta de stock'); return }
-    confirmar(0, motivo.trim())
+    confirmar(0, undefined)
   }
 
   // ── Early returns ──
@@ -325,22 +321,27 @@ export function ConfirmarSubtareaPage() {
         </div>
       )}
 
-      {/* ── Sin stock: solo motivo ── */}
+      {/* ── Sin stock: tarjeta de confirmación ── */}
       {sinStockMode && (
-        <div className="cf-sinstock-section">
-          <div className="cf-sinstock-banner">
-            <IcoWarn /> Sin stock — se registrará como 0 unidades despachadas
+        <div className="cf-sinstock-card">
+          <p className="cf-sinstock-card-titulo">Confirmar producto sin stock</p>
+          <p className="cf-sinstock-card-desc">Se registrará como 0 unidades despachadas.</p>
+          <div className="cf-sinstock-card-btns">
+            <button
+              className="cf-btn cf-btn--sinstock"
+              disabled={isPending}
+              onClick={handleSinStock}
+            >
+              {isPending ? 'Registrando…' : 'Confirmar'}
+            </button>
+            <button
+              className="cf-btn cf-btn--secondary"
+              disabled={isPending}
+              onClick={() => { setSinStockMode(false); setError(null) }}
+            >
+              Volver
+            </button>
           </div>
-          <label className="cf-label">
-            Motivo (obligatorio)
-            <textarea
-              className="cf-textarea"
-              value={motivo}
-              onChange={e => setMotivo(e.target.value)}
-              placeholder="Motivo de falta de stock…"
-              autoFocus
-            />
-          </label>
         </div>
       )}
 
@@ -381,18 +382,6 @@ export function ConfirmarSubtareaPage() {
               onClick={() => setCantidad(String(cantAsignada))}
             >Max</button>
           </div>
-
-          {requiereMotivo && (
-            <label className="cf-label">
-              Motivo de diferencia (obligatorio)
-              <textarea
-                className="cf-textarea"
-                value={motivo}
-                onChange={e => setMotivo(e.target.value)}
-                placeholder="Motivo de la diferencia…"
-              />
-            </label>
-          )}
 
           <button
             className="cf-carga-total-btn cf-carga-total-btn--confirm"
@@ -454,26 +443,7 @@ export function ConfirmarSubtareaPage() {
       {/* ── Acciones principales ── */}
       <div className="cf-acciones">
 
-        {/* Sin stock: confirmar o cancelar */}
-        {sinStockMode && (
-          <>
-            <button
-              className="cf-btn cf-btn--sinstock cf-btn--xl"
-              disabled={isPending || !motivo.trim()}
-              onClick={handleSinStock}
-            >
-              <IcoWarn />
-              {isPending ? 'Registrando…' : 'CONFIRMAR SIN STOCK'}
-            </button>
-            <button
-              className="cf-btn cf-btn--secondary"
-              disabled={isPending}
-              onClick={() => { setSinStockMode(false); setMotivo(''); setError(null) }}
-            >
-              Cancelar
-            </button>
-          </>
-        )}
+        {sinStockMode && (<></>)}
 
         {/* Equivalente — siempre visible en modo normal */}
         {!sinStockMode && !esParcialEditable && (

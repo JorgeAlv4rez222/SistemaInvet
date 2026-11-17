@@ -127,6 +127,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           lpn:            f.lpn,
           tienda:         f.tienda,
           skuProveedor:   f.skuProveedor,
+          ordenCarga:     f.ordenCarga,
         })) : [],
       })
       setResultado(res)
@@ -171,6 +172,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           lpn:            i.lpn,
           tienda:         i.tienda,
           skuProveedor:   i.skuProveedor,
+          ordenCarga:     i.ordenCarga,
         })),
       })
 

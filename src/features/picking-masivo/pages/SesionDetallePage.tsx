@@ -41,6 +41,7 @@ type ItemDetalle = {
   tienda:              string | null
   codigo_barra:        string | null
   sku_proveedor:       string | null
+  orden_carga:         number | null
   subtareas_picking_masivo: SubtareaDetalle[]
 }
 
@@ -250,29 +251,30 @@ export function SesionDetallePage() {
   }
 
   function descargarExcel() {
-    const LABEL: Record<string, string> = { completado: 'Completado', parcial: 'Parcial', sin_stock: 'Sin stock', libre: 'Pendiente', bloqueado: 'En progreso' }
-    const filas: Record<string, unknown>[] = []
-    for (const item of sesion.items) {
-      for (const sub of item.subtareas_picking_masivo) {
-        const eq = sub.es_equivalente && sub.producto_equivalente
-          ? `${sub.producto_equivalente.codigo} — ${sub.producto_equivalente.descripcion}` : ''
-        filas.push({
-          'UPC / EAN': item.codigo_barra ?? '—', 'SKU': item.sku_proveedor ?? skuMap.get(item.codigo) ?? item.codigo,
-          'Descripción': item.descripcion ?? item.codigo,
-          'Código': item.codigo, 'LPN': item.lpn ?? '—',
-          'Cant. Solicitada': sub.cantidad_asignada,
-          'Cant. Despachada': sub.cantidad_despachada ?? 0,
-          'Diferencia': (sub.cantidad_despachada ?? 0) - sub.cantidad_asignada,
-          'Estado': LABEL[sub.estado] ?? sub.estado, 'Motivo': sub.motivo_diferencia ?? '',
-          'Producto equivalente': eq,
-        })
-      }
+    const ESTADO_LABEL: Record<string, string> = {
+      completado: 'Completo',
+      parcial:    'Parcial',
+      sin_stock:  'Sin stock',
+      libre:      'Pendiente',
+      bloqueado:  'Pendiente',
     }
+    const itemsOrdenados = [...sesion.items].sort((a, b) =>
+      (a.orden_carga ?? 999999) - (b.orden_carga ?? 999999)
+    )
+    const filas = itemsOrdenados.map(item => ({
+      'UPC':              item.codigo_barra ?? '—',
+      'SKU':              item.sku_proveedor ?? item.codigo,
+      'Descripción':      item.descripcion ?? item.codigo,
+      'VIN':              item.codigo,
+      'Unidades':         item.cantidad_pedida,
+      'Cant. Despachada': item.cantidad_despachada,
+      'Estado':           ESTADO_LABEL[item.estado] ?? item.estado,
+    }))
     const ws = XLSX.utils.json_to_sheet(filas)
-    ws['!cols'] = [{ wch: 18 }, { wch: 14 }, { wch: 40 }, { wch: 16 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 45 }]
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 40 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 12 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
-    XLSX.writeFile(wb, `picking-${sesion.nombre_cliente ?? sesion.numero_oc}-${sesion.numero_oc}.xlsx`.replace(/[^a-zA-Z0-9\-_.]/g, '_'))
+    XLSX.writeFile(wb, `picking-Sodimac-${sesion.numero_oc}-${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
   // ── Guards ──

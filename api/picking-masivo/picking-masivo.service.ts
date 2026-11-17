@@ -19,6 +19,7 @@ export type CrearSesionInput = {
     lpn?:          string
     tienda?:       string
     skuProveedor?: string
+    ordenCarga?:   number
   }[]
 }
 
@@ -211,6 +212,7 @@ export const pickingMasivoService = {
       lpn:                item.lpn ?? null,
       tienda:             item.tienda ?? null,
       sku_proveedor:      item.skuProveedor ?? null,
+      orden_carga:        item.ordenCarga ?? null,
     }))
 
     const { error: itemsErr } = await supabase
@@ -573,10 +575,6 @@ export const pickingMasivoService = {
     const esParcialoSinStock = cantidadDespachada < sub.cantidad_asignada
     const esEquivalente = !!input.productoRealId
     const productoRealId = input.productoRealId ?? (sub.items_picking_masivo as { producto_id: string } | null)?.producto_id
-
-    if (esParcialoSinStock && !input.motivo) {
-      return { ok: false, error: { code: 'VALIDATION_ERROR', message: 'El motivo es obligatorio para despacho parcial o sin stock' } }
-    }
 
     let movimientoId: string | null = null
 

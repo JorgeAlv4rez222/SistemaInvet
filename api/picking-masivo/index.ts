@@ -15,6 +15,7 @@ const itemExcelSchema = z.object({
   lpn:           z.string().optional(),
   tienda:        z.string().optional(),
   skuProveedor:  z.string().optional(),
+  ordenCarga:    z.number().int().optional(),
 })
 
 const validarExcelSchema = z.object({

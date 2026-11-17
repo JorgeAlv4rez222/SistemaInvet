@@ -10994,6 +10994,32 @@ input[type="radio"] {
   gap: 10px;
 }
 
+.cf-sinstock-card {
+  background: var(--surface);
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 14px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cf-sinstock-card-titulo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f87171;
+  margin: 0;
+}
+.cf-sinstock-card-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.cf-sinstock-card-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
 .cf-sinstock-banner {
   display: flex;
   align-items: center;

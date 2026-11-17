@@ -8,6 +8,7 @@ export type FilaExcelPicking = {
   lpn?:           string
   tienda?:        string
   skuProveedor?:  string
+  ordenCarga:     number
 }
 
 export type ResultadoParseoPicking = {
@@ -97,7 +98,7 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
     const lpn          = idxLpn          !== -1 ? String(fila[idxLpn]          ?? '').trim() || undefined : undefined
     const tienda       = idxTienda       !== -1 ? String(fila[idxTienda]       ?? '').trim() || undefined : undefined
     const skuProveedor = idxSkuProveedor !== -1 ? String(fila[idxSkuProveedor] ?? '').trim() || undefined : undefined
-    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad), codigoBarra, lpn, tienda, skuProveedor })
+    filas.push({ codigo, descripcion, cantidadPedida: Math.round(cantidad), codigoBarra, lpn, tienda, skuProveedor, ordenCarga: filas.length })
   }
 
   if (filas.length === 0) errores.push('No se encontraron filas válidas en el archivo')
