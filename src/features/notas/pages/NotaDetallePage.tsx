@@ -652,7 +652,7 @@ export function NotaDetallePage() {
             <div className="rv2-expand-field">
               <span className="rv2-expand-label">Código de barras</span>
               {(() => {
-                const cb = (!item.codigoBarra || item.codigoBarra.startsWith('SK-')) ? (item.codigoBaRalternativo ?? null) : item.codigoBarra
+                const cb = (!item.codigoBarra || !/^\d+$/.test(item.codigoBarra)) ? (item.codigoBaRalternativo ?? null) : item.codigoBarra
                 return <>
                   <code className="rv2-expand-val">{cb || '—'}</code>
                   {cb && (

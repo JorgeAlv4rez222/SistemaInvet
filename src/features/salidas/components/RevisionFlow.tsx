@@ -600,7 +600,7 @@ export function RevisionFlow({
             <div className="rv2-expand-field">
               <span className="rv2-expand-label">Código de barras</span>
               {(() => {
-                const cb = (!item.codigoBarra || item.codigoBarra.startsWith('SK-')) ? (item.codigoBarraAlternativo ?? null) : item.codigoBarra
+                const cb = (!item.codigoBarra || !/^\d+$/.test(item.codigoBarra)) ? (item.codigoBarraAlternativo ?? null) : item.codigoBarra
                 return <>
                   <code className="rv2-expand-val">{cb || '—'}</code>
                   {cb && (
@@ -946,11 +946,11 @@ export function RevisionFlow({
               <div className="rv-equiv-despacho">
                 <span className="rv-equiv-row"><span className="rv-equiv-etiqueta">Producto original:</span><code className="rv-equiv-codigo">{paso.item.sku}</code></span>
                 <span className="rv-equiv-row rv-equiv-row--activo"><span className="rv-equiv-etiqueta">Equivalente asignado:</span><code className="rv-equiv-codigo rv-equiv-codigo--activo">{paso.item.skuEquivalente}</code></span>
-                {(() => { const cb = (!paso.item.codigoBarra || paso.item.codigoBarra.startsWith('SK-')) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{cb}</code> : null })()}
+                {(() => { const cb = (!paso.item.codigoBarra || !/^\d+$/.test(paso.item.codigoBarra)) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean" style={{ marginTop: '4px' }}>{cb}</code> : null })()}
               </div>
             ) : (
               <div className="nd-prod-codes">
-                {(() => { const cb = (!paso.item.codigoBarra || paso.item.codigoBarra.startsWith('SK-')) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean">{cb}</code> : null })()}
+                {(() => { const cb = (!paso.item.codigoBarra || !/^\d+$/.test(paso.item.codigoBarra)) ? (paso.item.codigoBarraAlternativo ?? null) : paso.item.codigoBarra; return cb ? <code className="nd-prod-ean">{cb}</code> : null })()}
               </div>
             )}
           </div>
