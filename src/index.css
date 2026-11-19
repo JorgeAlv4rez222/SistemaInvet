@@ -12824,10 +12824,15 @@ input[type="radio"] {
 /* Columna entrega */
 .pm-t-td--entrega { white-space: nowrap; }
 .pm-t-fecha-entrega {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
 }
 .pm-t-urgencia {
   display: inline-block;
