@@ -162,7 +162,7 @@ export function OperadorSesionesPage() {
 
   const sesiones = (dataSes ?? []).map(normalizarSesion)
   const olas     = (dataOlas ?? [])
-    .filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion' || o.estado === 'completada')
+    .filter(o => o.estado === 'en_extraccion' || o.estado === 'en_preparacion')
     .map(normalizarOla)
 
   const filas: FilaOp[] = [...olas, ...sesiones]
