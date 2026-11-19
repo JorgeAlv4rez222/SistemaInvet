@@ -1984,6 +1984,7 @@ label {
   color: var(--text-muted); display: flex; align-items: center; gap: 4px;
 }
 .ext-tarea-ean-label { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; }
+.ext-tarea-desc-inline { color: var(--text-secondary); font-size: 0.82rem; font-weight: 500; margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
 
 .ext-tarea-cant {
   display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
@@ -10713,14 +10714,51 @@ input[type="radio"] {
 
 /* ── Picking Masivo — Confirmación rediseño (cf-*) ──────────────────────── */
 
+.cf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.cf-modal-panel {
+  width: 100%;
+  max-width: 760px;
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: var(--bg-surface);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+  -webkit-overflow-scrolling: touch;
+}
+.cf-modal-panel::-webkit-scrollbar { display: none; }
+
+@media (min-width: 600px) {
+  .cf-modal-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+  .cf-modal-panel {
+    border-radius: 20px;
+    max-height: 88vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+}
+
 .cf-page {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 14px;
-  max-width: 760px;
+  padding: 18px;
+  max-width: 700px;
+  width: 100%;
   margin: 0 auto;
   padding-bottom: 32px;
+  box-sizing: border-box;
 }
 
 /* Cabecera */
@@ -10728,8 +10766,230 @@ input[type="radio"] {
 .cf-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.cf-item-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* Tarjeta de producto */
+
+.cf-prod-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.cf-prod-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cf-prod-ubicacion-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(0,160,223,0.12);
+  border: 1px solid rgba(0,160,223,0.3);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  width: fit-content;
+  letter-spacing: 0.03em;
+}
+
+.cf-prod-nombre {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.cf-prod-qty-block {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 90px;
+}
+
+.cf-solicitado-total {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cf-lote-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Steps */
+
+.cf-step-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  opacity: 0.65;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cf-step-section--active {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.cf-step-section--done {
+  border-color: #22c55e;
+  opacity: 1;
+}
+
+.cf-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cf-step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.cf-step-num--done {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.cf-step-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+/* Inline quantity row */
+
+.cf-qty-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.cf-qty-inline-row > .cf-qty-btn {
+  flex-shrink: 0;
+}
+
+.cf-qty-inline-row > .cf-qty-inline-display {
+  flex: 1;
+  min-width: 140px;
+}
+
+.cf-qty-inline-row > .cf-carga-total-btn--inline {
+  flex: 1;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.cf-qty-inline-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 48px;
+  min-width: 0;
+}
+
+.cf-qty-inline-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cf-qty-inline-display .cf-qty-input {
+  font-size: 1.3rem;
+  border-bottom: none;
+  font-weight: 800;
+  min-width: 40px;
+  max-width: 70px;
+  padding: 2px 4px;
+}
+
+.cf-carga-total-btn--inline {
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 0 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cf-btn--verify-inline {
+  flex-shrink: 0;
+  flex-grow: 0;
+  width: 90px;
+  min-height: 52px;
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .cf-volver-btn {
@@ -10784,9 +11044,19 @@ input[type="radio"] {
 /* Bloques de contexto */
 
 .cf-context-grid {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
+  margin-left: -14px;
+  margin-right: -14px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
 }
 
 .cf-context-block {
@@ -10863,6 +11133,26 @@ input[type="radio"] {
   padding: 2px 8px;
   border-radius: 4px;
 }
+.cf-ean-tag--copiable {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px 2px 8px;
+}
+.cf-ean-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251,191,36,0.15);
+  border: 1px solid rgba(251,191,36,0.4);
+  border-radius: 3px;
+  color: #fbbf24;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: background 0.15s;
+}
+.cf-ean-copy-btn:hover { background: rgba(251,191,36,0.3); }
+.cf-ean-copy-btn--ok { background: rgba(74,222,128,0.3) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
 
 /* Cantidad solicitada */
 
@@ -10954,17 +11244,43 @@ input[type="radio"] {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.cf-scanner-input-row .btn-camara {
+  flex-shrink: 0;
+  flex-grow: 0;
+  width: 52px !important;
+  min-width: 52px;
+  height: 52px;
+}
+
+.cf-scanner-input-row .cf-scanner-input {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0;
+}
+
+.cf-scanner-input-row .cf-btn--verify {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  width: 90px !important;
+  min-width: 90px;
 }
 
 .cf-scanner-input {
-  flex: 1;
-  background: var(--bg-elevated);
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: 15px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 16px;
   color: var(--text-primary);
   outline: none;
+  min-height: 52px;
   transition: border-color 0.15s;
 }
 
@@ -11342,9 +11658,12 @@ input[type="radio"] {
 
 .cf-acciones {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   margin-top: 4px;
+}
+.cf-acciones .cf-btn {
+  flex: 1;
 }
 
 .cf-btn {
@@ -11780,6 +12099,15 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.cola-lista-titulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 4px 2px;
 }
 
 .cola-progreso-meta {

@@ -4,6 +4,7 @@ import { useColaSubtareas, useLiberarPropias, useSesionPicking, useTomarSubtarea
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { SubtareaResumen } from '../services/picking-masivo.api'
+import { ConfirmarSubtareaPanel } from './ConfirmarSubtareaPage'
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 
@@ -37,14 +38,15 @@ function SubtareaCard({
   sesionId,
   tomandoId,
   onTomar,
+  onAbrir,
 }: {
   sub: SubtareaResumen
   operadorId: string
   sesionId: string
   tomandoId: string | null
   onTomar: (sub: SubtareaResumen) => void
+  onAbrir: (subtareaId: string) => void
 }) {
-  const navigate = useNavigate()
   const [expandido, setExpandido] = useState(false)
   const [descVisible, setDescVisible] = useState(false)
 
@@ -85,12 +87,7 @@ function SubtareaCard({
           onClick={e => { e.stopPropagation(); setDescVisible(v => !v) }}>
           <span className="ext-tarea-ean">
             <span className="sd-sku-tag sd-sku-tag--hl">{sku}</span>
-            {ean && (
-              <>
-                <span className="ext-tarea-ean-label" style={{ marginLeft: 8 }}>EAN</span>
-                {ean}
-              </>
-            )}
+            {desc !== sku && <span className="ext-tarea-desc-inline">{desc}</span>}
             {rack !== 'S/U' && (
               <span style={{ marginLeft: 8, color: 'var(--accent)', fontFamily: 'inherit', fontWeight: 600 }}>
                 <IcoPin /> {rack}
@@ -117,7 +114,7 @@ function SubtareaCard({
           ) : esMia ? (
             <button
               className="sd-accion-btn sd-accion-btn--picking"
-              onClick={() => navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)}
+              onClick={() => onAbrir(sub.id)}
             >
               <IcoScan /> Picking
             </button>
@@ -162,11 +159,11 @@ export function OperadorColaPage() {
   const tomarSubtarea  = useTomarSubtarea(sesionId ?? '')
   const liberarPropias = useLiberarPropias(sesionId ?? '')
 
-  const [tomandoId, setTomandoId] = useState<string | null>(null)
-  const [error, setError]         = useState<string | null>(null)
+  const [tomandoId, setTomandoId]       = useState<string | null>(null)
+  const [error, setError]               = useState<string | null>(null)
+  const [modalSubtareaId, setModalSubtareaId] = useState<string | null>(null)
   const [filtro, setFiltro]       = useState<'todas' | 'mias' | 'tomadas' | 'parcial' | 'completas'>('todas')
   const [busqueda, setBusqueda]   = useState('')
-
   const subtareas    = data ?? []
   const tengoPropias = subtareas.some(s => s.estado === 'bloqueado' && s.bloqueado_por === operadorId)
 
@@ -202,7 +199,7 @@ export function OperadorColaPage() {
     setTomandoId(sub.id)
     try {
       await tomarSubtarea.mutateAsync({ subtareaId: sub.id, usuarioId: operadorId })
-      navigate(`/picking-masivo/operador/${sesionId}/confirmar/${sub.id}`)
+      setModalSubtareaId(sub.id)
     } catch (e) {
       setError(e instanceof ApiResponseError ? e.message : 'No se pudo tomar la subtarea')
     } finally {
@@ -309,6 +306,7 @@ export function OperadorColaPage() {
 
       {!isLoading && !isError && visibles.length > 0 && (
         <div className="sd-items-lista">
+          <h2 className="cola-lista-titulo">Listado de productos {cliente}</h2>
           {visibles.map(sub => (
             <SubtareaCard
               key={sub.id}
@@ -317,8 +315,22 @@ export function OperadorColaPage() {
               sesionId={sesionId ?? ''}
               tomandoId={tomandoId}
               onTomar={handleTomar}
+              onAbrir={setModalSubtareaId}
             />
           ))}
+        </div>
+      )}
+
+      {/* ── Modal confirmar subtarea ── */}
+      {modalSubtareaId && sesionId && (
+        <div className="cf-modal-overlay" onClick={() => setModalSubtareaId(null)}>
+          <div className="cf-modal-panel" onClick={e => e.stopPropagation()}>
+            <ConfirmarSubtareaPanel
+              sesionId={sesionId}
+              subtareaId={modalSubtareaId}
+              onClose={() => setModalSubtareaId(null)}
+            />
+          </div>
         </div>
       )}
     </div>
