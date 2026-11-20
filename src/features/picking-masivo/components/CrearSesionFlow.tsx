@@ -180,7 +180,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       // para garantizar que se guarda aunque el pipeline de validarExcel lo pierda
       if (datos.tipo === 'sodimac') {
         const skuItems = datos.filas
-          .filter(f => f.skuProveedor)
+          .filter(f => f.skuProveedor && f.codigo)
           .map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! }))
         if (skuItems.length > 0) {
           await pickingMasivoApi.parcharSkuProveedor({ sesionId, items: skuItems })

@@ -31,6 +31,8 @@ import { PreparacionOlaPage }          from './features/picking-masivo/pages/Pre
 import { ConfirmarLpnPage }            from './features/picking-masivo/pages/ConfirmarLpnPage'
 import { DespachoOlaPage }             from './features/picking-masivo/pages/DespachoOlaPage'
 import { UsuariosPage }          from './features/usuarios/pages/UsuariosPage'
+import { ProduccionPage }        from './features/produccion/pages/ProduccionPage'
+import { ProduccionAdminPage }   from './features/produccion/pages/ProduccionAdminPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation()
@@ -82,6 +84,12 @@ export default function App() {
 
       {/* Gestión de usuarios — solo admin */}
       <Route path="/usuarios" element={<Protected><UsuariosPage /></Protected>} />
+
+      {/* Control de producción — etiquetado */}
+      <Route path="/produccion" element={<Protected><ProduccionPage /></Protected>} />
+
+      {/* Control de producción — admin */}
+      <Route path="/produccion/admin" element={<Protected><ProduccionAdminPage /></Protected>} />
     </Routes>
   )
 }

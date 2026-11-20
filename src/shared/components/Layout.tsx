@@ -40,6 +40,7 @@ const IcoPicking  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const IcoUsuarios = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 const IcoDashboard= <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
 const IcoReporte  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+const IcoProduccion = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MATRIZ DE NAVEGACIÓN POR ROL
@@ -115,6 +116,16 @@ const NAV_ITEMS: NavItem[] = [
     ruta: '/usuarios', label: 'Usuarios', labelCorto: 'Usuarios', roles: ['admin'],
     icono: IcoUsuarios,
   },
+  // ── Etiquetado ────────────────────────────────────────────────────────────
+  {
+    ruta: '/produccion', label: 'Control Producción', labelCorto: 'Producción', roles: ['etiquetado'],
+    icono: IcoProduccion,
+  },
+  // ── Admin: vista producción ───────────────────────────────────────────────
+  {
+    ruta: '/produccion/admin', label: 'Producción', labelCorto: 'Producción', roles: ['admin'],
+    icono: IcoProduccion,
+  },
 ]
 
 const IconLogout = () => (
@@ -163,16 +174,17 @@ export function Layout({ children }: Props) {
 
   const logoSrc = '/LOGO GRANTT G COLOR Y LETRAS BLANCAS.png'
 
-  const rol        = sesion.rol as UserRole | null
-  const esOperador = rol === 'operador'
+  const rol           = sesion.rol as UserRole | null
+  const esOperador    = rol === 'operador'
+  const esEtiquetado  = rol === 'etiquetado'
   const nombre     = localStorage.getItem('user_nombre') ?? ''
 
   const itemsVisibles = NAV_ITEMS.filter((item) =>
     !item.roles || (rol !== null && item.roles.includes(rol))
   )
 
-  // Operador siempre expandido; admin/supervisor pueden colapsar
-  const [expandido, setExpandido] = useState(() => esOperador || window.innerWidth >= 1101)
+  // Operador/etiquetado siempre expandido; admin/supervisor pueden colapsar
+  const [expandido, setExpandido] = useState(() => esOperador || esEtiquetado || window.innerWidth >= 1101)
 
   async function handleLogout() {
     await logout()
@@ -310,6 +322,20 @@ export function Layout({ children }: Props) {
     </nav>
   )
 
+  // ── Header top mobile — etiquetado ──────────────────────────────────────
+  const MobileHeaderEtiquetado = () => {
+    const iniciales = nombre.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
+    return (
+      <header className="ep-top-header">
+        <div className="ep-top-logo">
+          <span className="ep-top-logo-g">G</span>
+          <span className="ep-top-logo-txt">rantt</span>
+        </div>
+        <div className="ep-top-avatar" title={nombre}>{iniciales}</div>
+      </header>
+    )
+  }
+
   // ── Barra inferior mobile — operador (botones grandes táctiles) ───────────
   const MobileNavOperador = () => (
     <nav className="tablet:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0f1e29] border-t border-[rgba(255,255,255,0.08)] shadow-[0_-2px_16px_rgba(0,0,0,0.4)]">
@@ -352,11 +378,14 @@ export function Layout({ children }: Props) {
       {/* ── Sidebar desktop/tablet (igual para todos los roles) ── */}
       <SidebarAdminSupervisor />
 
+      {/* ── Header top etiquetado (mobile) ───────────────────── */}
+      {esEtiquetado && <MobileHeaderEtiquetado />}
+
       {/* ── Navegación mobile por rol ────────────────────────── */}
-      {esOperador ? <MobileNavOperador /> : <MobileNavAdminSupervisor />}
+      {(esOperador || esEtiquetado) ? <MobileNavOperador /> : <MobileNavAdminSupervisor />}
 
       {/* ── Contenido principal ──────────────────────────── */}
-      <div className={`layout-content flex-1 flex flex-col min-w-0 ${esOperador ? 'pb-20 tablet:pb-0 tablet:pl-0' : 'pl-14 tablet:pl-0'}`}>
+      <div className={`layout-content flex-1 flex flex-col min-w-0 ${esEtiquetado ? 'pt-14 pb-20 tablet:pt-0 tablet:pb-0' : esOperador ? 'pb-20 tablet:pb-0 tablet:pl-0' : 'pl-14 tablet:pl-0'}`}>
 
         {offline && (
           <div className="offline-banner bg-[rgba(239,68,68,0.15)] border-b border-[rgba(239,68,68,0.3)] text-red-300 text-sm text-center py-2 px-4">

@@ -95,7 +95,7 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
   const HEADER_PRECIO = /^(Precio|P\.?\s*Unit(ario)?|Valor|Total|Importe|Neto)$/i
   const FIN_TABLA     = /^(Sub\s*Total|Condici[oó]n|En\s+efectivo|Descuento\s+1)$/i
 
-  const filas = agruparFilas(todosItems)
+  const filas = agruparFilas(todosItems, 6)
 
   // Buscar fila de encabezado (contiene "Cantidad" y "Cod..." en la misma fila)
   let headerFila: Item[] | null = null
@@ -139,8 +139,8 @@ export async function parsearNota(file: File): Promise<ResultadoParseoNota> {
 
     // Items de la columna Cantidad (x cercano a xCant)
     const cantItems = fila.filter((it) => it.x < xCod - MARGEN && it.x >= xCant - MARGEN)
-    // Items de la columna Codigo (entre xCod y xDesc)
-    const codItems  = fila.filter((it) => it.x >= xCod - MARGEN && it.x < xDesc - MARGEN)
+    // Items de la columna Codigo (entre xCod y xDesc, sin margen derecho para no cortar sufijos cortos)
+    const codItems  = fila.filter((it) => it.x >= xCod - MARGEN && it.x < xDesc)
 
     if (cantItems.length === 0 || codItems.length === 0) continue
 

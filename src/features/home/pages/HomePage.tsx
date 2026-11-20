@@ -174,6 +174,11 @@ export function HomePage() {
     return <DashboardOperador />
   }
 
+  // Etiquetado: no tiene acceso a /home
+  if (rol === 'etiquetado') {
+    return null
+  }
+
   // Fallback (rol desconocido): vista simple con todos los ítems
   return (
     <div className="home-page">

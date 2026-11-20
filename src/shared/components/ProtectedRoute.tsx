@@ -63,6 +63,12 @@ export function ProtectedRoute({ children, rutaActual }: Props) {
     return <Navigate to="/login" replace />
   }
 
+  // Etiquetado: solo puede acceder a /produccion y /productos
+  if (rol === 'etiquetado') {
+    const permitida = rutaActual.startsWith('/produccion') || rutaActual.startsWith('/productos')
+    if (!permitida) return <Navigate to="/produccion" replace />
+  }
+
   // Operador intenta ruta de admin o admin+supervisor → /productos
   // Excepción: /picking-masivo/operador es la ruta propia del operador
   if (rol === 'operador') {
