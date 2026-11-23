@@ -158,10 +158,12 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       if (!resultado) return
 
       // Mapa codigo → skuProveedor desde el Excel original (por si validarExcel lo pierde)
-      const skuMapExcel = new Map(
-        datos.filas
-          .filter(f => f.skuProveedor && f.codigo)
-          .map(f => [f.codigo, f.skuProveedor!])
+      const skuMapExcel = new Map<string, string>(
+        datos.tipo === 'sodimac'
+          ? datos.filas
+              .filter(f => f.skuProveedor && f.codigo)
+              .map(f => [f.codigo, f.skuProveedor!] as [string, string])
+          : []
       )
 
       const { sesionId } = await crearSesion.mutateAsync({
