@@ -184,14 +184,14 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
         })),
       })
 
-      // Parchar sku_proveedor desde el Excel parseado (garantiza datos correctos independiente del backend)
+      // Parchar sku_proveedor desde el Excel parseado (no bloquea navegación si falla)
       if (datos.tipo === 'sodimac') {
-        const skuItems = (datos.filas as FilaExcelPicking[]).filter(f => f.skuProveedor)
+        const skuItems = (datos.filas as FilaExcelPicking[])
+          .filter(f => f.skuProveedor && f.codigo)
+          .map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! }))
         if (skuItems.length > 0) {
-          await apiClient.post('/picking-masivo?accion=parchar-sku-proveedor', {
-            sesionId,
-            items: skuItems.map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! })),
-          })
+          apiClient.post('/picking-masivo?accion=parchar-sku-proveedor', { sesionId, items: skuItems })
+            .catch(() => { /* silencioso */ })
         }
       }
 
