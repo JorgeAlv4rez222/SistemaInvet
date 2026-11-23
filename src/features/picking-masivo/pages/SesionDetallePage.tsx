@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCancelarSesion, useSesionPicking, useGuardarLpns, useParcharSkuProveedor } from '../hooks/usePickingMasivo'
+import { useCancelarSesion, useSesionPicking, useGuardarLpns } from '../hooks/usePickingMasivo'
 import { useRealtimeSesion } from '../hooks/useRealtimePicking'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { SesionResumen } from '../services/picking-masivo.api'
@@ -137,15 +137,11 @@ export function SesionDetallePage() {
   useRealtimeSesion(sesionId)
   const cancelarSesion    = useCancelarSesion()
   const guardarLpns       = useGuardarLpns()
-  const parcharSku        = useParcharSkuProveedor(sesionId ?? '')
   const qc                = useQueryClient()
   const fileInputRef      = useRef<HTMLInputElement>(null)
-  const skuFileInputRef   = useRef<HTMLInputElement>(null)
 
   const [confirmarCancelar, setConfirmarCancelar] = useState(false)
   const [error, setError]               = useState<string | null>(null)
-  const [skuMap, setSkuMap]             = useState<Map<string, string>>(new Map())
-  const [skuMapLabel, setSkuMapLabel]   = useState<string | null>(null)
   const [expandido, setExpandido]       = useState<Set<string>>(new Set())
   const [descExpandidos, setDescExpandidos] = useState<Set<string>>(new Set())
   const [busqueda, setBusqueda]         = useState('')
@@ -230,25 +226,6 @@ export function SesionDetallePage() {
     reader.readAsArrayBuffer(file)
   }
 
-  async function handleSkuFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    try {
-      const { parsearExcelSkuProveedor } = await import('../utils/parsearExcelSkuProveedor')
-      const { items, error: parseError } = await parsearExcelSkuProveedor(file)
-      if (parseError || items.length === 0) { setError(parseError ?? 'No se encontraron items'); return }
-      console.log('[SKU] items a enviar:', items.length, items.slice(0, 3))
-      const mapa = new Map(items.map(i => [i.codigo, i.skuProveedor]))
-      setSkuMap(mapa)
-      await parcharSku.mutateAsync({ sesionId: sesionId ?? '', items })
-      setSkuMapLabel(`SKU sincronizado: ${mapa.size} productos`)
-      setError(null)
-    } catch (err) {
-      console.error('[SKU] error:', err)
-      setError(err instanceof Error ? err.message : 'Error al leer el archivo')
-    }
-  }
 
   function descargarExcel() {
     const ESTADO_LABEL: Record<string, string> = {
@@ -381,13 +358,6 @@ export function SesionDetallePage() {
         <div className="sd-header-actions">
           {esAdmin && (
             <>
-              <input ref={skuFileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
-                onChange={handleSkuFile} />
-              <button className="sd-btn sd-btn--secondary" disabled={parcharSku.isPending}
-                onClick={() => skuFileInputRef.current?.click()}
-                title={skuMapLabel ?? 'Cargar Excel original para sincronizar SKU proveedor'}>
-                📋 {parcharSku.isPending ? 'Guardando…' : skuMapLabel ? 'SKU ✓' : 'SKU'}
-              </button>
               <button className="sd-btn sd-btn--secondary" onClick={descargarExcel}>
                 <IcoDownload /> Excel
               </button>
