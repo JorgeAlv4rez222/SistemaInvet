@@ -5,7 +5,7 @@ import { parsearExcelConstrumart, consolidarSkusConstrumart, type OrdenConstruma
 import { parsearExcelImperial } from '../utils/parsearExcelImperial'
 import { useActivarSesion, useCrearSesion, useValidarExcel } from '../hooks/usePickingMasivo'
 import { useCrearOla, useActivarOla } from '../hooks/useOlas'
-import { ApiResponseError } from '../../../shared/utils/apiClient'
+import { ApiResponseError, apiClient } from '../../../shared/utils/apiClient'
 import type { ValidarExcelResult } from '../services/picking-masivo.api'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -183,6 +183,17 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           ordenCarga:     f.ordenCarga,
         })),
       })
+
+      // Parchar sku_proveedor desde el Excel parseado (garantiza datos correctos independiente del backend)
+      if (datos.tipo === 'sodimac') {
+        const skuItems = (datos.filas as FilaExcelPicking[]).filter(f => f.skuProveedor)
+        if (skuItems.length > 0) {
+          await apiClient.post('/picking-masivo?accion=parchar-sku-proveedor', {
+            sesionId,
+            items: skuItems.map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! })),
+          })
+        }
+      }
 
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })
       navigate(`/picking-masivo/${sesionId}`)
