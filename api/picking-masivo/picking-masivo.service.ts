@@ -435,7 +435,8 @@ export const pickingMasivoService = {
         )
       `)
       .eq('sesion_id', sesionId)
-      .order('id')
+      .order('orden_carga', { ascending: true, nullsFirst: false })
+      .order('id', { ascending: true })
 
     if (itemsErr) return { ok: false, error: { code: 'DB_ERROR', message: itemsErr.message } }
 
