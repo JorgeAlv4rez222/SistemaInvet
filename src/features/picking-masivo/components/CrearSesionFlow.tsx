@@ -157,33 +157,31 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
 
       if (!resultado) return
 
-      // Mapa codigo → fila original del Excel (fuente de verdad para skuProveedor y ordenCarga)
-      const filaMap = new Map<string, FilaExcelPicking>(
-        datos.tipo === 'sodimac'
-          ? datos.filas.map(f => [f.codigo, f])
-          : []
+      // productoId desde el resultado de validación (lookup por codigo)
+      const productoIdMap = new Map<string, string>(
+        resultado.items
+          .filter(i => i.productoId)
+          .map(i => [i.codigo, i.productoId!] as [string, string])
       )
 
+      // Usar dados.filas directamente — skuProveedor y ordenCarga vienen del Excel parseado
       const { sesionId } = await crearSesion.mutateAsync({
         usuarioId:       adminId,
         numeroOc:        numeroOc.trim(),
         nombreCliente:   proveedor === 'sodimac' ? 'Sodimac' : 'Imperial',
         numeroOcPedido:  numeroOcPedido.trim() || undefined,
         archivoNombre:   archivo?.name ?? 'excel.xlsx',
-        items: resultado.items.map((i) => {
-          const orig = filaMap.get(i.codigo)
-          return {
-            codigo:         i.codigo,
-            descripcion:    i.descripcion,
-            cantidadPedida: i.cantidadPedida,
-            productoId:     i.productoId,
-            codigoBarra:    orig?.codigoBarra ?? i.codigoBarra,
-            lpn:            i.lpn,
-            tienda:         i.tienda,
-            skuProveedor:   orig?.skuProveedor,
-            ordenCarga:     orig?.ordenCarga,
-          }
-        }),
+        items: datos.filas.map((f) => ({
+          codigo:         f.codigo,
+          descripcion:    f.descripcion,
+          cantidadPedida: f.cantidadPedida,
+          productoId:     productoIdMap.get(f.codigo),
+          codigoBarra:    f.codigoBarra,
+          lpn:            f.lpn,
+          tienda:         f.tienda,
+          skuProveedor:   f.skuProveedor,
+          ordenCarga:     f.ordenCarga,
+        })),
       })
 
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })
