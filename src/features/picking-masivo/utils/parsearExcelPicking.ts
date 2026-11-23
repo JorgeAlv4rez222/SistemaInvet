@@ -81,6 +81,9 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
     return { filas: [], errores }
   }
 
+  console.log('[parsear] encabezados:', encabezados)
+  console.log('[parsear] idxCodigo:', idxCodigo, 'idxSkuProveedor:', idxSkuProveedor)
+
   if (idxCodigoBarra === -1) {
     errores.push('El archivo no contiene columna de código de barras (UPC / EAN). Agrega una columna con encabezado "UPC", "EAN13", "EAN" o "Codigo Barra" e intenta de nuevo.')
     return { filas: [], errores }
@@ -102,6 +105,8 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
   }
 
   if (filas.length === 0) errores.push('No se encontraron filas válidas en el archivo')
+
+  if (filas.length > 0) console.log('[parsear] fila[0]:', JSON.stringify({ codigo: filas[0].codigo, skuProveedor: filas[0].skuProveedor, ordenCarga: filas[0].ordenCarga }))
 
   return { filas, errores }
 }

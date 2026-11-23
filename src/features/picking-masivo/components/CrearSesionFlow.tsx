@@ -166,6 +166,8 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           : []
       )
 
+      console.log('[crearSesion] skuMapExcel size:', skuMapExcel.size, 'primer entry:', JSON.stringify([...skuMapExcel.entries()].slice(0, 2)))
+      console.log('[crearSesion] resultado.items[0]:', JSON.stringify({ codigo: resultado.items[0]?.codigo, skuProveedor: resultado.items[0]?.skuProveedor, ordenCarga: resultado.items[0]?.ordenCarga }))
       const { sesionId } = await crearSesion.mutateAsync({
         usuarioId:       adminId,
         numeroOc:        numeroOc.trim(),
