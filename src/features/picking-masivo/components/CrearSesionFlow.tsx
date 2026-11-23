@@ -300,11 +300,10 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                   <thead>
                     <tr>
                       <th className="excel-th excel-th--num">#</th>
-                      <th className="excel-th">Código</th>
+                      <th className="excel-th">VIN (interno)</th>
+                      <th className="excel-th">SKU Proveedor</th>
                       <th className="excel-th excel-th--derecha">Cantidad</th>
-                      {datos.filas.some((f) => f.codigoBarra) && <th className="excel-th">EAN / UPC</th>}
-                      {datos.filas.some((f) => f.lpn)         && <th className="excel-th">LPN</th>}
-                      {datos.filas.some((f) => f.tienda)      && <th className="excel-th">Tienda</th>}
+                      {datos.filas.some((f) => f.codigoBarra) && <th className="excel-th">UPC</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -312,10 +311,9 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                       <tr key={i} className={i % 2 === 0 ? 'excel-tr--par' : 'excel-tr--impar'}>
                         <td className="excel-td excel-td--num">{i + 1}</td>
                         <td className="excel-td">{f.codigo}</td>
+                        <td className="excel-td" style={{ color: f.skuProveedor ? 'inherit' : 'var(--danger, red)', fontStyle: f.skuProveedor ? 'normal' : 'italic' }}>{f.skuProveedor ?? '— sin SKU —'}</td>
                         <td className="excel-td excel-td--derecha">{f.cantidadPedida}</td>
                         {datos.filas.some((f2) => f2.codigoBarra) && <td className="excel-td">{f.codigoBarra ?? '—'}</td>}
-                        {datos.filas.some((f2) => f2.lpn)         && <td className="excel-td">{f.lpn ?? '—'}</td>}
-                        {datos.filas.some((f2) => f2.tienda)      && <td className="excel-td">{f.tienda ?? '—'}</td>}
                       </tr>
                     ))}
                   </tbody>
