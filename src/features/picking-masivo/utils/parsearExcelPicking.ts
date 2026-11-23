@@ -12,8 +12,10 @@ export type FilaExcelPicking = {
 }
 
 export type ResultadoParseoPicking = {
-  filas:   FilaExcelPicking[]
-  errores: string[]
+  filas:        FilaExcelPicking[]
+  errores:      string[]
+  encabezados?: string[]
+  idxDetectado?: { codigo: number; skuProveedor: number }
 }
 
 type Celda = string | number | boolean | null
@@ -103,5 +105,5 @@ export async function parsearExcelPicking(file: File): Promise<ResultadoParseoPi
 
   if (filas.length === 0) errores.push('No se encontraron filas válidas en el archivo')
 
-  return { filas, errores }
+  return { filas, errores, encabezados, idxDetectado: { codigo: idxCodigo, skuProveedor: idxSkuProveedor } }
 }

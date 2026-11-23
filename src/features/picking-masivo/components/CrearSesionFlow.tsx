@@ -14,7 +14,7 @@ type Paso      = 'proveedor' | 'upload' | 'preview' | 'validado'
 type Proveedor = 'sodimac' | 'imperial' | 'construmart'
 
 type DatosParseo =
-  | { tipo: 'sodimac'; filas: FilaExcelPicking[] }
+  | { tipo: 'sodimac'; filas: FilaExcelPicking[]; encabezados?: string[]; idxDetectado?: { codigo: number; skuProveedor: number } }
   | { tipo: 'imperial' | 'construmart'; ordenes: OrdenConstrumart[] }
 
 const ALERTA_LABELS: Record<string, string> = {
@@ -97,7 +97,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           setError(res.errores.join(' — '))
           return
         }
-        setDatos({ tipo: proveedor!, filas: res.filas })
+        setDatos({ tipo: proveedor!, filas: res.filas, encabezados: res.encabezados, idxDetectado: res.idxDetectado })
       }
       setPaso('preview')
     } catch (e) {
@@ -294,6 +294,17 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
                 />
               </div>
               <p className="notas-conteo">{datos.filas.length} línea{datos.filas.length !== 1 ? 's' : ''} detectada{datos.filas.length !== 1 ? 's' : ''}</p>
+              {datos.encabezados && (
+                <p style={{ fontSize: '0.78rem', opacity: 0.6, marginBottom: 4 }}>
+                  Columnas: {datos.encabezados.map((h, i) => (
+                    <span key={i} style={{
+                      fontWeight: (i === datos.idxDetectado?.codigo || i === datos.idxDetectado?.skuProveedor) ? 700 : 400,
+                      color: i === datos.idxDetectado?.codigo ? 'var(--accent)' : i === datos.idxDetectado?.skuProveedor ? '#f59e0b' : 'inherit',
+                    }}>{h || '(vacío)'}{i < datos.encabezados!.length - 1 ? ' | ' : ''}</span>
+                  ))}
+                  {datos.idxDetectado?.skuProveedor === -1 && <span style={{ color: 'var(--danger)', marginLeft: 8 }}>⚠ Sin columna SKU separada</span>}
+                </p>
+              )}
               <div className="excel-tabla-wrap">
                 <table className="excel-tabla">
                   <thead>
