@@ -7,6 +7,11 @@ const itemExcelSchema = z.object({
   codigo: z.string().min(1), descripcion: z.string().min(1),
   cantidadPedida: z.coerce.number().int().positive(), productoId: z.string().uuid().optional(),
   codigoBarra: z.string().optional(), lpn: z.string().optional(),
+  skuProveedor: z.string().optional(), ordenCarga: z.coerce.number().int().optional(),
+})
+const parcharSkuSchema = z.object({
+  sesionId: z.string().min(1),
+  items: z.array(z.object({ codigo: z.string().min(1), skuProveedor: z.string().min(1) })).min(1),
 })
 const validarExcelSchema   = z.object({ items: z.array(itemExcelSchema).min(1) })
 const crearSesionSchema    = z.object({
@@ -155,6 +160,12 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       const parsed = guardarLpnsSchema.safeParse(body)
       if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
       const result = await pickingMasivoService.guardarLpns(parsed.data.sesionId, parsed.data.lpnsData)
+      return result.ok ? json(result.data) : json({ error: result.error }, 500)
+    }
+    if (accion === 'parchar-sku-proveedor') {
+      const parsed = parcharSkuSchema.safeParse(body)
+      if (!parsed.success) return json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } }, 400)
+      const result = await pickingMasivoService.parcharSkuProveedor(parsed.data.sesionId, parsed.data.items)
       return result.ok ? json(result.data) : json({ error: result.error }, 500)
     }
     return json({ error: 'Acción POST no reconocida' }, 400)
