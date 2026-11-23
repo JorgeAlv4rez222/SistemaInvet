@@ -23,11 +23,12 @@ const validarExcelSchema = z.object({
 })
 
 const crearSesionSchema = z.object({
-  usuarioId:     z.string().uuid(),
-  numeroOc:      z.string().min(1),
-  nombreCliente: z.string().optional(),
-  archivoNombre: z.string().min(1),
-  items:         z.array(itemExcelSchema).min(1),
+  usuarioId:       z.string().uuid(),
+  numeroOc:        z.string().min(1),
+  nombreCliente:   z.string().optional(),
+  numeroOcPedido:  z.string().optional(),
+  archivoNombre:   z.string().min(1),
+  items:           z.array(itemExcelSchema).min(1),
 })
 
 const parcharSkuSchema = z.object({

@@ -157,34 +157,33 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
 
       if (!resultado) return
 
-      // Mapa codigo → skuProveedor desde el Excel original (por si validarExcel lo pierde)
-      const skuMapExcel = new Map<string, string>(
+      // Mapa codigo → fila original del Excel (fuente de verdad para skuProveedor y ordenCarga)
+      const filaMap = new Map<string, FilaExcelPicking>(
         datos.tipo === 'sodimac'
-          ? datos.filas
-              .filter(f => f.skuProveedor && f.codigo)
-              .map(f => [f.codigo, f.skuProveedor!] as [string, string])
+          ? datos.filas.map(f => [f.codigo, f])
           : []
       )
 
-      console.log('[crearSesion] skuMapExcel size:', skuMapExcel.size, 'primer entry:', JSON.stringify([...skuMapExcel.entries()].slice(0, 2)))
-      console.log('[crearSesion] resultado.items[0]:', JSON.stringify({ codigo: resultado.items[0]?.codigo, skuProveedor: resultado.items[0]?.skuProveedor, ordenCarga: resultado.items[0]?.ordenCarga }))
       const { sesionId } = await crearSesion.mutateAsync({
         usuarioId:       adminId,
         numeroOc:        numeroOc.trim(),
         nombreCliente:   proveedor === 'sodimac' ? 'Sodimac' : 'Imperial',
         numeroOcPedido:  numeroOcPedido.trim() || undefined,
         archivoNombre:   archivo?.name ?? 'excel.xlsx',
-        items: resultado.items.map((i) => ({
-          codigo:         i.codigo,
-          descripcion:    i.descripcion,
-          cantidadPedida: i.cantidadPedida,
-          productoId:     i.productoId,
-          codigoBarra:    i.codigoBarra,
-          lpn:            i.lpn,
-          tienda:         i.tienda,
-          skuProveedor:   i.skuProveedor || skuMapExcel.get(i.codigo),
-          ordenCarga:     i.ordenCarga,
-        })),
+        items: resultado.items.map((i) => {
+          const orig = filaMap.get(i.codigo)
+          return {
+            codigo:         i.codigo,
+            descripcion:    i.descripcion,
+            cantidadPedida: i.cantidadPedida,
+            productoId:     i.productoId,
+            codigoBarra:    orig?.codigoBarra ?? i.codigoBarra,
+            lpn:            i.lpn,
+            tienda:         i.tienda,
+            skuProveedor:   orig?.skuProveedor,
+            ordenCarga:     orig?.ordenCarga,
+          }
+        }),
       })
 
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })
