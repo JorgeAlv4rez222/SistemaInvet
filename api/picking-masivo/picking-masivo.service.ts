@@ -375,6 +375,22 @@ export const pickingMasivoService = {
     return { ok: true, data: { actualizados } }
   },
 
+  // ── 3c. Parchar sku_proveedor + orden_carga (bypass Zod) ─────────────────
+  async parcharSkuYOrden(sesionId: string, items: any[]): Promise<void> {
+    await Promise.all(
+      items.map((item: any) =>
+        supabase
+          .from('items_picking_masivo')
+          .update({
+            sku_proveedor: item.skuProveedor ?? null,
+            orden_carga:   item.ordenCarga   ?? null,
+          })
+          .eq('sesion_id', sesionId)
+          .eq('codigo', item.codigo)
+      )
+    )
+  },
+
   // ── 4. Listar sesiones ────────────────────────────────────────────────────
   async listarSesiones(estado?: string): Promise<ServiceResult<unknown[]>> {
     let q = supabase

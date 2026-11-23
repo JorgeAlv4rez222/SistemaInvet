@@ -151,9 +151,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const parsed = crearSesionSchema.safeParse(req.body)
       if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
       const result = await pickingMasivoService.crearSesion(parsed.data)
-      return result.ok
-        ? res.status(201).json({ ...result.data, _d: { sku: parsed.data.items[0]?.skuProveedor, oc: parsed.data.items[0]?.ordenCarga } })
-        : res.status(500).json({ error: result.error })
+      if (!result.ok) return res.status(500).json({ error: result.error })
+      // Parchar sku_proveedor y orden_carga directamente desde req.body (bypasa posibles strips de Zod)
+      const rawItems = Array.isArray(req.body?.items) ? req.body.items : []
+      if (rawItems.length > 0) {
+        await pickingMasivoService.parcharSkuYOrden(result.data.sesionId, rawItems)
+      }
+      return res.status(201).json(result.data)
     }
 
     if (accion === 'activar-sesion') {
