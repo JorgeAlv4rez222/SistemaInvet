@@ -171,7 +171,7 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
         nombreCliente:   proveedor === 'sodimac' ? 'Sodimac' : 'Imperial',
         numeroOcPedido:  numeroOcPedido.trim() || undefined,
         archivoNombre:   archivo?.name ?? 'excel.xlsx',
-        items: datos.filas.map((f) => ({
+        items: (datos.tipo === 'sodimac' ? datos.filas : resultado.items).map((f) => ({
           codigo:         f.codigo,
           descripcion:    f.descripcion,
           cantidadPedida: f.cantidadPedida,
