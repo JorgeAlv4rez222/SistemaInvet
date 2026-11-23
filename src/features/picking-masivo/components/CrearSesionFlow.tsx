@@ -4,7 +4,6 @@ import { parsearExcelPicking, type FilaExcelPicking } from '../utils/parsearExce
 import { parsearExcelConstrumart, consolidarSkusConstrumart, type OrdenConstrumart } from '../utils/parsearExcelConstrumart'
 import { parsearExcelImperial } from '../utils/parsearExcelImperial'
 import { useActivarSesion, useCrearSesion, useValidarExcel } from '../hooks/usePickingMasivo'
-import { pickingMasivoApi } from '../services/picking-masivo.api'
 import { useCrearOla, useActivarOla } from '../hooks/useOlas'
 import { ApiResponseError } from '../../../shared/utils/apiClient'
 import type { ValidarExcelResult } from '../services/picking-masivo.api'
@@ -157,6 +156,14 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
       }
 
       if (!resultado) return
+
+      // Mapa codigo → skuProveedor desde el Excel original (por si validarExcel lo pierde)
+      const skuMapExcel = new Map(
+        datos.filas
+          .filter(f => f.skuProveedor && f.codigo)
+          .map(f => [f.codigo, f.skuProveedor!])
+      )
+
       const { sesionId } = await crearSesion.mutateAsync({
         usuarioId:       adminId,
         numeroOc:        numeroOc.trim(),
@@ -171,21 +178,10 @@ export function CrearSesionFlow({ adminId }: { adminId: string }) {
           codigoBarra:    i.codigoBarra,
           lpn:            i.lpn,
           tienda:         i.tienda,
-          skuProveedor:   i.skuProveedor,
+          skuProveedor:   i.skuProveedor || skuMapExcel.get(i.codigo),
           ordenCarga:     i.ordenCarga,
         })),
       })
-
-      // Parchar sku_proveedor directamente desde el Excel original
-      // para garantizar que se guarda aunque el pipeline de validarExcel lo pierda
-      if (datos.tipo === 'sodimac') {
-        const skuItems = datos.filas
-          .filter(f => f.skuProveedor && f.codigo)
-          .map(f => ({ codigo: f.codigo, skuProveedor: f.skuProveedor! }))
-        if (skuItems.length > 0) {
-          await pickingMasivoApi.parcharSkuProveedor({ sesionId, items: skuItems })
-        }
-      }
 
       await activarSesion.mutateAsync({ sesionId, usuarioId: adminId })
       navigate(`/picking-masivo/${sesionId}`)
