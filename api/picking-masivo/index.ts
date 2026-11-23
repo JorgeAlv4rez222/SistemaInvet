@@ -152,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!parsed.success) return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: parsed.error.message } })
       const result = await pickingMasivoService.crearSesion(parsed.data)
       return result.ok
-        ? res.status(201).json(result.data)
+        ? res.status(201).json({ ...result.data, _d: { sku: parsed.data.items[0]?.skuProveedor, oc: parsed.data.items[0]?.ordenCarga } })
         : res.status(500).json({ error: result.error })
     }
 
