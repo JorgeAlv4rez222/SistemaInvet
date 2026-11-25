@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSesionesPicking } from '../hooks/usePickingMasivo'
 import { useOlas } from '../hooks/useOlas'
@@ -104,9 +104,8 @@ function IcoJoin() {
 
 function FilaOp({ fila }: { fila: FilaOp }) {
   const navigate = useNavigate()
-  const pct      = fila.total > 0 ? Math.round((fila.completados / fila.total) * 100) : 0
-  const cfg      = ESTADO_CFG[fila.estado]
-  const udsTxt   = `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} ${fila.unidad}`
+  const cfg = ESTADO_CFG[fila.estado]
+  const [expandido, setExpandido] = useState(false)
 
   function handleUnirse() {
     if (fila.tipo === 'ola') navigate(`/picking-masivo/ola/${fila.id}`)
@@ -114,38 +113,54 @@ function FilaOp({ fila }: { fila: FilaOp }) {
   }
 
   return (
-    <tr className={`pm-t-fila pm-t-fila--${fila.estado === 'en_proceso' ? 'en_proceso' : fila.estado}`}>
+    <>
+      <tr
+        className={`pm-t-fila pm-t-fila--clickable pm-t-fila--${fila.estado === 'en_proceso' ? 'en_proceso' : fila.estado}`}
+        onClick={() => setExpandido(e => !e)}
+      >
+        {/* Cliente / Proveedor */}
+        <td className="pm-t-td pm-t-td--id">
+          <span className="pm-t-cliente">{fila.cliente}</span>
+        </td>
 
-      {/* Cliente / Proveedor */}
-      <td className="pm-t-td pm-t-td--id">
-        <span className="pm-t-cliente">{fila.cliente}</span>
-        {fila.oc && <span className="pm-t-oc">OC {fila.oc}</span>}
-      </td>
+        {/* Estado */}
+        <td className="pm-t-td pm-t-td--estado">
+          <span className={`pm-admin-badge ${cfg.cls}`}>
+            <span className="pm-admin-badge-dot" style={{ background: cfg.dot }} />
+            {cfg.label}
+          </span>
+        </td>
 
-      {/* Entrega */}
-      <td className="pm-t-td pm-t-td--entrega">
-        <span className="pm-t-fecha-entrega">{fila.entrega}</span>
-      </td>
+        {/* Acciones */}
+        <td className="pm-t-td pm-t-td--acciones" onClick={e => e.stopPropagation()}>
+          <button
+            className="pm-t-btn pm-t-btn--monitor"
+            disabled={fila.estado === 'completada' || fila.estado === 'despachada'}
+            onClick={handleUnirse}
+          >
+            <IcoJoin /> Unirse a Picking
+          </button>
+        </td>
+      </tr>
 
-      {/* Estado */}
-      <td className="pm-t-td pm-t-td--estado">
-        <span className={`pm-admin-badge ${cfg.cls}`}>
-          <span className="pm-admin-badge-dot" style={{ background: cfg.dot }} />
-          {cfg.label}
-        </span>
-      </td>
-
-      {/* Acciones */}
-      <td className="pm-t-td pm-t-td--acciones">
-        <button
-          className="pm-t-btn pm-t-btn--monitor"
-          disabled={fila.estado === 'completada' || fila.estado === 'despachada'}
-          onClick={handleUnirse}
-        >
-          <IcoJoin /> Unirse a Picking
-        </button>
-      </td>
-    </tr>
+      {expandido && (
+        <tr className="pm-t-fila-detalle">
+          <td colSpan={3} className="pm-t-td">
+            <div className="pm-t-detalle-contenido">
+              <span className="pm-t-detalle-linea">
+                <span className="pm-t-detalle-lbl">OC:</span>
+                <span className="pm-t-detalle-val">{fila.oc ?? '—'}</span>
+              </span>
+              <span className="pm-t-detalle-sep">·</span>
+              <span className="pm-t-detalle-linea">
+                <span className="pm-t-detalle-lbl">Fecha de entrega:</span>
+                <span className="pm-t-detalle-val">{fila.entrega}</span>
+              </span>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -179,8 +194,9 @@ export function OperadorSesionesPage() {
 
       {/* ── Cabecera ── */}
       <div className="pm-admin-header">
-        <h1 className="pm-admin-titulo">Sesiones de Picking Masivo</h1>
+        <h1 className="pm-admin-titulo">Órdenes Picking Masivo</h1>
       </div>
+      <p className="notas-descripcion">Órdenes de picking masivo activas asignadas a tu turno. Únete a una sesión para comenzar a preparar los productos solicitados.</p>
 
       {/* ── Búsqueda ── */}
       <div className="pm-admin-search-row">
@@ -214,7 +230,6 @@ export function OperadorSesionesPage() {
             <thead>
               <tr className="pm-t-thead-tr">
                 <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
-                <th className="pm-t-th pm-t-th--entrega">Entrega</th>
                 <th className="pm-t-th pm-t-th--estado">Estado</th>
                 <th className="pm-t-th pm-t-th--acciones">Acciones</th>
               </tr>

@@ -275,8 +275,9 @@ export function ProduccionPage() {
       {/* Título de sección */}
       <div className="ep-header">
         <h1 className="ep-titulo">Control de Producción</h1>
-        <p className="ep-subtitulo">{fechaTexto} · {nombre}</p>
+        <p className="ep-subtitulo">{nombre}</p>
       </div>
+      <p className="notas-descripcion">Registra aquí tu tarea del turno: indica el producto, la meta y tus unidades completadas al finalizar.</p>
 
       {error && <p className="ep-error ep-error--banner">{error}</p>}
 

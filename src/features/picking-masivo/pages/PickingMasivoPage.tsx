@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSesionesPicking, useCancelarSesion } from '../hooks/usePickingMasivo'
 import { useOlas, useCancelarOla } from '../hooks/useOlas'
@@ -180,59 +180,67 @@ function OlaFila({
   onMonitorear: () => void
   onCancelar: () => void
 }) {
+  const [expandido, setExpandido] = React.useState(false)
   const cfg         = ESTADO_CFG[fila.estado]
-  const pct         = fila.total > 0 ? Math.round((fila.completados / fila.total) * 100) : 0
-  const udsTxt      = `${fila.completados.toLocaleString('es-CL')} / ${fila.total.toLocaleString('es-CL')} ${fila.tipo === 'sesion' ? 'Uds' : 'líneas'}`
-  const badge       = urgenciaBadge(fila.entrega)
-  const esHoy       = badge?.label === 'HOY'
-  const alerta      = esHoy && pct < 50
   const cancelable  = fila.estado === 'libre' || fila.estado === 'validando' || fila.estado === 'en_proceso'
   const accionLabel = fila.estado === 'despachada' || fila.estado === 'cancelada' ? 'Ver detalle' : 'Ver'
 
   return (
-    <tr className={`pm-t-fila pm-t-fila--${fila.estado}`}>
+    <>
+      <tr
+        className={`pm-t-fila pm-t-fila--${fila.estado} pm-t-fila--clickable`}
+        onClick={() => setExpandido(e => !e)}
+      >
+        {/* Identificación */}
+        <td className="pm-t-td pm-t-td--id">
+          <span className="pm-t-cliente">{fila.cliente}</span>
+        </td>
 
-      {/* Identificación */}
-      <td className="pm-t-td pm-t-td--id">
-        <span className="pm-t-cliente">{fila.cliente}</span>
-        {fila.oc && (
-          <span className="pm-t-oc">OC {fila.oc}</span>
-        )}
-      </td>
+        {/* Estado */}
+        <td className="pm-t-td pm-t-td--estado">
+          <span className={`pm-admin-badge ${cfg.cls}`}>
+            <span className="pm-admin-badge-dot" style={{ background: cfg.dot }} />
+            {cfg.label}
+          </span>
+        </td>
 
-      {/* Entrega */}
-      <td className="pm-t-td pm-t-td--entrega">
-        <span className="pm-t-fecha-entrega">{fila.entrega}</span>
-      </td>
+        {/* Acciones */}
+        <td className="pm-t-td pm-t-td--acciones" onClick={e => e.stopPropagation()}>
+          <div className="pm-t-acciones">
+            <button className="pm-t-btn pm-t-btn--monitor" onClick={onMonitorear} title={accionLabel}>
+              👁 {accionLabel}
+            </button>
+            {cancelable && (
+              <MenuContextual onCancelar={onCancelar} />
+            )}
+          </div>
+        </td>
+      </tr>
 
-      {/* Creación */}
-      <td className="pm-t-td pm-t-td--creacion">
-        <span className="pm-t-fecha-creacion">{fmtFecha(fila.creadoEn)}</span>
-        {fila.creadoPor && (
-          <span className="pm-t-creador">{fila.creadoPor}</span>
-        )}
-      </td>
-
-      {/* Estado */}
-      <td className="pm-t-td pm-t-td--estado">
-        <span className={`pm-admin-badge ${cfg.cls}`}>
-          <span className="pm-admin-badge-dot" style={{ background: cfg.dot }} />
-          {cfg.label}
-        </span>
-      </td>
-
-      {/* Acciones */}
-      <td className="pm-t-td pm-t-td--acciones">
-        <div className="pm-t-acciones">
-          <button className="pm-t-btn pm-t-btn--monitor" onClick={onMonitorear} title={accionLabel}>
-            👁 {accionLabel}
-          </button>
-          {cancelable && (
-            <MenuContextual onCancelar={onCancelar} />
-          )}
-        </div>
-      </td>
-    </tr>
+      {expandido && (
+        <tr className="pm-t-fila-detalle">
+          <td colSpan={3} className="pm-t-td-detalle">
+            <div className="pm-t-detalle-contenido">
+              {fila.oc && (
+                <span className="pm-t-detalle-linea">
+                  <span className="pm-t-detalle-lbl">OC:</span>
+                  <span className="pm-t-detalle-val">{fila.oc}</span>
+                </span>
+              )}
+              {fila.entrega && (
+                <span className="pm-t-detalle-sep">·</span>
+              )}
+              {fila.entrega && (
+                <span className="pm-t-detalle-linea">
+                  <span className="pm-t-detalle-lbl">Fecha de entrega:</span>
+                  <span className="pm-t-detalle-val">{fila.entrega}</span>
+                </span>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -328,6 +336,12 @@ export function PickingMasivoPage() {
           </button>
         )}
       </div>
+      <p className="notas-descripcion">
+        {ROL === 'admin'      && 'Crea y gestiona sesiones de picking masivo. Carga el archivo Excel, supervisa el avance por fases y confirma el despacho final al cliente o proveedor.'}
+        {ROL === 'supervisor' && 'Supervisa el estado de todas las órdenes de picking masivo. Monitorea el avance por proveedor, filtra por fecha de entrega y coordina el despacho con el equipo.'}
+        {ROL === 'operador'   && 'Aquí encontrarás las sesiones de picking asignadas. Extrae los productos indicados de la bodega y prepara cada LPN hasta completar tu tarea.'}
+        {ROL === 'validador'  && 'Verifica que los códigos de barra y SKU de cada LPN coincidan con los productos preparados. Detecta discrepancias antes de que la orden avance al despacho.'}
+      </p>
 
       {/* ── KPIs ── */}
       <div className="pm-admin-kpis">
@@ -407,8 +421,6 @@ export function PickingMasivoPage() {
               <thead>
                 <tr className="pm-t-thead-tr">
                   <th className="pm-t-th pm-t-th--id">Cliente / Proveedor</th>
-                  <th className="pm-t-th pm-t-th--entrega">Entrega</th>
-                  <th className="pm-t-th pm-t-th--creacion">Creación</th>
                   <th className="pm-t-th pm-t-th--estado">Estado</th>
                   <th className="pm-t-th pm-t-th--acciones">Acciones</th>
                 </tr>

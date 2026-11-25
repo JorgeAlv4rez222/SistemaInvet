@@ -19,11 +19,13 @@ function useTema(): [Tema, () => void] {
 }
 
 type NavItem = {
-  ruta:        string
-  label:       string
-  labelCorto:  string
-  roles?:      UserRole[]   // undefined = visible para todos
-  icono:       React.ReactNode
+  ruta:           string
+  label:          string
+  labelCorto:     string
+  roles?:         UserRole[]   // undefined = visible para todos
+  rolesExcluidos?: UserRole[]  // ocultar para estos roles específicos
+  oculto?:        boolean       // desactivar completamente de la barra
+  icono:          React.ReactNode
 }
 
 // ── iconos SVG reutilizables ──────────────────────────────────────────────
@@ -36,7 +38,7 @@ const IcoTraslado = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const IcoHistoria = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 const IcoUbicacion= <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
 const IcoEtiqueta = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-const IcoPicking  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+const IcoPicking  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="13" width="8" height="8" rx="1"/><rect x="15" y="13" width="8" height="8" rx="1"/><rect x="7" y="4" width="10" height="8" rx="1"/><line x1="5" y1="13" x2="5" y2="21"/><line x1="19" y1="13" x2="19" y2="21"/><line x1="12" y1="4" x2="12" y2="12"/></svg>
 const IcoUsuarios = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 const IcoDashboard= <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
 const IcoReporte  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -64,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     ruta: '/ubicaciones', label: 'Mapa Bodega', labelCorto: 'Mapa',
-    icono: IcoMap,
+    icono: IcoMap, rolesExcluidos: ['etiquetado'],
   },
   // ── Solo Admin ───────────────────────────────────────────────────────────
   {
@@ -84,22 +86,17 @@ const NAV_ITEMS: NavItem[] = [
   // ── Admin + Operador ─────────────────────────────────────────────────────
   {
     ruta: '/traslados', label: 'Traslado', labelCorto: 'Traslado', roles: ['admin', 'operador'],
-    icono: IcoTraslado,
-  },
-  // ── Admin + Supervisor ───────────────────────────────────────────────────
-  {
-    ruta: '/historial', label: 'Historial', labelCorto: 'Historial', roles: ['admin', 'supervisor'],
-    icono: IcoHistoria,
+    icono: IcoTraslado, oculto: true,
   },
   // ── Admin + Supervisor + Operador ────────────────────────────────────────
   {
     ruta: '/inventario-inicial', label: 'Ubicacion Inicial', labelCorto: 'Ubicación', roles: ['admin', 'supervisor', 'operador'],
-    icono: IcoUbicacion,
+    icono: IcoUbicacion, oculto: true,
   },
   // ── Solo Admin ───────────────────────────────────────────────────────────
   {
     ruta: '/etiquetas', label: 'Etiquetas', labelCorto: 'Etiquetas', roles: ['admin'],
-    icono: IcoEtiqueta,
+    icono: IcoEtiqueta, oculto: true,
   },
   // ── Admin + Supervisor: ruta principal picking masivo ────────────────────
   {
@@ -110,6 +107,11 @@ const NAV_ITEMS: NavItem[] = [
   {
     ruta: '/picking-masivo/operador', label: 'Picking Masivo', labelCorto: 'Picking', roles: ['operador'],
     icono: IcoPicking,
+  },
+  // ── Solo Admin ───────────────────────────────────────────────────────────
+  {
+    ruta: '/historial', label: 'Historial', labelCorto: 'Historial', roles: ['admin'],
+    icono: IcoHistoria,
   },
   // ── Solo Admin ───────────────────────────────────────────────────────────
   {
@@ -179,12 +181,14 @@ export function Layout({ children }: Props) {
   const esEtiquetado  = rol === 'etiquetado'
   const nombre     = localStorage.getItem('user_nombre') ?? ''
 
-  const itemsVisibles = NAV_ITEMS.filter((item) =>
-    !item.roles || (rol !== null && item.roles.includes(rol))
-  )
+  const itemsVisibles = NAV_ITEMS.filter((item) => {
+    if (item.oculto) return false
+    if (item.roles && (rol === null || !item.roles.includes(rol))) return false
+    if (item.rolesExcluidos && rol !== null && item.rolesExcluidos.includes(rol)) return false
+    return true
+  })
 
-  // Operador/etiquetado siempre expandido; admin/supervisor pueden colapsar
-  const [expandido, setExpandido] = useState(() => esOperador || esEtiquetado || window.innerWidth >= 1101)
+  const expandido = false
 
   async function handleLogout() {
     await logout()
@@ -231,19 +235,10 @@ export function Layout({ children }: Props) {
         ${expandido ? 'w-52' : 'w-16'}
       `}
     >
-      {/* Logo + toggle */}
-      <div className={`flex items-center border-b border-[rgba(255,255,255,0.06)] shrink-0 h-16 ${expandido ? 'px-3 gap-2' : 'justify-center'}`}>
-        {expandido && (
-          <button onClick={() => navigate('/home')} className="flex-1 flex items-center min-w-0">
-            <img src={logoSrc} alt="Grantt" className="h-10 w-auto object-contain" />
-          </button>
-        )}
-        <button
-          onClick={() => setExpandido(e => !e)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-[#F1F5F9] opacity-60 hover:opacity-100 hover:bg-[rgba(255,255,255,0.08)] transition-all shrink-0"
-          title={expandido ? 'Contraer' : 'Expandir'}
-        >
-          {expandido ? <IconClose /> : <IconMenu />}
+      {/* Logo */}
+      <div className="flex items-center justify-center border-b border-[rgba(255,255,255,0.06)] shrink-0 h-16">
+        <button onClick={() => navigate('/home')} title="Inicio">
+          <img src={logoSrc} alt="Grantt" className="h-9 w-auto object-contain" />
         </button>
       </div>
 
@@ -396,6 +391,14 @@ export function Layout({ children }: Props) {
           {children}
         </main>
       </div>
+
+      {/* ── Nombre de usuario fijo esquina inferior derecha ── */}
+      {nombre && (
+        <div className="layout-nombre-fijo">
+          <IconUser />
+          <span>{nombre}</span>
+        </div>
+      )}
 
     </div>
   )

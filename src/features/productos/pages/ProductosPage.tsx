@@ -152,6 +152,7 @@ export function ProductosPage() {
 
       {offline && <div className="aviso-offline">Sin conexión — datos en caché</div>}
 
+      <p className="notas-descripcion">Consulta el catálogo de productos por nombre, SKU o código de barras. Revisa stock, ubicaciones en bodega y ficha completa de cada artículo.</p>
       <div className="barra-busqueda">
         <input
           type="search"

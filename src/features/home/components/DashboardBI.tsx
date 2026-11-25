@@ -153,6 +153,7 @@ function DashboardBIInner() {
           <p className="bi-subtitulo">{rolLabel && `${rolLabel} · `}Bodega Central Grantt — {mesActual}</p>
         </div>
       </div>
+      <p className="notas-descripcion">Panel de control de la bodega. Revisa el estado actual de las notas de venta, importaciones y la actividad reciente del turno.</p>
 
       {/* KPIs */}
       <div className="bi-kpi-op-row">

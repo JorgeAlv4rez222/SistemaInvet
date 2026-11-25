@@ -893,6 +893,27 @@ export const notasService = {
 
     await supabase.from('notas_venta').update({ estado: 'completa' }).eq('id', input.notaId)
 
+    // Cuando se envía directo a revisión sin picking, copiar cantidad_solicitada → cantidad_despachada
+    // solo en los productos que aún tienen cantidad_despachada = 0
+    const { data: productos } = await supabase
+      .from('nota_productos')
+      .select('id, cantidad_solicitada, cantidad_despachada')
+      .eq('nota_venta_id', input.notaId)
+
+    if (productos?.length) {
+      const sinDespachar = productos.filter((p: any) => !p.cantidad_despachada)
+      if (sinDespachar.length) {
+        await Promise.all(
+          sinDespachar.map((p: any) =>
+            supabase
+              .from('nota_productos')
+              .update({ cantidad_despachada: p.cantidad_solicitada })
+              .eq('id', p.id)
+          )
+        )
+      }
+    }
+
     await supabase.from('movimientos').insert({
       tipo:          'cambio_estado_nota',
       nota_venta_id: input.notaId,

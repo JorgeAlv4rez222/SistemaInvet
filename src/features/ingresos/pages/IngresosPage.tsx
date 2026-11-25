@@ -688,6 +688,9 @@ export function IngresosPage() {
           <span className="ingresos-titulo-sub"> / {detalleActual.codigo}</span>
         )}
       </h1>
+      {vista.tipo === 'lista' && (
+        <p className="notas-descripcion">Gestión de órdenes de compra en tránsito. Registra el ingreso de mercadería, ubica los productos en bodega y controla el estado de cada importación.</p>
+      )}
 
       {offline && (
         <div className="aviso-offline">

@@ -188,6 +188,7 @@ export function ProduccionAdminPage() {
         <h1 className="pa-titulo">Control de Producción</h1>
         <p className="pa-subtitulo">Vista administrador</p>
       </div>
+      <p className="notas-descripcion">Seguimiento de tareas productivas. Registra tiempos, unidades logradas y metas para medir el rendimiento de cada turno.</p>
 
       {/* Filtros */}
       <div className="pa-filtros">

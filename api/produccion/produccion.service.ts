@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase/client'
 import type { ServiceResult } from '../../src/shared/types/base'
 
-export type TipoTarea = 'etiquetado' | 'cambio_codigo' | 'cambio_bolsa' | 'codigo_sku_dun' | 'sellado'
+export type TipoTarea = 'etiquetado' | 'cambio_codigo' | 'cambio_bolsa' | 'codigo_sku_dun' | 'sellado' | 'otro'
 
 export type RegistroProduccion = {
   id:                string

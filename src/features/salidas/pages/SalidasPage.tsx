@@ -309,6 +309,9 @@ export function SalidasPage() {
         </div>
       )}
 
+      {/* Subtítulo informativo */}
+      <p className="notas-descripcion">Revisión y despacho de notas de venta. Verifica cada ítem escaneando su código, asigna el chofer y confirma el despacho al cliente.</p>
+
       {/* Búsqueda + Filtro */}
       <div className="notas-toolbar">
         <div className="ing-busqueda">

@@ -239,6 +239,7 @@ export function NotasPage() {
 
       {/* Búsqueda + Filtro */}
       <div className="notas-toolbar">
+        <p className="notas-descripcion">Gestión de órdenes de preparación. Revisa y completa cada nota de venta asignando operadores y confirmando los ítems despachados.</p>
         <div className="ing-busqueda">
           <span className="ing-busqueda-icono"><IconSearch /></span>
           <input

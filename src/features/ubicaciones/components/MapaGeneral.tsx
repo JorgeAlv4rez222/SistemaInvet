@@ -51,7 +51,7 @@ export function MapaGeneral({
   return (
     <>
       <h1 className="mapa-titulo">Mapa de Bodega</h1>
-      <p className="mapa-subtitulo">Toca un rack para ver su detalle</p>
+      <p className="notas-descripcion">Visualización interactiva de la bodega. Selecciona un rack para ver sus posiciones, niveles y el stock almacenado en cada ubicación.</p>
 
       <div className="mapa-filtro-estado">
         <button

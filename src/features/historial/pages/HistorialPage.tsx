@@ -1453,8 +1453,11 @@ export function HistorialPage() {
 
   return (
     <div className="historial-page">
+      <h1 className="hist-page-titulo">Historial de movimientos</h1>
+      <p className="notas-descripcion">Registro completo de entradas, salidas y traslados de la bodega. Filtra por tipo, fecha o producto para auditar cualquier movimiento de inventario.</p>
+
       {/* ── Tabs ── */}
-      <div className="flex gap-1 bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-2xl p-1 mb-4 w-full tablet:w-fit overflow-hidden">
+      <div className="flex gap-1 bg-[var(--bg-surface)] border border-[var(--border-light)] rounded-2xl p-1 mb-2 w-full tablet:w-fit overflow-hidden">
         {(
           [
             {
@@ -1484,15 +1487,6 @@ export function HistorialPage() {
                 </svg>
               ),
             },
-            {
-              key: 'picking',
-              label: 'PM',
-              icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={15} height={15}>
-                  <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                </svg>
-              ),
-            },
           ] as { key: typeof vista; label: string; icon: React.ReactNode }[]
         ).map(({ key, label, icon }) => (
           <button
@@ -1510,9 +1504,14 @@ export function HistorialPage() {
         ))}
       </div>
 
-      {vista === 'ingresos' && <IngresosHistorialView />}
+      {/* Subtítulo dinámico por tab */}
+      <p className="hist-tab-descripcion">
+        {vista === 'movimientos' && 'Registro cronológico de todas las entradas, salidas y traslados de inventario en la bodega.'}
+        {vista === 'ingresos'    && 'Movimientos generados por importaciones y órdenes de compra ingresadas al sistema.'}
+        {vista === 'notas'       && 'Movimientos de salida asociados a notas de venta preparadas y despachadas a clientes.'}
+      </p>
 
-      {vista === 'picking' && <PickingHistorialView />}
+      {vista === 'ingresos' && <IngresosHistorialView />}
 
       {vista === 'notas' && (
         <NotasHistorialView />

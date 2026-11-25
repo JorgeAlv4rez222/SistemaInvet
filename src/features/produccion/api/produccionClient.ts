@@ -8,6 +8,7 @@ export const TIPOS_TAREA: { value: TipoTarea; label: string }[] = [
   { value: 'cambio_bolsa',  label: 'Cambio de bolsa' },
   { value: 'codigo_sku_dun',label: 'Colocación SKU / DUN' },
   { value: 'sellado',       label: 'Sellado' },
+  { value: 'otro',          label: 'Otro' },
 ]
 
 async function apiFetch<T>(url: string, opts?: RequestInit): Promise<T> {
