@@ -44,6 +44,15 @@ type LineaDespacho = {
 
 // ── Tarjeta LPN ───────────────────────────────────────────────────────────────
 
+function IcoChevron({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"
+      width={14} height={14} style={{ transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  )
+}
+
 function LpnCard({
   lpn, lineas, olaId, supervisorId,
 }: {
@@ -52,11 +61,10 @@ function LpnCard({
   olaId: string
   supervisorId: string
 }) {
+  const [abierto, setAbierto] = useState(false)
   const validado   = lineas.every(l => l.fase3_validado)
   const tienda     = lineas[0]?.tienda ?? '—'
   const orden      = lineas[0]?.ola_ordenes?.numero_orden ?? null
-  const totalUds   = lineas.reduce((s, l) => s + l.cantidad_solicitada, 0)
-  const esMultiSku = lineas.length > 1
   const rollback   = useRollbackLineaF3(olaId)
 
   async function handleRollback(lineaId: string, e: React.MouseEvent) {
@@ -65,29 +73,29 @@ function LpnCard({
   }
 
   return (
-    <div className={`prep-lpn-card ${validado ? 'prep-lpn-card--done' : ''}`}>
+    <div className={`prep-lpn-card desp-lpn-card ${validado ? 'prep-lpn-card--done' : ''}`}
+      onClick={() => setAbierto(a => !a)} style={{ cursor: 'pointer' }}>
       <div className="prep-lpn-header">
         <div className="prep-lpn-id-wrap">
-          <span className="prep-lpn-id">{lpn}</span>
+          <span className="prep-lpn-id"><span className="prep-lpn-prefix">LPN</span> {lpn.slice(-5)}</span>
           {orden && <span className="prep-lpn-orden">OC: {orden}</span>}
         </div>
-        <div className="prep-lpn-meta">
-          {validado
-            ? <span className="prep-lpn-badge prep-lpn-badge--ok"><IcoCheck /> Validado</span>
-            : <span className="prep-lpn-badge prep-lpn-badge--pend">{totalUds} Uds</span>
-          }
+        <div className="prep-lpn-meta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {validado && <span className="prep-lpn-badge prep-lpn-badge--ok"><IcoCheck /> Validado</span>}
+          <span className="desp-lpn-chevron"><IcoChevron open={abierto} /></span>
         </div>
       </div>
       <div className="prep-lpn-tienda"><IcoStore /> {tienda}</div>
 
-      {esMultiSku && (
-        <div className="desp-multisku-lineas">
+      {abierto && (
+        <div className="desp-expand" onClick={e => e.stopPropagation()}>
+          <span className="desp-expand-titulo">Producto solicitado</span>
           {lineas.map(l => (
-            <div key={l.id} className="desp-multisku-fila">
-              <span className={`desp-multisku-chip ${l.fase3_validado ? 'desp-multisku-chip--ok' : ''}`}>
+            <div key={l.id} className="desp-expand-fila">
+              <span className={`desp-expand-codigo ${l.fase3_validado ? 'desp-expand-codigo--ok' : ''}`}>
                 {l.descripcion}
               </span>
-              <span className="desp-multisku-uds">{l.cantidad_solicitada} Uds</span>
+              <span className="desp-expand-cant">Cantidad: {l.cantidad_solicitada}</span>
               {l.fase3_validado && (
                 <button
                   className="desp-multisku-rollback"
@@ -228,12 +236,17 @@ export function DespachoOlaPage() {
           <IcoBack /> Volver
         </button>
         <div className="sd-header-title">
-          <span className="sd-header-nombre">Validar Carga — {proveedor}</span>
+          <span className="sd-header-nombre">Validación de carga</span>
           {ola?.fecha_entrega && (
             <span className="sd-header-meta">Entrega: {ola.fecha_entrega}</span>
           )}
         </div>
       </div>
+
+      {/* ── Descripción ── */}
+      <p className="desp-descripcion">
+        Procedimiento de verificación posterior a la preparación, destinado a confirmar que el código y la cantidad de cada artículo sean correctos previo al despacho
+      </p>
 
       {/* ── Progreso ── */}
       <div className="cola-progreso-wrap">
@@ -348,20 +361,21 @@ export function DespachoOlaPage() {
               <h3 className="desp-modal-titulo">Confirmar bulto</h3>
               <div className="desp-modal-fila">
                 <span className="desp-modal-label desp-modal-label--white">LPN</span>
-                <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip">{lpnPendiente.lpn}</span>
+                <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip">{lpnPendiente.lpn.slice(-5)}</span>
               </div>
               <div className="desp-modal-fila desp-modal-fila--sep">
                 <span className="desp-modal-label desp-modal-label--white">Tienda destino</span>
                 <span className="desp-modal-valor desp-modal-valor--white">{lpnPendiente.lineas[0]?.tienda ?? '—'}</span>
               </div>
               <div className="desp-modal-body">
+                <span className="desp-modal-seccion-titulo">Productos solicitados</span>
                 {lpnPendiente.lineas.map(l => {
                   const checked = !!checkboxes[l.id]
                   if (!esMultiSku) {
                     return (
-                      <div key={l.id} className="desp-modal-fila">
-                        <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip" style={{ fontSize: '0.85rem' }}>{l.descripcion}</span>
-                        <span className="desp-modal-valor desp-modal-valor--xl">{l.cantidad_solicitada} Uds</span>
+                      <div key={l.id} className="desp-modal-prod-marco">
+                        <span className="desp-modal-valor desp-modal-valor--mono desp-modal-valor--chip" style={{ fontSize: '1.1rem' }}>{l.descripcion}</span>
+                        <span className="desp-modal-prod-cant">Cantidad: {l.cantidad_solicitada}</span>
                       </div>
                     )
                   }
@@ -396,7 +410,7 @@ export function DespachoOlaPage() {
                   disabled={confirmando || !todosChecked}
                   onClick={handleConfirmarLpn}
                 >
-                  {confirmando ? 'Confirmando…' : 'Confirmar carga'}
+                  {confirmando ? 'Confirmando…' : 'Confirmar'}
                 </button>
               </div>
             </div>

@@ -94,7 +94,7 @@ export function useLineasPreparacion(olaId: string | null) {
     queryFn:         () => olasApi.lineasPreparacion(olaId!),
     enabled:         !!olaId,
     staleTime:       0,
-    refetchInterval: 3000,
+    refetchInterval: 2000,
   })
 }
 
@@ -103,7 +103,20 @@ export function useEscanearLpnF2(olaId: string) {
   return useMutation({
     mutationFn: ({ lpn, usuarioId }: { lpn: string; usuarioId: string }) =>
       olasApi.escanearLpnF2(olaId, lpn, usuarioId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['olas', 'preparacion', olaId] }),
+    onMutate: async ({ lpn }) => {
+      await qc.cancelQueries({ queryKey: ['olas', 'preparacion', olaId] })
+      const prev = qc.getQueryData(['olas', 'preparacion', olaId])
+      qc.setQueryData(['olas', 'preparacion', olaId], (old: any) =>
+        Array.isArray(old)
+          ? old.map(l => l.lpn === lpn ? { ...l, fase2_escaneado: true } : l)
+          : old
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['olas', 'preparacion', olaId], ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['olas', 'preparacion', olaId] }),
   })
 }
 

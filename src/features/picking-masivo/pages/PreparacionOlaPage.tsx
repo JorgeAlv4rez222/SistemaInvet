@@ -142,7 +142,7 @@ function LpnCard({ lpn, lineas, resaltado }: { lpn: string; lineas: LineaLpn[]; 
       {/* ── Cabecera LPN ── */}
       <div className="prep-lpn-header">
         <div className="prep-lpn-id-wrap">
-          <span className="prep-lpn-id">{lpn}</span>
+          <span className="prep-lpn-id"><span className="prep-lpn-prefix">LPN</span> {lpn.slice(-5)}</span>
           {orden && <span className="prep-lpn-orden">OC: {orden}</span>}
         </div>
         <div className="prep-lpn-meta">
