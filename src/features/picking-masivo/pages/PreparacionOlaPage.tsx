@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useOla, useLineasPreparacion } from '../hooks/useOlas'
+import { useOla, useLineasPreparacion, useEscanearLpnF2 } from '../hooks/useOlas'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
 import type { LineaLpn } from '../services/olas.api'
+import { ApiResponseError } from '../../../shared/utils/apiClient'
 
 // ── Íconos ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,100 @@ function IcoScan() {
 }
 function IcoStore() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+}
+function IcoX() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+}
+function IcoCheckBig() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}><polyline points="20 6 9 17 4 12"/></svg>
+}
+
+// ── Tarjeta flotante LPN ──────────────────────────────────────────────────────
+
+function LpnFloatCard({
+  lpn, lineas, olaId, operadorId,
+  onClose, onConfirmado,
+}: {
+  lpn: string
+  lineas: LineaLpn[]
+  olaId: string
+  operadorId: string
+  onClose: () => void
+  onConfirmado: () => void
+}) {
+  const escanear   = useEscanearLpnF2(olaId)
+  const [carg, setCarg]   = useState(false)
+  const [err,  setErr]    = useState<string | null>(null)
+
+  const tienda   = lineas[0]?.tienda ?? '—'
+  const orden    = lineas[0]?.ola_ordenes?.numero_orden ?? null
+  const yaListo  = lineas.length > 0 && lineas.every(l => l.fase2_escaneado)
+  const sufijo   = lpn.slice(-5)
+
+  async function handleConfirmar() {
+    setErr(null); setCarg(true)
+    try {
+      await escanear.mutateAsync({ lpn, usuarioId: operadorId })
+      onConfirmado()
+    } catch (e) {
+      setErr(e instanceof ApiResponseError ? e.message : 'Error al confirmar LPN')
+    } finally {
+      setCarg(false)
+    }
+  }
+
+  return (
+    <div className="prep-float-backdrop" onClick={onClose}>
+      <div className="prep-float-card" onClick={e => e.stopPropagation()}>
+        {/* ── Cabecera ── */}
+        <div className="prep-float-header">
+          <div className="prep-float-lpn-inline">
+            <span className="prep-float-lpn-label">LPN:</span>
+            <span className="prep-float-lpn-num">{sufijo}</span>
+          </div>
+          <button className="prep-float-close" onClick={onClose}><IcoX /></button>
+        </div>
+
+        {/* ── Tienda ── */}
+        <div className="prep-float-row">
+          <span className="prep-float-lbl"><IcoStore /> TIENDA DESTINO</span>
+          <span className="prep-float-val prep-float-val--big">{tienda}</span>
+        </div>
+
+        {/* ── Líneas: código + cantidad en fila ── */}
+        {lineas.map(l => (
+          <div key={l.id} className="prep-float-cod-qty">
+            <div className="prep-float-row prep-float-row--half">
+              <span className="prep-float-lbl">CÓDIGO</span>
+              <span className="prep-float-val">{l.descripcion}</span>
+            </div>
+            <div className="prep-float-row prep-float-row--half">
+              <span className="prep-float-lbl">CANTIDAD</span>
+              <span className="prep-float-val prep-float-val--qty">{l.cantidad_solicitada}</span>
+            </div>
+          </div>
+        ))}
+
+        {err && <div className="cf-error-banner" style={{ margin: '8px 0 0' }}><IcoWarn /> {err}</div>}
+
+        {/* ── Botón ── */}
+        {yaListo ? (
+          <div className="cf-scan-ok" style={{ fontSize: '0.95rem', padding: '14px' }}>
+            <IcoCheckBig /> Este LPN ya fue confirmado
+          </div>
+        ) : (
+          <button
+            className="cf-carga-total-btn cf-carga-total-btn--confirm"
+            style={{ marginTop: 12 }}
+            disabled={carg}
+            onClick={handleConfirmar}
+          >
+            {carg ? 'Guardando…' : 'Confirmar Productos'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function fmtDt(iso: string | null): string {
@@ -98,6 +193,7 @@ export function PreparacionOlaPage() {
   const [scanInput, setScanInput]     = useState('')
   const [error, setError]             = useState<string | null>(null)
   const [filtro, setFiltro]           = useState<'todas' | 'pendientes' | 'listas'>('pendientes')
+  const [lpnActivo, setLpnActivo]     = useState<string | null>(null)
   const inputRef                      = useRef<HTMLInputElement>(null)
   const resaltado: string | null      = null
 
@@ -152,7 +248,8 @@ export function PreparacionOlaPage() {
       setError(`LPN no encontrado. Ingresa el número impreso bajo el código de barras.`)
       return
     }
-    navigate(`/picking-masivo/ola/${olaId}/preparacion/${encodeURIComponent(lpn)}`)
+    setLpnActivo(lpn)
+    setScanInput('')
   }
 
   const proveedor = ola ? ola.proveedor.charAt(0).toUpperCase() + ola.proveedor.slice(1) : '…'
@@ -260,6 +357,18 @@ export function PreparacionOlaPage() {
             />
           ))}
         </div>
+      )}
+
+      {/* ── Tarjeta flotante ── */}
+      {lpnActivo && porLpn[lpnActivo] && (
+        <LpnFloatCard
+          lpn={lpnActivo}
+          lineas={porLpn[lpnActivo]}
+          olaId={olaId}
+          operadorId={operadorId}
+          onClose={() => { setLpnActivo(null); inputRef.current?.focus() }}
+          onConfirmado={() => { setLpnActivo(null); setScanInput(''); inputRef.current?.focus() }}
+        />
       )}
     </div>
   )
