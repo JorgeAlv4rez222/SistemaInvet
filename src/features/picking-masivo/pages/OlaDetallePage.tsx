@@ -377,7 +377,7 @@ export function OlaDetallePage() {
                 activo={ola.estado === 'en_preparacion'}
                 hecho={fase > 2}
                 verDetalle={!esOperador}
-                onIr={!esOperador ? () => navigate(`/picking-masivo/ola/${id}/preparacion`) : undefined}
+                onIr={() => navigate(`/picking-masivo/ola/${id}/preparacion`)}
                 btnLabel="Ver preparación"
               />
             )}
