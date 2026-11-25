@@ -454,10 +454,12 @@ export function SalidasPage() {
                       }
                     </span>
                     <span className="nota-card-sep" aria-hidden="true">|</span>
-                    <span className="nota-expand-item">
-                      <IcoTruck size={14} />
-                      {nota.nombreChofer ? nota.nombreChofer : 'Sin chofer'}
-                    </span>
+                    {(esDespachada || nota.nombreChofer) && (
+                      <span className="nota-expand-item">
+                        <IcoTruck size={14} />
+                        {nota.nombreChofer ?? 'Sin chofer'}
+                      </span>
+                    )}
                     {nota.comentarioDespacho && (
                       <>
                         <span className="nota-card-sep" aria-hidden="true">|</span>
