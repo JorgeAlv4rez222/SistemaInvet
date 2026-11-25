@@ -15610,10 +15610,32 @@ input[type="radio"] {
 .ep-textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
 
 /* Fila SKU + scan */
+.ep-sku-wrap { position: relative; }
 .ep-input-scan-row {
   display: flex; gap: 8px; align-items: stretch;
 }
 .ep-input--sku { flex: 1; }
+.ep-sugs {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+  margin: 0; padding: 4px 0; list-style: none;
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  max-height: 260px; overflow-y: auto;
+}
+.ep-sug-item {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+  transition: background .12s;
+}
+.ep-sug-item:hover { background: var(--bg-hover, rgba(0,160,223,.1)); }
+.ep-sug-sku {
+  font-weight: 700; font-size: .9rem; color: #00A0DF;
+  min-width: 56px; flex-shrink: 0;
+}
+.ep-sug-nombre {
+  font-size: .84rem; color: var(--text-muted); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
 .ep-scan-btn-wrap .btn-camara {
   width: 50px !important; height: 50px !important;
   border-radius: 12px !important;

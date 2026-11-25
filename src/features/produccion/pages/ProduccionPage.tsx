@@ -44,12 +44,54 @@ const IcoScan = () => (
 )
 
 // ── Formulario nueva tarea ─────────────────────────────────────────────────────
+type Sugerencia = { sku: string; nombre: string }
+
 function FormIniciar({ onIniciar }: { onIniciar: (p: { tipoTarea: TipoTarea; sku: string; unidadesMeta: number }) => Promise<void> }) {
   const [tipo,  setTipo]  = useState<TipoTarea>('etiquetado')
   const [sku,   setSku]   = useState('')
   const [meta,  setMeta]  = useState('')
   const [carg,  setCarg]  = useState(false)
   const [err,   setErr]   = useState<string | null>(null)
+  const [sugs,  setSugs]  = useState<Sugerencia[]>([])
+  const [showSugs, setShowSugs] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapRef     = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setShowSugs(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function handleSkuChange(val: string) {
+    setSku(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const term = val.trim()
+    if (term.length < 2) { setSugs([]); setShowSugs(false); return }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('auth_token') ?? ''
+        const res = await fetch(`/api/productos?q=${encodeURIComponent(term)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const raw = await res.json()
+        const arr: Array<{ sku: string; nombre: string }> = Array.isArray(raw) ? raw : (raw.productos ?? raw.items ?? [])
+        const lista: Sugerencia[] = arr.slice(0, 8).map(p => ({ sku: p.sku, nombre: p.nombre }))
+        setSugs(lista)
+        setShowSugs(lista.length > 0)
+      } catch { /* silencioso */ }
+    }, 300)
+  }
+
+  function seleccionarSku(s: Sugerencia) {
+    setSku(s.sku)
+    setShowSugs(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -80,18 +122,32 @@ function FormIniciar({ onIniciar }: { onIniciar: (p: { tipoTarea: TipoTarea; sku
 
       <div className="ep-field">
         <label className="ep-label">Producto / SKU</label>
-        <div className="ep-input-scan-row">
-          <input
-            className="ep-input ep-input--sku"
-            type="text"
-            placeholder="Ej: 0452"
-            value={sku}
-            onChange={e => setSku(e.target.value)}
-            autoCapitalize="characters"
-          />
-          <div className="ep-scan-btn-wrap">
-            <BarcodeScanner onDetected={val => setSku(val)} title="Escanear código" />
+        <div className="ep-sku-wrap" ref={wrapRef}>
+          <div className="ep-input-scan-row">
+            <input
+              className="ep-input ep-input--sku"
+              type="text"
+              placeholder="Ej: 0452"
+              value={sku}
+              onChange={e => handleSkuChange(e.target.value)}
+              onFocus={() => { if (sugs.length > 0) setShowSugs(true) }}
+              autoCapitalize="characters"
+              autoComplete="off"
+            />
+            <div className="ep-scan-btn-wrap">
+              <BarcodeScanner onDetected={val => { setSku(val); setShowSugs(false) }} title="Escanear código" />
+            </div>
           </div>
+          {showSugs && (
+            <ul className="ep-sugs">
+              {sugs.map(s => (
+                <li key={s.sku} className="ep-sug-item" onMouseDown={() => seleccionarSku(s)}>
+                  <span className="ep-sug-sku">{s.sku}</span>
+                  <span className="ep-sug-nombre">{s.nombre}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
