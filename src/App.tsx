@@ -9,6 +9,7 @@ import { Layout }           from './shared/components/Layout'
 import { HomePage }         from './features/home/pages/HomePage'
 import { UbicacionesPage }  from './features/ubicaciones/pages/UbicacionesPage'
 import { ProductosPage }    from './features/productos/pages/ProductosPage'
+import { NuevoProductoPage } from './features/productos/pages/NuevoProductoPage'
 import { IngresosPage }     from './features/ingresos/pages/IngresosPage'
 import { NotasPage }        from './features/notas/pages/NotasPage'
 import { NotaDetallePage }  from './features/notas/pages/NotaDetallePage'
@@ -55,7 +56,8 @@ export default function App() {
       {/* Admin + Operador */}
       <Route path="/home"        element={<Protected><HomePage /></Protected>} />
       <Route path="/ubicaciones" element={<Protected><UbicacionesPage /></Protected>} />
-      <Route path="/productos"   element={<Protected><ProductosPage /></Protected>} />
+      <Route path="/productos"       element={<Protected><ProductosPage /></Protected>} />
+      <Route path="/productos/nuevo" element={<Protected><NuevoProductoPage /></Protected>} />
       <Route path="/notas"       element={<Protected><NotasPage /></Protected>} />
       <Route path="/notas/:id"   element={<Protected><NotaDetallePage /></Protected>} />
       <Route path="/traslados"   element={<Protected><TrasladosPage /></Protected>} />

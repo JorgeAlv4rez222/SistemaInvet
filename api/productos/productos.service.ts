@@ -35,7 +35,61 @@ export type UbicacionDetalle = {
   fechaIngreso:    string
 }
 
+export type CrearProductoInput = {
+  sku:                  string
+  nombre:               string
+  codigo_barra:         string
+  prefijo:              string
+  codigo_grupo:         string
+  descripcion_grupo:    string
+  codigo_subgrupo:      string
+  descripcion_subgrupo: string
+  alto_cm:              number
+  ancho_cm:             number
+  largo_cm:             number
+  peso_kg:              number
+}
+
+export const PREFIJOS_VALIDOS = [
+  '2 USB','B','BK','BO','CG000','CG001','CG002','CG003','CP005',
+  'DR','EK','GT','HX','LED E14','LED E27','LED GU10','NUMERICO','PACK','UB','PL',
+] as const
+
 export const productosService = {
+
+  async crearProducto(input: CrearProductoInput): Promise<ServiceResult<Producto>> {
+    const { data: existe } = await supabase
+      .from('productos')
+      .select('id')
+      .eq('sku', input.sku.toUpperCase().trim())
+      .maybeSingle()
+
+    if (existe) return { ok: false, error: { code: 'CONFLICT', message: `El SKU "${input.sku}" ya existe.` } }
+
+    const { data, error } = await supabase
+      .from('productos')
+      .insert({
+        sku:                  input.sku.toUpperCase().trim(),
+        nombre:               input.nombre.trim(),
+        codigo_barra:         input.codigo_barra.trim(),
+        prefijo:              input.prefijo,
+        codigo_grupo:         input.codigo_grupo.trim(),
+        descripcion_grupo:    input.descripcion_grupo.trim(),
+        codigo_subgrupo:      input.codigo_subgrupo.trim(),
+        descripcion_subgrupo: input.descripcion_subgrupo.trim(),
+        alto_cm:              input.alto_cm,
+        ancho_cm:             input.ancho_cm,
+        largo_cm:             input.largo_cm,
+        peso_kg:              input.peso_kg,
+        activo:               true,
+        stock_total:          0,
+      })
+      .select()
+      .single()
+
+    if (error || !data) return { ok: false, error: { code: 'DB_ERROR', message: error?.message ?? 'Error al crear producto.' } }
+    return { ok: true, data: data as Producto }
+  },
 
   async obtenerUbicaciones(productoId: string): Promise<ServiceResult<UbicacionDetalle[]>> {
     const { data, error } = await supabase

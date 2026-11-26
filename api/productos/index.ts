@@ -4,6 +4,15 @@ import { productosService } from './productos.service'
 import type { ProductoConUbicacion } from './productos.service'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    const result = await productosService.crearProducto(req.body)
+    if (!result.ok) {
+      const status = result.error?.code === 'CONFLICT' ? 409 : 500
+      return res.status(status).json({ error: result.error })
+    }
+    return res.status(201).json(result.data)
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' })
   }

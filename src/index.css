@@ -3712,6 +3712,192 @@ label {
 /* ═══════════════════════════════════════════════════════════
    PRODUCTOS PAGE
    ═══════════════════════════════════════════════════════════ */
+
+/* ── Nuevo Producto (np-) ──────────────────────────────────── */
+.np-wrap {
+  padding: var(--spacing-md);
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.np-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.np-btn-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+.np-btn-back:hover { background: var(--border); }
+.np-titulo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.np-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.np-seccion {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.np-seccion-titulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+.np-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.np-grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .np-grid2, .np-grid4 { grid-template-columns: 1fr 1fr; }
+}
+.np-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.np-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.np-req { color: var(--accent); }
+.np-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+.np-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,160,223,0.15);
+}
+.np-prefijos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.np-prefijo-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.np-prefijo-btn:hover { border-color: var(--accent); color: var(--accent); }
+.np-prefijo-btn--activo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.np-error {
+  color: #ef4444;
+  font-size: 0.88rem;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.np-exito {
+  color: #22c55e;
+  font-size: 0.88rem;
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.np-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.np-btn-cancelar {
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.np-btn-cancelar:hover { background: var(--border); }
+.np-btn-guardar {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.np-btn-guardar:hover { background: #0080B8; }
+.np-btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Productos Admin Button ──────────────────────────────────── */
+.productos-admin-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.productos-btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.productos-btn-nuevo:hover { background: #0080B8; }
+
 .productos-page {
   padding: var(--spacing-md);
   display: flex;

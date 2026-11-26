@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useBuscarProductos, useUbicacionesProducto } from '../hooks/useProductos'
 import { useConectividad } from '../../../shared/hooks/useConectividad'
 import { BarcodeScanner } from '../../../shared/components/BarcodeScanner'
@@ -134,9 +135,11 @@ function ProductoCard({ p, onClick }: { p: ProductoConUbicacion; onClick: () => 
 }
 
 export function ProductosPage() {
+  const navigate = useNavigate()
   const { offline } = useConectividad()
   const [busqueda, setBusqueda]           = useState('')
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoConUbicacion | null>(null)
+  const esAdmin = localStorage.getItem('user_rol') === 'admin'
 
   const { data: resultado, isFetching } = useBuscarProductos(busqueda)
 
@@ -148,7 +151,14 @@ export function ProductosPage() {
       {productoSeleccionado && (
         <UbicacionesModal p={productoSeleccionado} onCerrar={() => setProductoSeleccionado(null)} />
       )}
-      <h1 className="productos-titulo">Búsqueda de Productos</h1>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <h1 className="productos-titulo">Búsqueda de Productos</h1>
+        {esAdmin && (
+          <button className="productos-btn-nuevo" onClick={() => navigate('/productos/nuevo')}>
+            + Nuevo producto
+          </button>
+        )}
+      </div>
 
       {offline && <div className="aviso-offline">Sin conexión — datos en caché</div>}
 
